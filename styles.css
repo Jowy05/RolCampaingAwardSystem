@@ -82,3 +82,24 @@
   .login-err{color:#ff8585;font-size:13px;min-height:18px;margin-bottom:4px;}
   .login-hint{color:#54687a;font-size:12px;margin-top:14px;}
   @media(max-width:560px){.toggle span{display:none;}.ic{width:52px;height:52px;flex-basis:52px;font-size:28px;}}
+  .dm-fab{position:fixed;bottom:22px;right:22px;z-index:50;background:var(--gold);color:#2a2207;border:none;border-radius:30px;padding:13px 20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.5);display:none;align-items:center;gap:8px;}
+  .dm-fab:hover{background:#ffd65a;}
+  .modal{position:fixed;inset:0;z-index:60;background:rgba(4,9,14,.72);display:none;align-items:center;justify-content:center;padding:18px;}
+  .modal.open{display:flex;}
+  .modal-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:100%;max-width:840px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+  .modal-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .modal-head h2{margin:0;font-size:18px;color:#fff;font-weight:600;flex:1;min-width:140px;}
+  .modal-body{padding:16px 18px;overflow:auto;flex:1;}
+  .guia-view{font-size:14px;line-height:1.65;color:var(--text);}
+  .guia-view h1{font-size:22px;} .guia-view h2{font-size:19px;} .guia-view h3{font-size:16px;}
+  .guia-view h1,.guia-view h2,.guia-view h3,.guia-view h4{color:#fff;margin:18px 0 8px;}
+  .guia-view p{margin:8px 0;} .guia-view ul,.guia-view ol{margin:8px 0;padding-left:22px;}
+  .guia-view table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;}
+  .guia-view th,.guia-view td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top;}
+  .guia-view th{background:#16242f;color:#fff;}
+  .guia-view code{background:#0f1c27;padding:1px 5px;border-radius:4px;font-size:12.5px;}
+  .guia-view blockquote{border-left:3px solid var(--accent2);margin:8px 0;padding:2px 12px;color:var(--muted);}
+  .guia-view hr{border:none;border-top:1px solid var(--line);margin:16px 0;}
+  .guia-view a{color:var(--accent);}
+  .guia-edit{width:100%;height:62vh;background:#0f1c27;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:12px;font-family:Consolas,"Courier New",monospace;font-size:13px;line-height:1.55;outline:none;resize:vertical;}
+  .guia-edit:focus{border-color:var(--accent);}
