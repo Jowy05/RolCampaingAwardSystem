@@ -1,0 +1,1016 @@
+[
+    {
+        "nombre":  "Refuerzos para Olivilla",
+        "descripcion":  "Convencer a la Ciudad Troll de enviar tropas para ayudar a defender Olivilla del próximo ataque goblin.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Palabras en vez de espadas",
+        "descripcion":  "Resolver una misión planteada como combate sin desenvainar, solo hablando.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Operación fantasma",
+        "descripcion":  "Saquear un campamento enemigo entero sin que os detecten.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "El cofre soñado",
+        "descripcion":  "Reunir entre todos un fondo grupal realmente gordo.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Nadie se queda atrás",
+        "descripcion":  "Ganar un combate peligroso sin que ningún miembro del grupo caiga inconsciente.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Salió según el plan",
+        "descripcion":  "Completar un objetivo importante siguiendo un plan trazado de antemano, sin improvisar a lo loco.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Red de favores",
+        "descripcion":  "Conseguir que tres pueblos o facciones distintas os deban un favor.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Hogar, dulce cueva",
+        "descripcion":  "Mejorar a fondo la base del grupo (la cueva) con dinero del bote común.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Sin un rasguño",
+        "descripcion":  "Terminar un combate sin recibir ni un solo punto de daño.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Mataensueños",
+        "descripcion":  "Derrotar a un enemigo muy por encima de vuestro nivel.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Arma improvisada",
+        "descripcion":  "Derrotar a un enemigo con algo que no es un arma: una silla, un pescado, una jarra...",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Combo coordinado",
+        "descripcion":  "Dos miembros del grupo encadenan sus ataques en el mismo turno para tumbar a un enemigo.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Justo a tiempo",
+        "descripcion":  "Estabilizar a un compañero moribundo en el último segundo.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "A puño limpio",
+        "descripcion":  "Ganar un combate entero sin lanzar ni un solo conjuro, todo a tortazos.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Crítico de oro",
+        "descripcion":  "Confirmar un crítico en el momento más decisivo de una pelea.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Vozarrón",
+        "descripcion":  "Hacer huir a un enemigo solo gritándole.",
+        "categoria":  "combate",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Políglota isekai",
+        "descripcion":  "Aprender cualquier idioma nuevo de la tabla de idiomas.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Esto no es Benidorm",
+        "descripcion":  "Sobrevivir a una zona de frío extremo sin caer por congelación.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Estrella Michelin",
+        "descripcion":  "Cocinar un plato de calidad Excelente (con un crítico de Cocina).",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "El tercer ritual",
+        "descripcion":  "Descubrir y usar por fin el tercer ritual isekai que nadie del grupo recuerda.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Vidente aficionado",
+        "descripcion":  "Resolver un acertijo o evitar una trampa gracias al ritual de Ubicar pista.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Pies de plomo",
+        "descripcion":  "Cruzar una zona muy peligrosa sin que salte ni una sola alarma.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "El altar te reclama",
+        "descripcion":  "Subir de nivel en un Altar cumpliendo los requisitos temáticos de tu clase.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Patas arriba",
+        "descripcion":  "Registrar a fondo un lugar y encontrar un pasadizo o secreto que casi nadie vería.",
+        "categoria":  "exploracion",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Don Juan isekai",
+        "descripcion":  "Seducir con éxito a un NPC.",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Mejor hablando",
+        "descripcion":  "Superar tú solo un encuentro tenso convenciendo en vez de luchando.",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Buenas migas",
+        "descripcion":  "Ganarte la amistad sincera de un NPC importante.",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Trolero profesional",
+        "descripcion":  "Colarle una mentira gordísima a alguien y que se la trague enterita.",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Terror de trolls",
+        "descripcion":  "Intimidar con éxito a un troll (las máscaras de +2 ayudan).",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Paz y amor",
+        "descripcion":  "Evitar una pelea mediando entre dos bandos a punto de liarse a mamporros.",
+        "categoria":  "social",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Mecenas del nigromante",
+        "descripcion":  "Reunir el oro que Leomar necesita para su próximo proyecto de nigromancia.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "El ojo del mercader",
+        "descripcion":  "Vender un objeto por bastante más de lo que vale, a base de regateo.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Botín troll",
+        "descripcion":  "Llevarse un buen pellizco de monedas gigantes de los trolls.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Caza de recompensas",
+        "descripcion":  "Cobrar la recompensa de un encargo o de un cartel de \u0027se busca\u0027.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Hucha de hierro",
+        "descripcion":  "Ahorrar una buena cantidad de oro en el bote común sin gastarlo en tonterías.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Inversión de futuro",
+        "descripcion":  "Comprar un objeto caro pero muy útil para el grupo.",
+        "categoria":  "botin",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "¿Y si me lo pruebo?",
+        "descripcion":  "Probarse o usar un pergamino \u0027orden de GM\u0027 a ver qué demonios pasa.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Backflip táctico",
+        "descripcion":  "Hacer una voltereta hacia atrás en plena pelea, con una tirada de Acrobacias de las de rezar.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Mascota nueva",
+        "descripcion":  "Adoptar a una criatura rara y absurda como mascota del grupo.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Salió bien de milagro",
+        "descripcion":  "Que una decisión completamente idiota del grupo acabe saliendo perfecta.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Casi la palmo por tonto",
+        "descripcion":  "Estar a punto de morir por una tontería autoinfligida.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Coleccionista compulsivo",
+        "descripcion":  "Acumular un objeto absurdo en una cantidad totalmente ridícula.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Momento leyenda",
+        "descripcion":  "Hacer algo tan épico (o tan ridículo) que un NPC lo cuente como leyenda.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Influencer de taberna",
+        "descripcion":  "Convertirte en el tema de conversación de una taberna entera.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Esto no estaba en el guion",
+        "descripcion":  "Romperle por completo los planes al DM con una idea totalmente inesperada.",
+        "categoria":  "meme",
+        "recompensa":  "XP extra"
+    },
+    {
+        "nombre":  "Cuida del bicho",
+        "descripcion":  "Que tu ankylosaurio llegue vivo y sano al final de una aventura peligrosa.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Jinete del trueno",
+        "descripcion":  "Derribar a un enemigo grande cargando a lomos del ankylosaurio.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Anky-muralla",
+        "descripcion":  "Usar al ankylosaurio para tapar un paso y proteger al grupo.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Reto aceptado",
+        "descripcion":  "Reta a un enemigo con tu Reto de samurái y acábalo de un solo golpe.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Domador jurásico",
+        "descripcion":  "Enseñarle un truco nuevo al ankylosaurio.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Cuida del caballo",
+        "descripcion":  "Que el caballo siga vivo y sano al final de la aventura.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Madre de dragón",
+        "descripcion":  "Interponerte para salvar a tu eidolon dragón de un golpe mortal.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Sincronía perfecta",
+        "descripcion":  "Coordinar un ataque combinado entre tú y tu dragón.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Establo feliz",
+        "descripcion":  "Conseguir buen alojamiento y comida para las monturas del grupo.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Vínculo inquebrantable",
+        "descripcion":  "Recuperar a tu eidolon después de perderlo en combate.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Dragón de compañía",
+        "descripcion":  "Usar a tu dragón para algo totalmente pacífico y absurdo.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Botica ambulante",
+        "descripcion":  "Preparar pociones y remedios para todo el grupo antes de una misión gorda.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Recolectora",
+        "descripcion":  "Reunir un buen alijo de ingredientes raros para tus brebajes.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Embrujo perfecto",
+        "descripcion":  "Cambiar el rumbo de un combate con un embrujo en el momento justo.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Familiar al rescate",
+        "descripcion":  "Resolver una situación complicada gracias a tu familiar.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Experimento dudoso",
+        "descripcion":  "Probar una poción casera sin tener ni idea de qué hace.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Ejército de un solo hechicero",
+        "descripcion":  "Tener tres o más secuaces o no-muertos a la vez en combate.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Financiación necro",
+        "descripcion":  "Conseguir el oro para tu siguiente proyecto de nigromancia.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Sargento Sapo, ascenso",
+        "descripcion":  "Mejorar o equipar al Sargento Sapo.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Maestro de marionetas",
+        "descripcion":  "Comandar a tus minions en una jugada coordinada compleja.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Recluta absurdo",
+        "descripcion":  "Sumar un secuaz nuevo de la forma más ridícula posible.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El casco no se toca",
+        "descripcion":  "Pasar una sesión entera sin quitarte el casco ni una sola vez.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Muro de fe",
+        "descripcion":  "Aguantar como tanque protegiendo al grupo en un combate durísimo.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Médico de campaña",
+        "descripcion":  "Curar al grupo lo justo para sobrevivir a un día infernal.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Bendición oportuna",
+        "descripcion":  "Activar una bendición de warpriest en el momento perfecto.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Fervor imparable",
+        "descripcion":  "Usar el fervor para curarte y atacar en el mismo turno.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "¿Quién hay bajo el casco?",
+        "descripcion":  "Que un NPC sea incapaz de reconocerte cuando te ve sin el casco.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "La piedra era mía, ¿no?",
+        "descripcion":  "Recupera tu piedra misteriosa de las manos (o el zurrón apestoso) del goblin al que se la regalaste, sea por la fuerza, por trato o por persecución a lomos del anky.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Carga de tonelada y media",
+        "descripcion":  "Ejecuta una carga montado en el ankylosaurio que impacte contra dos o más enemigos en la misma línea, atropellando con maniobra de Arrollar (Overrun) a al menos uno de ellos.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El mazo de la cola",
+        "descripcion":  "Provoca que tu ankylosaurio remate con su ataque de cola (tail slap) a un enemigo que tú ya hayas dejado tocado en el mismo turno.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Te he retado, ahora aguanta",
+        "descripcion":  "Usa tu Reto (Challenge) contra un enemigo y termina el combate sin que ese objetivo te haya hecho perder ni un solo punto de vida.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Líder de la carga, no de la huida",
+        "descripcion":  "Sé el primero de la party en entrar en alcance del enemigo en tres combates distintos, abriendo tú la pelea antes que nadie.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Pared con patas",
+        "descripcion":  "Termina un combate en el que tú y el anky hayáis recibido más golpes que todo el resto de la party junta, sin caer inconsciente.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Duelo a la vieja usanza",
+        "descripcion":  "Acepta o propón un duelo singular contra un enemigo con nombre y véncelo en combate uno contra uno, sin que la party intervenga.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Resolución de samurái",
+        "descripcion":  "Usa tu habilidad de clase Resolución (Resolve) para sobreponerte a un efecto que te tendría fuera de combate (asustado, agotado o aturdido) en el momento más crítico de una pelea.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Aparcamiento jurásico",
+        "descripcion":  "Mete al ankylosaurio dentro de un edificio, tienda o local pensado para humanos (la feria de los trolls, una taberna, el mercado de Olivilla) y sal sin tener que pagar destrozos.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Pergamino del malo, papel del anky",
+        "descripcion":  "Arranca un pergamino \"orden de GM\" usando la fuerza bruta del ankylosaurio en lugar de tus propias manos.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Forraje gigante",
+        "descripcion":  "Consigue alimentar al ankylosaurio con algo absurdamente desproporcionado: una moneda gigante de los trolls, un barril entero del aceite de Olivilla o la cosecha completa de alguien muy enfadado.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Aguanta el frío, aguanta todo",
+        "descripcion":  "Supera una situación de frío extremo de la campaña sin sufrir penalizaciones, protegiendo además a un compañero con tu propio aguante (o con el calorcito del dinosaurio).",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Mismo jinete, cuerpo nuevo",
+        "descripcion":  "Muere en combate y, tras reencarnar como Alma Isekai en un cuerpo cambiado, vuelve a subirte al mismo ankylosaurio y haz que el bicho te reconozca.",
+        "categoria":  "pj:Joel",
+        "personaje":  "Joel",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Aerolínea Cristina, embarcando",
+        "descripcion":  "Monta a tu eidolon dragón en pleno vuelo y transporta por el aire al menos a un compañero de party durante un combate o huida.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Esto antes era un lagarto",
+        "descripcion":  "Gasta una mejora de evolución para darle alas (o la evolución de vuelo) al eidolon dragón por primera vez.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Tres por el precio de uno",
+        "descripcion":  "Ten en mesa simultáneamente al eidolon, una criatura de Convocar Monstruo activa y al caballo, todos vivos al final del turno.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El que avisa no es traidor",
+        "descripcion":  "Reposiciona al caballo fuera de peligro usando una acción antes de que un enemigo pueda alcanzarlo en su siguiente turno.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Convocación quirúrgica",
+        "descripcion":  "Usa Convocar Monstruo para colocar a una criatura en flanqueo exacto que conceda el bonificador de ataque a un aliado ese mismo turno.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Barbacoa improvisada",
+        "descripcion":  "Haz que el dragón use su arma de aliento o ataque de fuego para cocinar comida y consigue al menos calidad Excelente en el plato resultante.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Calefacción con escamas",
+        "descripcion":  "Sobrevive a una escena de Frío usando al eidolon dragón como fuente de calor en vez de hoguera o magia.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Pergamino, te como",
+        "descripcion":  "Ordena al eidolon dragón que arranque o destruya una \u0027orden de GM\u0027 colocada por el malo maloso.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Madre, hay dos puertas",
+        "descripcion":  "Aumenta al eidolon a tamaño Grande o superior mediante evoluciones hasta que no quepa por una puerta normal de mazmorra.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El dragón no es un perchero",
+        "descripcion":  "Aguanta tres sesiones seguidas sin usar al eidolon para tareas domésticas tontas (cargar la compra, alcanzar estanterías, espantar goblins del mercado de Olivilla).",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "A cuatro manos y dos garras",
+        "descripcion":  "En un mismo turno, ataca con Cristina y con el eidolon dragón al mismo enemigo y reducidlo a 0 puntos de golpe entre los dos.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Reencarné, sigo siendo madre",
+        "descripcion":  "Muere y vuelve por Alma Isekai en un cuerpo cambiado, y reestablece el vínculo con tu eidolon dragón sin perder ninguna evolución.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Doma de feria troll",
+        "descripcion":  "Lleva al caballo o al dragón a la feria de los trolls y sal de allí sin que ninguna de tus monturas acabe apostada por monedas gigantes.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Recupera la piedrita",
+        "descripcion":  "Recobra una de las piedritas robadas por el malo maloso e intégrala o úsala en una mejora del vínculo con tu eidolon.",
+        "categoria":  "pj:Cristina",
+        "personaje":  "Cristina",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Esto te lo bebes",
+        "descripcion":  "Reparte en una sola sesión una poción a cada miembro de la party (incluido el bicho que nadie quiere) antes de que empiece un combate. Que nadie diga que no avisaste.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Mi piedra, cabrón",
+        "descripcion":  "Estás presente y participas en el combate en el que se le arranca al malo maloso la piedrita que te robó. Recuperarla en tu propia mano cuenta doble en tu corazón.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Maleficio te quedas",
+        "descripcion":  "Inutiliza a un enemigo por completo durante un turno entero usando el embrujo de Maleficio (Misfortune) y que falle la tirada que le tocaba salvar.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Aquí huele a cabra muerta",
+        "descripcion":  "Lanza el embrujo de Vahído (Slumber) y duerme a un enemigo que el resto de la party llevaba tres asaltos sin poder tocar. Lo demás ya es cuestión de degollar tranquilamente.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Cocinera de Olivilla",
+        "descripcion":  "Prepara un plato de calidad Excelente usando aceite del pueblo de Olivilla como ingrediente principal y dáselo a comer al grupo antes de un descanso.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El patrón siempre cobra",
+        "descripcion":  "Roleas una conversación (o pesadilla, o trance) con el patrón de tu bruja en la que te exige algo a cambio de tu poder. Aceptar o regatear, tú verás.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Farmacia de guerra",
+        "descripcion":  "Llega a un combate con al menos cinco brebajes distintos preparados de antemano y usa al menos tres de ellos durante la pelea. La previsión es la mejor de las armas.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Ese pergamino me lo quedo yo",
+        "descripcion":  "Sé tú quien arranque físicamente un pergamino de \u0027orden de GM\u0027 del malo maloso, anulando su efecto sobre un aliado esclavizado.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Probadlo, no pasa nada",
+        "descripcion":  "Da a probar un brebaje experimental sin etiquetar a un compañero (o NPC) y que el resultado sea claramente NO el que tú esperabas. Documéntalo igualmente.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Recolectora de feria",
+        "descripcion":  "Consigue un ingrediente alquímico raro en la feria de los trolls regateando con monedas gigantes. Que te sobre el cambio es opcional.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Mi familiar lo vio antes",
+        "descripcion":  "Evita una emboscada o una trampa para todo el grupo gracias a algo que percibió tu familiar antes que cualquier personaje. Hazle un mimo después.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "La nueva ya no es la nueva",
+        "descripcion":  "Que un compañero de los que ya estaban antes de Mortus te pida a TI consejo o cobertura en un momento crítico, reconociendo de hecho que ya eres del grupo.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Subir de nivel le jode",
+        "descripcion":  "Sube de nivel en un Altar con el malo maloso o sus secuaces conscientes de ello, sabiendo que es justo lo que más teme. Sonríe mientras lo haces.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Reencarnada y peor que antes",
+        "descripcion":  "Muere en combate, regresa por Alma Isekai en un cuerpo cambiado y sigue siendo capaz de lanzar tus embrujos y cocinar como si nada. La herbolaria nunca descansa.",
+        "categoria":  "pj:Carol",
+        "personaje":  "Carol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El que mucho aprieta, poco anima",
+        "descripcion":  "Supera tu límite de Dados de Golpe controlados por Animar Muertos a la vez y mira cómo uno de tus esqueletos se va por libre justo en el peor momento.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Sangre, dale, que es gratis",
+        "descripcion":  "Lanza con éxito un conjuro usando tu Sangre/herencia de hechicero para modificarlo o ignorar una de sus limitaciones durante un combate.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Recursos humanos, sección difuntos",
+        "descripcion":  "Ten activos a la vez al menos cuatro tipos distintos de secuaz: el Sargento Sapo, el orco revivido, un no-muerto animado y un recluta vivo cualquiera.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El orco no era de usar y tirar",
+        "descripcion":  "Revive al mismo orco una segunda vez tras volver a palmarla, demostrando que en tu plantilla el despido improcedente no existe.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Necromante con licencia de obras",
+        "descripcion":  "Acumula el oro suficiente y monta por fin una instalación fija para tus proyectos de nigromancia (cripta, laboratorio o taller de cadáveres).",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Pared de carne con seguro a terceros",
+        "descripcion":  "Sobrevive a un combate en el que TÚ no recibes ni un solo punto de daño porque tus minions se comieron absolutamente todos los golpes por ti.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Toque helado, perdón por la ola de frío",
+        "descripcion":  "Aprovecha el frío de la campaña combinándolo con un conjuro tuyo para sacar ventaja mecánica clara en un encuentro.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Comité de empresa de los no-muertos",
+        "descripcion":  "Coordina en un mismo turno a tres o más secuaces para ejecutar una jugada táctica combinada (flanqueo, presa y rematador) sin que ninguno la fastidie.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Esto es un altar, no un cementerio",
+        "descripcion":  "Sube de nivel en un Altar mientras te niegan la magia y tienes, pese a todo, al menos un no-muerto en pie a tu lado.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Pergamino al horno",
+        "descripcion":  "Arranca y destruye un pergamino \"orden de GM\" usando a un minion como mano de obra, en lugar de jugártela tú mismo.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Sargento Sapo, jefe de personal",
+        "descripcion":  "Delega en el Sargento Sapo el mando directo de otro grupo de secuaces y que dirija una acción él solo mientras tú haces otra cosa.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Necropromotor de feria",
+        "descripcion":  "Consigue que un troll de la feria te pague en monedas gigantes a cambio de un \"servicio\" tuyo de dudosa legalidad mortuoria.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Reencarné y traje plantilla",
+        "descripcion":  "Muere y reencarna por Alma Isekai en un cuerpo nuevo y raro, y aun así recupera y vuelve a comandar a tu ejército de minions tras el cambio.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Olivilla, capital del embalsamado",
+        "descripcion":  "Consigue en el pueblo del aceite (Olivilla) suficiente aceite para un uso necromántico, ritual o de conservación de cadáveres descaradamente impropio.",
+        "categoria":  "pj:Leomar",
+        "personaje":  "Leomar",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "DPS: Daños Por Sacerdote",
+        "descripcion":  "En un mismo turno, usa fervor para lanzar un conjuro de cura como acción rápida y acto seguido suelta un ataque completo. El combo curar+repartir leches en la misma ronda.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Sacred Weapon, sí señor",
+        "descripcion":  "Activa Arma Sagrada y mete un crítico que reviente a un enemigo en el mismo asalto. Que el dado y la divinidad se pongan de acuerdo por una vez.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El casco también reza",
+        "descripcion":  "Resiste una tirada de salvación contra un efecto que te dejaría fuera de combate (aturdido, dominado, dormido) y justifica el éxito diciendo que fue el casco quien la pasó por ti.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Bendición a la carta",
+        "descripcion":  "En una misma sesión, usa las dos bendiciones de tus dominios para dos situaciones completamente distintas (una ofensiva y una defensiva o utilitaria).",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Plus uno a la fe",
+        "descripcion":  "Mantén tu Fervor para Mayor Gloria (o el buff de combate equivalente) activo durante un combate entero sin que se te caiga ni una ronda.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Reparador de almas isekai",
+        "descripcion":  "Trae de vuelta de 0 PG o menos a un compañero que estaba a punto de palmar y reencarnar como Alma Isekai. Le salvas el cuerpo actual de milagro.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El tanque que no se moja (la cabeza)",
+        "descripcion":  "Encaja un golpe que habría dejado seco a otro miembro de la party y sigue en pie, recibiéndolo tú a propósito por protegerlos.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Antipergaminos por vocación",
+        "descripcion":  "Arranca un pergamino \u0027orden de GM\u0027 del malo maloso e improvisa una bendición de la divinidad como excusa de por qué a ti las reglas reescritas te resbalan.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Milagro de bajo presupuesto",
+        "descripcion":  "Resuelve un problema no-combate (abrir algo, purificar agua, espantar bichos) gastando un conjuro o canalización de forma absurdamente ingeniosa, no como estaba pensado.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "El casco entra en la bañera",
+        "descripcion":  "Encuéntrate en una situación social donde quitarse el casco sería lo lógico y educado (baño termal, banquete, audiencia con un noble) y aun así no te lo quites. Inventa una excusa litúrgica.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Capellán de Olivilla",
+        "descripcion":  "Bendice, sanea o protege a un NPC del pueblo del aceite hasta que te ofrezcan aceite, comida de calidad Excelente o un puestecito en la iglesia local.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Curandero de feria troll",
+        "descripcion":  "En la feria de los trolls, gánate o consigue una moneda gigante haciendo de sanador/tanque para alguien, montando una consulta médica improvisada bajo el casco.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Resucitado con casco incluido",
+        "descripcion":  "Muere y reencarna como Alma Isekai en un cuerpo nuevo... y lo primero que haces al despertar es reclamar tu casco (o conseguir uno equivalente de inmediato).",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Aguanta, que ya canalizo",
+        "descripcion":  "Suelta una canalización de energía positiva que cure a tres o más compañeros a la vez en el momento más crítico del combate, salvando la pelea de un wipe.",
+        "categoria":  "pj:Uriol",
+        "personaje":  "Uriol",
+        "recompensa":  "Punto de inspiración"
+    },
+    {
+        "nombre":  "Romper el asedio",
+        "descripcion":  "Liberar a un pueblo del asedio de las tropas del malo maloso.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Cazadores de comandantes",
+        "descripcion":  "Derrotar a un comandante enemigo (de los que sí llevan un pergamino «orden de GM») y arrancárselo.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Superados en número",
+        "descripcion":  "Ganar un combate estando en clara inferioridad numérica.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Emboscada perfecta",
+        "descripcion":  "Sorprender a un grupo de enemigos y tumbar al menos a uno antes de que puedan reaccionar.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Salir vivos de milagro",
+        "descripcion":  "Sobrevivir todos a un encuentro que parecía una derrota segura.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Limpieza a fondo",
+        "descripcion":  "Completar una mazmorra al 100%: todas las salas, todo el botín y todos los enemigos.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Sin bajas",
+        "descripcion":  "Encadenar tres combates seguidos sin que nadie caiga a 0 PG.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Jefe abajo",
+        "descripcion":  "Derrotar al jefe de una zona o de una misión importante.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Botín legendario",
+        "descripcion":  "Conseguir un objeto mágico raro o equipo claramente por encima de vuestro nivel.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Aguantar la noche",
+        "descripcion":  "Descansar a salvo en territorio hostil sin que os asalten.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "Retirada táctica",
+        "descripcion":  "Escapar de un combate imposible sin perder a nadie; a veces huir es ganar.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    },
+    {
+        "nombre":  "El grupo unido",
+        "descripcion":  "Que los cinco encadenéis acciones en un mismo turno para decidir un combate.",
+        "categoria":  "grupo",
+        "recompensa":  "Punto de inspiración (grupal)"
+    }
+]
