@@ -18,7 +18,7 @@
     color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; font-size:15px;
   }
   .wrap{max-width:960px;margin:0 auto;padding:26px 18px 60px;}
-  .banner{background:#13283a;border:1px solid #295275;color:#b9d6ee;border-radius:6px;padding:9px 14px;font-size:13px;margin-bottom:18px;}
+  .banner{background:#13283a;border:1px solid #295275;color:#b9d6ee;border-radius:6px;padding:9px 14px;font-size:13px;margin-bottom:18px;line-height:1.5;}
   .top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:18px;}
   .brand{display:flex;align-items:center;gap:14px;}
   .logo{font-size:40px;line-height:1;}
@@ -31,12 +31,14 @@
   .fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%;transition:width .4s ease;}
   .perfect{font-size:12px;color:var(--gold);margin-top:6px;min-height:14px;}
   .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
-  .controls input[type=text]{flex:1;min-width:160px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 11px;font-size:14px;outline:none;}
+  .controls input[type=text]{flex:1;min-width:140px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 11px;font-size:14px;outline:none;}
   .controls input[type=text]:focus{border-color:var(--accent);}
   .ck{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none;}
   .ck input{accent-color:var(--accent);width:16px;height:16px;}
   .btn{background:#22384a;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px 13px;font-size:13px;cursor:pointer;}
   .btn:hover{background:#2c4a60;}
+  .btn.dm{background:#3a2c10;border-color:#6b5114;color:#f0d488;}
+  .btn.dm:hover{background:#4d3a18;}
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap;}
   .tab{background:none;border:none;color:var(--muted);padding:11px 18px;cursor:pointer;font-size:15px;border-bottom:3px solid transparent;border-radius:4px 4px 0 0;}
   .tab:hover{color:#dce8f2;background:#15222e;}
@@ -58,10 +60,20 @@
   .nm{font-size:16px;font-weight:600;color:#fff;}
   .ach.on .nm{color:#eafbe0;}
   .ds{font-size:13.5px;color:var(--text);margin-top:4px;line-height:1.5;}
+  .rw{font-size:12.5px;color:#9fd3a0;margin-top:7px;}
+  .rwedit{margin-top:7px;font-size:12.5px;color:#9fd3a0;}
+  .rw-input{width:100%;max-width:380px;background:#0f1c27;border:1px solid #3a5a44;border-radius:6px;color:#bfe6a0;padding:6px 9px;font-size:12.5px;margin-top:3px;outline:none;}
+  .rw-input:focus{border-color:var(--green);}
+  .del{flex:0 0 auto;background:#3a1c1c;border:1px solid #6b2a2a;color:#ffb3b3;border-radius:8px;padding:8px 11px;cursor:pointer;font-size:14px;}
+  .del:hover{background:#512525;}
   .toggle{flex:0 0 auto;display:flex;align-items:center;gap:7px;background:#16242f;border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;font-size:12.5px;color:var(--muted);user-select:none;}
   .toggle:hover{border-color:var(--accent);color:#dce8f2;}
   .ach.on .toggle{background:#23381f;border-color:#4d7a2a;color:#bfe6a0;}
   .toggle input{accent-color:var(--green);width:16px;height:16px;}
+  .addbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#15212e;border:1px dashed #3a5a74;border-radius:8px;padding:12px;margin-bottom:14px;}
+  .addbox input{background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;}
+  .addbox input:focus{border-color:var(--accent);}
+  .addbox .an{flex:2;min-width:160px;} .addbox .ad{flex:3;min-width:200px;} .addbox .ar{flex:1;min-width:130px;}
   .empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px;}
   .foot{margin-top:26px;text-align:center;color:#54687a;font-size:12px;}
   .whoami{color:var(--accent);font-size:13px;font-weight:600;margin-left:auto;}
@@ -96,7 +108,7 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
-  <div class="banner" id="banner">Logros <b>por conseguir</b>. El progreso compartido se lee de <code>progreso.json</code> del repositorio (igual para todos). Para fijarlo: marca los logros y pulsa «Guardar (JSON)» para copiarlo y pegarlo en ese archivo.</div>
+  <div class="banner" id="banner">Logros <b>por conseguir</b>, cada uno con su recompensa. El estado y las recompensas se leen de <code>logros.json</code> y <code>progreso.json</code> del repositorio (igual para todos). Para fijar el progreso: marca y pulsa «Guardar progreso».</div>
 
   <div class="top">
     <div class="brand">
@@ -116,8 +128,10 @@
   <div class="controls">
     <input type="text" id="search" placeholder="🔍  Buscar logro...">
     <label class="ck"><input type="checkbox" id="t-hide"> Ocultar conseguidos</label>
+    <label class="ck" id="editwrap" style="display:none;"><input type="checkbox" id="t-edit"> ✏️ Modo edición (DM)</label>
+    <button class="btn" id="saveprog">💾 Guardar progreso</button>
+    <button class="btn dm" id="savelogros" style="display:none;">💾 Guardar logros</button>
     <button class="btn" id="reset">Reiniciar</button>
-    <button class="btn" id="savejson">💾 Guardar (JSON)</button>
     <span class="whoami" id="whoami"></span>
     <button class="btn" id="logout">Salir</button>
   </div>
@@ -126,7 +140,7 @@
   <div id="subtabs"></div>
   <main id="list"></main>
 
-  <div class="foot">El progreso compartido se lee de progreso.json en el repositorio (igual para todos). Tus marcas no se fijan para el grupo hasta que se guardan en ese archivo.</div>
+  <div class="foot">El contenido se lee del repositorio (igual para todos). Solo quien tenga acceso al repo puede fijar cambios con los botones de Guardar.</div>
 </div>
 
 <script>
@@ -138,18 +152,7 @@ const PLAYERS=[
   {key:"Uriol",icon:"⛑️"}
 ];
 
-// =======================================================================
-//  CREDENCIALES  ->  cada valor es el HASH SHA-256 de la contraseña,
-//  NO la contraseña en claro (al inspeccionar no se ve la contraseña).
-//
-//  Para cambiar la contraseña de alguien: abre esta página, pulsa F12 ->
-//  pestaña "Console", escribe   sha256hex('TuNuevaClave')   y pega el
-//  resultado (64 caracteres) aquí, sustituyendo el hash de esa persona.
-//
-//  (Aquí NO se guarda ninguna contraseña, solo su hash SHA-256.)
-//  AVISO: el hash impide leer la contraseña al inspeccionar, pero NO es
-//  seguridad fuerte (una clave floja se puede romper por fuerza bruta).
-// =======================================================================
+// CREDENCIALES: hash SHA-256 (no la contraseña en claro). Cambiar: sha256hex('clave') en consola.
 const USERS={
   "Joel":"37ef7424202b86d737af07d4593f8d6c2ecfedfef061a2432ac3a6deecc267f7",
   "Cristina":"37ef7424202b86d737af07d4593f8d6c2ecfedfef061a2432ac3a6deecc267f7",
@@ -158,19 +161,15 @@ const USERS={
   "Uriol":"37ef7424202b86d737af07d4593f8d6c2ecfedfef061a2432ac3a6deecc267f7",
   "Didac":"a2fc86bac4cec78448d73cbd19b5e77df108a861a5d553ac1a6663fa8069cfeb"
 };
+const DM="Didac";
 
-// === LOGROS (objetivos por conseguir; solo nombre y descripción) ===
-const LOGROS=[{"nombre":"Refuerzos para Olivilla","descripcion":"Convencer a la Ciudad Troll de enviar tropas para ayudar a defender Olivilla del próximo ataque goblin.","categoria":"grupo"},{"nombre":"Palabras en vez de espadas","descripcion":"Resolver una misión planteada como combate sin desenvainar, solo hablando.","categoria":"grupo"},{"nombre":"Operación fantasma","descripcion":"Saquear un campamento enemigo entero sin que os detecten.","categoria":"grupo"},{"nombre":"El cofre soñado","descripcion":"Reunir entre todos un fondo grupal realmente gordo.","categoria":"grupo"},{"nombre":"Nadie se queda atrás","descripcion":"Ganar un combate peligroso sin que ningún miembro del grupo caiga inconsciente.","categoria":"grupo"},{"nombre":"Salió según el plan","descripcion":"Completar un objetivo importante siguiendo un plan trazado de antemano, sin improvisar a lo loco.","categoria":"grupo"},{"nombre":"Red de favores","descripcion":"Conseguir que tres pueblos o facciones distintas os deban un favor.","categoria":"grupo"},{"nombre":"Hogar, dulce cueva","descripcion":"Mejorar a fondo la base del grupo (la cueva) con dinero del bote común.","categoria":"grupo"},{"nombre":"Sin un rasguño","descripcion":"Terminar un combate sin recibir ni un solo punto de daño.","categoria":"combate"},{"nombre":"Mataensueños","descripcion":"Derrotar a un enemigo muy por encima de vuestro nivel.","categoria":"combate"},{"nombre":"Arma improvisada","descripcion":"Derrotar a un enemigo con algo que no es un arma: una silla, un pescado, una jarra...","categoria":"combate"},{"nombre":"Combo coordinado","descripcion":"Dos miembros del grupo encadenan sus ataques en el mismo turno para tumbar a un enemigo.","categoria":"combate"},{"nombre":"Justo a tiempo","descripcion":"Estabilizar a un compañero moribundo en el último segundo.","categoria":"combate"},{"nombre":"A puño limpio","descripcion":"Ganar un combate entero sin lanzar ni un solo conjuro, todo a tortazos.","categoria":"combate"},{"nombre":"Crítico de oro","descripcion":"Confirmar un crítico en el momento más decisivo de una pelea.","categoria":"combate"},{"nombre":"Vozarrón","descripcion":"Hacer huir a un enemigo solo gritándole.","categoria":"combate"},{"nombre":"Políglota isekai","descripcion":"Aprender cualquier idioma nuevo de la tabla de idiomas.","categoria":"exploracion"},{"nombre":"Esto no es Benidorm","descripcion":"Sobrevivir a una zona de frío extremo sin caer por congelación.","categoria":"exploracion"},{"nombre":"Estrella Michelin","descripcion":"Cocinar un plato de calidad Excelente (con un crítico de Cocina).","categoria":"exploracion"},{"nombre":"El tercer ritual","descripcion":"Descubrir y usar por fin el tercer ritual isekai que nadie del grupo recuerda.","categoria":"exploracion"},{"nombre":"Vidente aficionado","descripcion":"Resolver un acertijo o evitar una trampa gracias al ritual de Ubicar pista.","categoria":"exploracion"},{"nombre":"Pies de plomo","descripcion":"Cruzar una zona muy peligrosa sin que salte ni una sola alarma.","categoria":"exploracion"},{"nombre":"El altar te reclama","descripcion":"Subir de nivel en un Altar cumpliendo los requisitos temáticos de tu clase.","categoria":"exploracion"},{"nombre":"Patas arriba","descripcion":"Registrar a fondo un lugar y encontrar un pasadizo o secreto que casi nadie vería.","categoria":"exploracion"},{"nombre":"Don Juan isekai","descripcion":"Seducir con éxito a un NPC.","categoria":"social"},{"nombre":"Mejor hablando","descripcion":"Superar tú solo un encuentro tenso convenciendo en vez de luchando.","categoria":"social"},{"nombre":"Buenas migas","descripcion":"Ganarte la amistad sincera de un NPC importante.","categoria":"social"},{"nombre":"Trolero profesional","descripcion":"Colarle una mentira gordísima a alguien y que se la trague enterita.","categoria":"social"},{"nombre":"Terror de trolls","descripcion":"Intimidar con éxito a un troll (las máscaras de +2 ayudan).","categoria":"social"},{"nombre":"Paz y amor","descripcion":"Evitar una pelea mediando entre dos bandos a punto de liarse a mamporros.","categoria":"social"},{"nombre":"Mecenas del nigromante","descripcion":"Reunir el oro que Leomar necesita para su próximo proyecto de nigromancia.","categoria":"botin"},{"nombre":"El ojo del mercader","descripcion":"Vender un objeto por bastante más de lo que vale, a base de regateo.","categoria":"botin"},{"nombre":"Botín troll","descripcion":"Llevarse un buen pellizco de monedas gigantes de los trolls.","categoria":"botin"},{"nombre":"Caza de recompensas","descripcion":"Cobrar la recompensa de un encargo o de un cartel de \u0027se busca\u0027.","categoria":"botin"},{"nombre":"Hucha de hierro","descripcion":"Ahorrar una buena cantidad de oro en el bote común sin gastarlo en tonterías.","categoria":"botin"},{"nombre":"Inversión de futuro","descripcion":"Comprar un objeto caro pero muy útil para el grupo.","categoria":"botin"},{"nombre":"¿Y si me lo pruebo?","descripcion":"Probarse o usar un pergamino \u0027orden de GM\u0027 a ver qué demonios pasa.","categoria":"meme"},{"nombre":"Backflip táctico","descripcion":"Hacer una voltereta hacia atrás en plena pelea, con una tirada de Acrobacias de las de rezar.","categoria":"meme"},{"nombre":"Mascota nueva","descripcion":"Adoptar a una criatura rara y absurda como mascota del grupo.","categoria":"meme"},{"nombre":"Salió bien de milagro","descripcion":"Que una decisión completamente idiota del grupo acabe saliendo perfecta.","categoria":"meme"},{"nombre":"Casi la palmo por tonto","descripcion":"Estar a punto de morir por una tontería autoinfligida.","categoria":"meme"},{"nombre":"Coleccionista compulsivo","descripcion":"Acumular un objeto absurdo en una cantidad totalmente ridícula.","categoria":"meme"},{"nombre":"Momento leyenda","descripcion":"Hacer algo tan épico (o tan ridículo) que un NPC lo cuente como leyenda.","categoria":"meme"},{"nombre":"Influencer de taberna","descripcion":"Convertirte en el tema de conversación de una taberna entera.","categoria":"meme"},{"nombre":"Esto no estaba en el guion","descripcion":"Romperle por completo los planes al DM con una idea totalmente inesperada.","categoria":"meme"},{"nombre":"Cuida del bicho","descripcion":"Que tu ankylosaurio llegue vivo y sano al final de una aventura peligrosa.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Jinete del trueno","descripcion":"Derribar a un enemigo grande cargando a lomos del ankylosaurio.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Anky-muralla","descripcion":"Usar al ankylosaurio para tapar un paso y proteger al grupo.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Reto aceptado","descripcion":"Reta a un enemigo con tu Reto de samurái y acábalo de un solo golpe.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Domador jurásico","descripcion":"Enseñarle un truco nuevo al ankylosaurio.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Cuida del caballo","descripcion":"Que el caballo siga vivo y sano al final de la aventura.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Madre de dragón","descripcion":"Interponerte para salvar a tu eidolon dragón de un golpe mortal.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Sincronía perfecta","descripcion":"Coordinar un ataque combinado entre tú y tu dragón.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Establo feliz","descripcion":"Conseguir buen alojamiento y comida para las monturas del grupo.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Vínculo inquebrantable","descripcion":"Recuperar a tu eidolon después de perderlo en combate.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Dragón de compañía","descripcion":"Usar a tu dragón para algo totalmente pacífico y absurdo.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Botica ambulante","descripcion":"Preparar pociones y remedios para todo el grupo antes de una misión gorda.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Recolectora","descripcion":"Reunir un buen alijo de ingredientes raros para tus brebajes.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Embrujo perfecto","descripcion":"Cambiar el rumbo de un combate con un embrujo en el momento justo.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Familiar al rescate","descripcion":"Resolver una situación complicada gracias a tu familiar.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Experimento dudoso","descripcion":"Probar una poción casera sin tener ni idea de qué hace.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Ejército de un solo hechicero","descripcion":"Tener tres o más secuaces o no-muertos a la vez en combate.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Financiación necro","descripcion":"Conseguir el oro para tu siguiente proyecto de nigromancia.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Sargento Sapo, ascenso","descripcion":"Mejorar o equipar al Sargento Sapo.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Maestro de marionetas","descripcion":"Comandar a tus minions en una jugada coordinada compleja.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Recluta absurdo","descripcion":"Sumar un secuaz nuevo de la forma más ridícula posible.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"El casco no se toca","descripcion":"Pasar una sesión entera sin quitarte el casco ni una sola vez.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Muro de fe","descripcion":"Aguantar como tanque protegiendo al grupo en un combate durísimo.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Médico de campaña","descripcion":"Curar al grupo lo justo para sobrevivir a un día infernal.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Bendición oportuna","descripcion":"Activar una bendición de warpriest en el momento perfecto.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Fervor imparable","descripcion":"Usar el fervor para curarte y atacar en el mismo turno.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"¿Quién hay bajo el casco?","descripcion":"Que un NPC sea incapaz de reconocerte cuando te ve sin el casco.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"La piedra era mía, ¿no?","descripcion":"Recupera tu piedra misteriosa de las manos (o el zurrón apestoso) del goblin al que se la regalaste, sea por la fuerza, por trato o por persecución a lomos del anky.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Carga de tonelada y media","descripcion":"Ejecuta una carga montado en el ankylosaurio que impacte contra dos o más enemigos en la misma línea, atropellando con maniobra de Arrollar (Overrun) a al menos uno de ellos.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"El mazo de la cola","descripcion":"Provoca que tu ankylosaurio remate con su ataque de cola (tail slap) a un enemigo que tú ya hayas dejado tocado en el mismo turno.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Te he retado, ahora aguanta","descripcion":"Usa tu Reto (Challenge) contra un enemigo y termina el combate sin que ese objetivo te haya hecho perder ni un solo punto de vida.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Líder de la carga, no de la huida","descripcion":"Sé el primero de la party en entrar en alcance del enemigo en tres combates distintos, abriendo tú la pelea antes que nadie.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Pared con patas","descripcion":"Termina un combate en el que tú y el anky hayáis recibido más golpes que todo el resto de la party junta, sin caer inconsciente.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Duelo a la vieja usanza","descripcion":"Acepta o propón un duelo singular contra un enemigo con nombre y véncelo en combate uno contra uno, sin que la party intervenga.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Resolución de samurái","descripcion":"Usa tu habilidad de clase Resolución (Resolve) para sobreponerte a un efecto que te tendría fuera de combate (asustado, agotado o aturdido) en el momento más crítico de una pelea.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Aparcamiento jurásico","descripcion":"Mete al ankylosaurio dentro de un edificio, tienda o local pensado para humanos (la feria de los trolls, una taberna, el mercado de Olivilla) y sal sin tener que pagar destrozos.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Pergamino del malo, papel del anky","descripcion":"Arranca un pergamino \"orden de GM\" usando la fuerza bruta del ankylosaurio en lugar de tus propias manos.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Forraje gigante","descripcion":"Consigue alimentar al ankylosaurio con algo absurdamente desproporcionado: una moneda gigante de los trolls, un barril entero del aceite de Olivilla o la cosecha completa de alguien muy enfadado.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Aguanta el frío, aguanta todo","descripcion":"Supera una situación de frío extremo de la campaña sin sufrir penalizaciones, protegiendo además a un compañero con tu propio aguante (o con el calorcito del dinosaurio).","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Mismo jinete, cuerpo nuevo","descripcion":"Muere en combate y, tras reencarnar como Alma Isekai en un cuerpo cambiado, vuelve a subirte al mismo ankylosaurio y haz que el bicho te reconozca.","categoria":"pj:Joel","personaje":"Joel"},{"nombre":"Aerolínea Cristina, embarcando","descripcion":"Monta a tu eidolon dragón en pleno vuelo y transporta por el aire al menos a un compañero de party durante un combate o huida.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Esto antes era un lagarto","descripcion":"Gasta una mejora de evolución para darle alas (o la evolución de vuelo) al eidolon dragón por primera vez.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Tres por el precio de uno","descripcion":"Ten en mesa simultáneamente al eidolon, una criatura de Convocar Monstruo activa y al caballo, todos vivos al final del turno.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"El que avisa no es traidor","descripcion":"Reposiciona al caballo fuera de peligro usando una acción antes de que un enemigo pueda alcanzarlo en su siguiente turno.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Convocación quirúrgica","descripcion":"Usa Convocar Monstruo para colocar a una criatura en flanqueo exacto que conceda el bonificador de ataque a un aliado ese mismo turno.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Barbacoa improvisada","descripcion":"Haz que el dragón use su arma de aliento o ataque de fuego para cocinar comida y consigue al menos calidad Excelente en el plato resultante.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Calefacción con escamas","descripcion":"Sobrevive a una escena de Frío usando al eidolon dragón como fuente de calor en vez de hoguera o magia.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Pergamino, te como","descripcion":"Ordena al eidolon dragón que arranque o destruya una \u0027orden de GM\u0027 colocada por el malo maloso.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Madre, hay dos puertas","descripcion":"Aumenta al eidolon a tamaño Grande o superior mediante evoluciones hasta que no quepa por una puerta normal de mazmorra.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"El dragón no es un perchero","descripcion":"Aguanta tres sesiones seguidas sin usar al eidolon para tareas domésticas tontas (cargar la compra, alcanzar estanterías, espantar goblins del mercado de Olivilla).","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"A cuatro manos y dos garras","descripcion":"En un mismo turno, ataca con Cristina y con el eidolon dragón al mismo enemigo y reducidlo a 0 puntos de golpe entre los dos.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Reencarné, sigo siendo madre","descripcion":"Muere y vuelve por Alma Isekai en un cuerpo cambiado, y reestablece el vínculo con tu eidolon dragón sin perder ninguna evolución.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Doma de feria troll","descripcion":"Lleva al caballo o al dragón a la feria de los trolls y sal de allí sin que ninguna de tus monturas acabe apostada por monedas gigantes.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Recupera la piedrita","descripcion":"Recobra una de las piedritas robadas por el malo maloso e intégrala o úsala en una mejora del vínculo con tu eidolon.","categoria":"pj:Cristina","personaje":"Cristina"},{"nombre":"Esto te lo bebes","descripcion":"Reparte en una sola sesión una poción a cada miembro de la party (incluido el bicho que nadie quiere) antes de que empiece un combate. Que nadie diga que no avisaste.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Mi piedra, cabrón","descripcion":"Estás presente y participas en el combate en el que se le arranca al malo maloso la piedrita que te robó. Recuperarla en tu propia mano cuenta doble en tu corazón.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Maleficio te quedas","descripcion":"Inutiliza a un enemigo por completo durante un turno entero usando el embrujo de Maleficio (Misfortune) y que falle la tirada que le tocaba salvar.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Aquí huele a cabra muerta","descripcion":"Lanza el embrujo de Vahído (Slumber) y duerme a un enemigo que el resto de la party llevaba tres asaltos sin poder tocar. Lo demás ya es cuestión de degollar tranquilamente.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Cocinera de Olivilla","descripcion":"Prepara un plato de calidad Excelente usando aceite del pueblo de Olivilla como ingrediente principal y dáselo a comer al grupo antes de un descanso.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"El patrón siempre cobra","descripcion":"Roleas una conversación (o pesadilla, o trance) con el patrón de tu bruja en la que te exige algo a cambio de tu poder. Aceptar o regatear, tú verás.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Farmacia de guerra","descripcion":"Llega a un combate con al menos cinco brebajes distintos preparados de antemano y usa al menos tres de ellos durante la pelea. La previsión es la mejor de las armas.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Ese pergamino me lo quedo yo","descripcion":"Sé tú quien arranque físicamente un pergamino de \u0027orden de GM\u0027 del malo maloso, anulando su efecto sobre un aliado esclavizado.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Probadlo, no pasa nada","descripcion":"Da a probar un brebaje experimental sin etiquetar a un compañero (o NPC) y que el resultado sea claramente NO el que tú esperabas. Documéntalo igualmente.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Recolectora de feria","descripcion":"Consigue un ingrediente alquímico raro en la feria de los trolls regateando con monedas gigantes. Que te sobre el cambio es opcional.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Mi familiar lo vio antes","descripcion":"Evita una emboscada o una trampa para todo el grupo gracias a algo que percibió tu familiar antes que cualquier personaje. Hazle un mimo después.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"La nueva ya no es la nueva","descripcion":"Que un compañero de los que ya estaban antes de Mortus te pida a TI consejo o cobertura en un momento crítico, reconociendo de hecho que ya eres del grupo.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Subir de nivel le jode","descripcion":"Sube de nivel en un Altar con el malo maloso o sus secuaces conscientes de ello, sabiendo que es justo lo que más teme. Sonríe mientras lo haces.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"Reencarnada y peor que antes","descripcion":"Muere en combate, regresa por Alma Isekai en un cuerpo cambiado y sigue siendo capaz de lanzar tus embrujos y cocinar como si nada. La herbolaria nunca descansa.","categoria":"pj:Carol","personaje":"Carol"},{"nombre":"El que mucho aprieta, poco anima","descripcion":"Supera tu límite de Dados de Golpe controlados por Animar Muertos a la vez y mira cómo uno de tus esqueletos se va por libre justo en el peor momento.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Sangre, dale, que es gratis","descripcion":"Lanza con éxito un conjuro usando tu Sangre/herencia de hechicero para modificarlo o ignorar una de sus limitaciones durante un combate.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Recursos humanos, sección difuntos","descripcion":"Ten activos a la vez al menos cuatro tipos distintos de secuaz: el Sargento Sapo, el orco revivido, un no-muerto animado y un recluta vivo cualquiera.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"El orco no era de usar y tirar","descripcion":"Revive al mismo orco una segunda vez tras volver a palmarla, demostrando que en tu plantilla el despido improcedente no existe.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Necromante con licencia de obras","descripcion":"Acumula el oro suficiente y monta por fin una instalación fija para tus proyectos de nigromancia (cripta, laboratorio o taller de cadáveres).","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Pared de carne con seguro a terceros","descripcion":"Sobrevive a un combate en el que TÚ no recibes ni un solo punto de daño porque tus minions se comieron absolutamente todos los golpes por ti.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Toque helado, perdón por la ola de frío","descripcion":"Aprovecha el frío de la campaña combinándolo con un conjuro tuyo para sacar ventaja mecánica clara en un encuentro.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Comité de empresa de los no-muertos","descripcion":"Coordina en un mismo turno a tres o más secuaces para ejecutar una jugada táctica combinada (flanqueo, presa y rematador) sin que ninguno la fastidie.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Esto es un altar, no un cementerio","descripcion":"Sube de nivel en un Altar mientras te niegan la magia y tienes, pese a todo, al menos un no-muerto en pie a tu lado.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Pergamino al horno","descripcion":"Arranca y destruye un pergamino \"orden de GM\" usando a un minion como mano de obra, en lugar de jugártela tú mismo.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Sargento Sapo, jefe de personal","descripcion":"Delega en el Sargento Sapo el mando directo de otro grupo de secuaces y que dirija una acción él solo mientras tú haces otra cosa.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Necropromotor de feria","descripcion":"Consigue que un troll de la feria te pague en monedas gigantes a cambio de un \"servicio\" tuyo de dudosa legalidad mortuoria.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Reencarné y traje plantilla","descripcion":"Muere y reencarna por Alma Isekai en un cuerpo nuevo y raro, y aun así recupera y vuelve a comandar a tu ejército de minions tras el cambio.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"Olivilla, capital del embalsamado","descripcion":"Consigue en el pueblo del aceite (Olivilla) suficiente aceite para un uso necromántico, ritual o de conservación de cadáveres descaradamente impropio.","categoria":"pj:Leomar","personaje":"Leomar"},{"nombre":"DPS: Daños Por Sacerdote","descripcion":"En un mismo turno, usa fervor para lanzar un conjuro de cura como acción rápida y acto seguido suelta un ataque completo. El combo curar+repartir leches en la misma ronda.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Sacred Weapon, sí señor","descripcion":"Activa Arma Sagrada y mete un crítico que reviente a un enemigo en el mismo asalto. Que el dado y la divinidad se pongan de acuerdo por una vez.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"El casco también reza","descripcion":"Resiste una tirada de salvación contra un efecto que te dejaría fuera de combate (aturdido, dominado, dormido) y justifica el éxito diciendo que fue el casco quien la pasó por ti.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Bendición a la carta","descripcion":"En una misma sesión, usa las dos bendiciones de tus dominios para dos situaciones completamente distintas (una ofensiva y una defensiva o utilitaria).","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Plus uno a la fe","descripcion":"Mantén tu Fervor para Mayor Gloria (o el buff de combate equivalente) activo durante un combate entero sin que se te caiga ni una ronda.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Reparador de almas isekai","descripcion":"Trae de vuelta de 0 PG o menos a un compañero que estaba a punto de palmar y reencarnar como Alma Isekai. Le salvas el cuerpo actual de milagro.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"El tanque que no se moja (la cabeza)","descripcion":"Encaja un golpe que habría dejado seco a otro miembro de la party y sigue en pie, recibiéndolo tú a propósito por protegerlos.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Antipergaminos por vocación","descripcion":"Arranca un pergamino \u0027orden de GM\u0027 del malo maloso e improvisa una bendición de la divinidad como excusa de por qué a ti las reglas reescritas te resbalan.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Milagro de bajo presupuesto","descripcion":"Resuelve un problema no-combate (abrir algo, purificar agua, espantar bichos) gastando un conjuro o canalización de forma absurdamente ingeniosa, no como estaba pensado.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"El casco entra en la bañera","descripcion":"Encuéntrate en una situación social donde quitarse el casco sería lo lógico y educado (baño termal, banquete, audiencia con un noble) y aun así no te lo quites. Inventa una excusa litúrgica.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Capellán de Olivilla","descripcion":"Bendice, sanea o protege a un NPC del pueblo del aceite hasta que te ofrezcan aceite, comida de calidad Excelente o un puestecito en la iglesia local.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Curandero de feria troll","descripcion":"En la feria de los trolls, gánate o consigue una moneda gigante haciendo de sanador/tanque para alguien, montando una consulta médica improvisada bajo el casco.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Resucitado con casco incluido","descripcion":"Muere y reencarna como Alma Isekai en un cuerpo nuevo... y lo primero que haces al despertar es reclamar tu casco (o conseguir uno equivalente de inmediato).","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Aguanta, que ya canalizo","descripcion":"Suelta una canalización de energía positiva que cure a tres o más compañeros a la vez en el momento más crítico del combate, salvando la pelea de un wipe.","categoria":"pj:Uriol","personaje":"Uriol"},{"nombre":"Romper el asedio","descripcion":"Liberar a un pueblo del asedio de las tropas del malo maloso.","categoria":"grupo"},{"nombre":"Cazadores de comandantes","descripcion":"Derrotar a un comandante enemigo (de los que sí llevan un pergamino «orden de GM») y arrancárselo.","categoria":"grupo"},{"nombre":"Superados en número","descripcion":"Ganar un combate estando en clara inferioridad numérica.","categoria":"grupo"},{"nombre":"Emboscada perfecta","descripcion":"Sorprender a un grupo de enemigos y tumbar al menos a uno antes de que puedan reaccionar.","categoria":"grupo"},{"nombre":"Salir vivos de milagro","descripcion":"Sobrevivir todos a un encuentro que parecía una derrota segura.","categoria":"grupo"},{"nombre":"Limpieza a fondo","descripcion":"Completar una mazmorra al 100%: todas las salas, todo el botín y todos los enemigos.","categoria":"grupo"},{"nombre":"Sin bajas","descripcion":"Encadenar tres combates seguidos sin que nadie caiga a 0 PG.","categoria":"grupo"},{"nombre":"Jefe abajo","descripcion":"Derrotar al jefe de una zona o de una misión importante.","categoria":"grupo"},{"nombre":"Botín legendario","descripcion":"Conseguir un objeto mágico raro o equipo claramente por encima de vuestro nivel.","categoria":"grupo"},{"nombre":"Aguantar la noche","descripcion":"Descansar a salvo en territorio hostil sin que os asalten.","categoria":"grupo"},{"nombre":"Retirada táctica","descripcion":"Escapar de un combate imposible sin perder a nadie; a veces huir es ganar.","categoria":"grupo"},{"nombre":"El grupo unido","descripcion":"Que los cinco encadenéis acciones en un mismo turno para decidir un combate.","categoria":"grupo"}];
-// === FIN LOGROS ===
-
-const PREFS="rdr2_prefs_v2";
-const SESSION="rdr2_session";
+let LOGROS=[], unlocked={}, currentUser="", editMode=false;
+const PREFS="rdr2_prefs_v2", SESSION="rdr2_session";
 let prefs={hide:false};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
-let unlocked={}, STORE="", currentUser="";
 let state={tab:"grupo",sub:"todos",search:""};
 
-const CAT_ICON={grupo:"🤝",combate:"⚔️",exploracion:"🗺️",social:"💬",botin:"💰",meme:"🤡"};
+const CAT_ICON={grupo:"🤝",combate:"⚔️",exploracion:"🗺️",social:"💬",botin:"💰",meme:"🤡",general:"🎯"};
 const PLAYER_ICON={Joel:"🦖",Cristina:"🐉",Carol:"🌿",Leomar:"💀",Uriol:"⛑️"};
 const ICON_RULES=[
   [["casco"],"⛑️"],
@@ -182,8 +181,6 @@ const ICON_RULES=[
   [["seduc","don juan","ligar","coquet"],"😍"],
   [["mascota"],"🐾"],
   [["sigilo","detect","alarma","fantasma","pies de plomo"],"🥷"],
-  [["minionese"],"👺"],
-  [["goblin","kobold"],"👺"],
   [["idioma","poliglota","lengua"],"🗣️"],
   [["benidorm","congel","frio","hielo","nieve","escarcha"],"❄️"],
   [["michelin","plato","cocina","cocinar","receta","chef","guiso"],"🍳"],
@@ -261,33 +258,52 @@ function viewLogros(){
   if(state.sub==="todos")return LOGROS.filter(function(l){return l.categoria!=="grupo"&&!isPlayer(l);});
   return LOGROS.filter(function(l){return l.personaje===state.sub;});
 }
-function stats(arr){
-  var u=0;arr.forEach(function(l){if(unlocked[slug(l.nombre)])u++;});
-  return{u:u,t:arr.length};
-}
-function save(){try{localStorage.setItem('rdr2_local',JSON.stringify(unlocked));}catch(e){}}
-function savePrefs(){try{localStorage.setItem(PREFS,JSON.stringify(prefs));}catch(e){}}
-function loadLocal(){try{unlocked=JSON.parse(localStorage.getItem('rdr2_local'))||{};}catch(e){unlocked={};}}
-function loadProgress(){
-  fetch('progreso.json?cb='+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(j){
-    if(j&&j.completados){unlocked={};j.completados.forEach(function(s){unlocked[s]=1;});}
-    else{loadLocal();}
+function stats(arr){var u=0;arr.forEach(function(l){if(unlocked[slug(l.nombre)])u++;});return{u:u,t:arr.length};}
+
+function loadData(){
+  var t=new Date().getTime();
+  Promise.all([
+    fetch("logros.json?cb="+t).then(function(r){return r.ok?r.json():null;}),
+    fetch("progreso.json?cb="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(res){
+    LOGROS=res[0]||[];
+    unlocked={};
+    if(res[1]&&res[1].completados)res[1].completados.forEach(function(s){unlocked[s]=1;});
     render();
-  }).catch(function(){loadLocal();render();});
+  }).catch(function(){
+    document.getElementById("list").innerHTML='<div class="empty">No se pudo cargar logros.json. Súbelo al repositorio.</div>';
+  });
+}
+
+function toggle(id){var y=window.scrollY;if(unlocked[id])delete unlocked[id];else unlocked[id]=1;render();window.scrollTo(0,y);}
+
+function copyText(txt,msg){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){alert(msg);}).catch(function(){window.prompt("Copia este texto:",txt);});
+  }else{window.prompt("Copia este texto:",txt);}
 }
 function copyProgress(){
   var slugs=Object.keys(unlocked).filter(function(k){return unlocked[k];}).sort();
-  var txt=JSON.stringify({completados:slugs},null,2);
-  var msg='Progreso copiado ('+slugs.length+' logros). Pega este JSON en progreso.json del repositorio y haz commit; en 1-2 min lo vera todo el grupo.';
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){alert(msg);}).catch(function(){window.prompt('Copia este JSON y pegalo en progreso.json:',txt);});
-  }else{window.prompt('Copia este JSON y pegalo en progreso.json:',txt);}
+  copyText(JSON.stringify({completados:slugs},null,2),"Progreso copiado ("+slugs.length+" logros). Pegalo en progreso.json del repositorio y haz commit; en 1-2 min lo vera el grupo.");
+}
+function copyLogros(){
+  copyText(JSON.stringify(LOGROS,null,2),"Logros copiados ("+LOGROS.length+"). Pegalo en logros.json del repositorio y haz commit para que el grupo vea los cambios y las recompensas.");
 }
 
-function toggle(id){
-  var y=window.scrollY;
-  if(unlocked[id])delete unlocked[id];else unlocked[id]=1;
-  save();render();window.scrollTo(0,y);
+function deleteLogro(l){
+  if(!confirm('¿Borrar el logro "'+l.nombre+'"?'))return;
+  var i=LOGROS.indexOf(l);if(i>=0)LOGROS.splice(i,1);
+  render();
+}
+function addLogro(){
+  var n=(document.getElementById("add-nombre").value||"").trim();
+  if(!n){alert("Pon al menos un nombre.");return;}
+  var nuevo={nombre:n,descripcion:(document.getElementById("add-desc").value||"").trim(),recompensa:(document.getElementById("add-recompensa").value||"").trim()};
+  if(state.tab==="grupo"){nuevo.categoria="grupo";}
+  else if(state.sub!=="todos"){nuevo.categoria="pj:"+state.sub;nuevo.personaje=state.sub;}
+  else{nuevo.categoria="general";}
+  LOGROS.push(nuevo);
+  render();
 }
 
 function renderTabs(){
@@ -317,24 +333,44 @@ function renderTabs(){
   });
 }
 
+function buildAddForm(){
+  var d=document.createElement("div");d.className="addbox";
+  var dest=state.tab==="grupo"?"Grupo":(state.sub==="todos"?"Para todos":state.sub);
+  d.innerHTML='<input class="an" id="add-nombre" placeholder="Nombre del nuevo logro (va a: '+esc(dest)+')"><input class="ad" id="add-desc" placeholder="Descripción"><input class="ar" id="add-recompensa" placeholder="Recompensa"><button class="btn dm" id="add-btn" type="button">➕ Añadir</button>';
+  d.querySelector("#add-btn").addEventListener("click",addLogro);
+  return d;
+}
+function buildCard(l){
+  var id=slug(l.nombre),on=!!unlocked[id];
+  var div=document.createElement("div");div.className="ach"+(on?" on":"");
+  var html='<div class="ic">'+getIcon(l)+(on?'<span class="vbadge">✓</span>':"")+'</div>';
+  html+='<div class="info"><div class="nm">'+esc(l.nombre)+'</div><div class="ds">'+esc(l.descripcion)+'</div>';
+  if(editMode){
+    html+='<div class="rwedit">🎁 Recompensa:<input class="rw-input" type="text" value="'+esc(l.recompensa||"")+'" placeholder="(sin recompensa)"></div>';
+  }else if(l.recompensa){
+    html+='<div class="rw">🎁 '+esc(l.recompensa)+'</div>';
+  }
+  html+='</div>';
+  if(editMode)html+='<button class="del" type="button" title="Borrar logro">🗑</button>';
+  html+='<label class="toggle"><input type="checkbox"'+(on?" checked":"")+'><span>'+(on?"Conseguido":"Marcar")+'</span></label>';
+  div.innerHTML=html;
+  div.querySelector(".toggle input").addEventListener("change",function(){toggle(id);});
+  if(editMode){
+    var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;});
+    var db=div.querySelector(".del");if(db)db.addEventListener("click",function(){deleteLogro(l);});
+  }
+  return div;
+}
+
 function renderList(){
   var arr=viewLogros();
-  if(prefs.hide)arr=arr.filter(function(l){return !unlocked[slug(l.nombre)];});
+  if(prefs.hide&&!editMode)arr=arr.filter(function(l){return !unlocked[slug(l.nombre)];});
   var q=norm(state.search);
   if(q)arr=arr.filter(function(l){return norm(l.nombre+" "+l.descripcion).indexOf(q)>=0;});
   var list=document.getElementById("list");list.innerHTML="";
-  if(!arr.length){list.innerHTML='<div class="empty">No hay logros que mostrar con estos filtros.</div>';return;}
-  arr.forEach(function(l){
-    var id=slug(l.nombre),on=!!unlocked[id];
-    var div=document.createElement("div");
-    div.className="ach"+(on?" on":"");
-    var html='<div class="ic">'+getIcon(l)+(on?'<span class="vbadge">✓</span>':"")+'</div>';
-    html+='<div class="info"><div class="nm">'+esc(l.nombre)+'</div><div class="ds">'+esc(l.descripcion)+'</div></div>';
-    html+='<label class="toggle"><input type="checkbox"'+(on?" checked":"")+'><span>'+(on?"Conseguido":"Marcar")+'</span></label>';
-    div.innerHTML=html;
-    div.querySelector("input").addEventListener("change",function(){toggle(id);});
-    list.appendChild(div);
-  });
+  if(editMode)list.appendChild(buildAddForm());
+  if(!arr.length){var e=document.createElement("div");e.className="empty";e.textContent="No hay logros que mostrar con estos filtros.";list.appendChild(e);return;}
+  arr.forEach(function(l){list.appendChild(buildCard(l));});
 }
 
 function renderGlobal(){
@@ -345,22 +381,30 @@ function renderGlobal(){
   document.getElementById("g-perfect").textContent=(s.u===s.t&&s.t>0)?"🏅 ¡Todos los logros conseguidos!":(pct+"% completado");
 }
 
-function render(){renderTabs();renderList();renderGlobal();}
+function render(){
+  document.getElementById("editwrap").style.display=(currentUser===DM)?"flex":"none";
+  document.getElementById("savelogros").style.display=(currentUser===DM&&editMode)?"inline-block":"none";
+  renderTabs();renderList();renderGlobal();
+}
 
 document.getElementById("search").addEventListener("input",function(e){state.search=e.target.value;renderList();});
 var th=document.getElementById("t-hide");th.checked=prefs.hide;
-th.addEventListener("change",function(e){prefs.hide=e.target.checked;savePrefs();renderList();});
+th.addEventListener("change",function(e){prefs.hide=e.target.checked;try{localStorage.setItem(PREFS,JSON.stringify(prefs));}catch(x){}renderList();});
+document.getElementById("t-edit").addEventListener("change",function(e){editMode=e.target.checked;render();});
+document.getElementById("saveprog").addEventListener("click",copyProgress);
+document.getElementById("savelogros").addEventListener("click",copyLogros);
 document.getElementById("reset").addEventListener("click",function(){
-  if(confirm("¿Borrar todo el progreso de logros marcados de "+currentUser+"?")){unlocked={};save();render();}
+  if(confirm("¿Desmarcar todos los logros en esta vista? (no afecta al repositorio hasta que guardes el progreso)")){unlocked={};render();}
 });
 
 function startApp(user){
-  currentUser=user;
+  currentUser=user;editMode=false;
   if(PLAYERS.some(function(p){return p.key===user;}))state.sub=user;
+  var te=document.getElementById("t-edit");if(te)te.checked=false;
   document.getElementById("login").style.display="none";
   document.getElementById("app").style.display="block";
   document.getElementById("whoami").textContent="👋 "+user;
-  loadProgress();
+  loadData();
 }
 function doLogin(){
   var name=(document.getElementById("li-user").value||"").trim();
@@ -382,7 +426,6 @@ function doLogin(){
   document.getElementById("li-pass").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
   document.getElementById("li-user").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("li-pass").focus();});
   document.getElementById("logout").addEventListener("click",function(){try{localStorage.removeItem(SESSION);}catch(e){}location.reload();});
-  document.getElementById("savejson").addEventListener("click",copyProgress);
   var sess="";try{sess=localStorage.getItem(SESSION)||"";}catch(e){}
   if(sess&&Object.prototype.hasOwnProperty.call(USERS,sess))startApp(sess);
 })();
