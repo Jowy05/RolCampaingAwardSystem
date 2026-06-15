@@ -96,7 +96,7 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
-  <div class="banner" id="banner">Estos son los logros <b>por conseguir</b>. Marca cada uno cuando lo logréis en partida; el progreso se guarda solo en tu navegador.</div>
+  <div class="banner" id="banner">Logros <b>por conseguir</b>. El progreso compartido se lee de <code>progreso.json</code> del repositorio (igual para todos). Para fijarlo: marca los logros y pulsa «Guardar (JSON)» para copiarlo y pegarlo en ese archivo.</div>
 
   <div class="top">
     <div class="brand">
@@ -116,7 +116,8 @@
   <div class="controls">
     <input type="text" id="search" placeholder="🔍  Buscar logro...">
     <label class="ck"><input type="checkbox" id="t-hide"> Ocultar conseguidos</label>
-    <button class="btn" id="reset">Reiniciar progreso</button>
+    <button class="btn" id="reset">Reiniciar</button>
+    <button class="btn" id="savejson">💾 Guardar (JSON)</button>
     <span class="whoami" id="whoami"></span>
     <button class="btn" id="logout">Salir</button>
   </div>
@@ -125,7 +126,7 @@
   <div id="subtabs"></div>
   <main id="list"></main>
 
-  <div class="foot">El progreso se guarda automáticamente en este navegador (localStorage), por jugador.</div>
+  <div class="foot">El progreso compartido se lee de progreso.json en el repositorio (igual para todos). Tus marcas no se fijan para el grupo hasta que se guardan en ese archivo.</div>
 </div>
 
 <script>
@@ -264,8 +265,24 @@ function stats(arr){
   var u=0;arr.forEach(function(l){if(unlocked[slug(l.nombre)])u++;});
   return{u:u,t:arr.length};
 }
-function save(){try{localStorage.setItem(STORE,JSON.stringify(unlocked));}catch(e){}}
+function save(){try{localStorage.setItem('rdr2_local',JSON.stringify(unlocked));}catch(e){}}
 function savePrefs(){try{localStorage.setItem(PREFS,JSON.stringify(prefs));}catch(e){}}
+function loadLocal(){try{unlocked=JSON.parse(localStorage.getItem('rdr2_local'))||{};}catch(e){unlocked={};}}
+function loadProgress(){
+  fetch('progreso.json?cb='+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(j){
+    if(j&&j.completados){unlocked={};j.completados.forEach(function(s){unlocked[s]=1;});}
+    else{loadLocal();}
+    render();
+  }).catch(function(){loadLocal();render();});
+}
+function copyProgress(){
+  var slugs=Object.keys(unlocked).filter(function(k){return unlocked[k];}).sort();
+  var txt=JSON.stringify({completados:slugs},null,2);
+  var msg='Progreso copiado ('+slugs.length+' logros). Pega este JSON en progreso.json del repositorio y haz commit; en 1-2 min lo vera todo el grupo.';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){alert(msg);}).catch(function(){window.prompt('Copia este JSON y pegalo en progreso.json:',txt);});
+  }else{window.prompt('Copia este JSON y pegalo en progreso.json:',txt);}
+}
 
 function toggle(id){
   var y=window.scrollY;
@@ -339,13 +356,11 @@ document.getElementById("reset").addEventListener("click",function(){
 
 function startApp(user){
   currentUser=user;
-  STORE="rdr2_logros_v2__"+slug(user);
-  try{unlocked=JSON.parse(localStorage.getItem(STORE))||{};}catch(e){unlocked={};}
   if(PLAYERS.some(function(p){return p.key===user;}))state.sub=user;
   document.getElementById("login").style.display="none";
   document.getElementById("app").style.display="block";
   document.getElementById("whoami").textContent="👋 "+user;
-  render();
+  loadProgress();
 }
 function doLogin(){
   var name=(document.getElementById("li-user").value||"").trim();
@@ -367,6 +382,7 @@ function doLogin(){
   document.getElementById("li-pass").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
   document.getElementById("li-user").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("li-pass").focus();});
   document.getElementById("logout").addEventListener("click",function(){try{localStorage.removeItem(SESSION);}catch(e){}location.reload();});
+  document.getElementById("savejson").addEventListener("click",copyProgress);
   var sess="";try{sess=localStorage.getItem(SESSION)||"";}catch(e){}
   if(sess&&Object.prototype.hasOwnProperty.call(USERS,sess))startApp(sess);
 })();
