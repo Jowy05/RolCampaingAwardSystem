@@ -23,7 +23,7 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
-  <div class="banner" id="banner">Logros <b>por conseguir</b>, cada uno con su recompensa. El estado y las recompensas se leen de <code>logros.json</code> y <code>progreso.json</code> del repositorio (igual para todos). Para fijar el progreso: marca y pulsa «Guardar progreso».</div>
+  <div class="banner" id="banner">Logros <b>por conseguir</b>, cada uno con su recompensa. Al marcar o editar <b>se guarda solo</b> y lo ve todo el grupo al instante.</div>
 
   <div class="top">
     <div class="brand">
@@ -44,10 +44,7 @@
     <input type="text" id="search" placeholder="🔍  Buscar logro...">
     <label class="ck"><input type="checkbox" id="t-hide"> Ocultar conseguidos</label>
     <label class="ck" id="editwrap" style="display:none;"><input type="checkbox" id="t-edit"> ✏️ Modo edición (DM)</label>
-    <button class="btn" id="saveprog">💾 Guardar progreso</button>
-    <button class="btn dm" id="savelogros" style="display:none;">💾 Guardar logros</button>
-    <button class="btn dm" id="tokenbtn" style="display:none;" title="Token de GitHub para guardar automáticamente">🔑 Token</button>
-    <button class="btn" id="reset">Reiniciar</button>
+    <span id="savestatus" style="font-size:12px;color:#9fd3a0;min-width:80px;"></span>
     <span class="whoami" id="whoami"></span>
     <button class="btn" id="logout">Salir</button>
   </div>
@@ -56,7 +53,7 @@
   <div id="subtabs"></div>
   <main id="list"></main>
 
-  <div class="foot">El contenido se lee del repositorio (igual para todos). Solo quien tenga acceso al repo puede fijar cambios con los botones de Guardar.</div>
+  <div class="foot">Progreso compartido en la nube (Firebase): lo que marca o edita uno, lo ven todos. Se guarda automáticamente.</div>
 </div>
 
 <button class="dm-fab" id="dm-fab" type="button">📖 Guía / Editar</button>
@@ -77,6 +74,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script>
+const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.app";
 const PLAYERS=[
   {key:"Joel",icon:"🦖"},
   {key:"Cristina",icon:"🐉"},
@@ -102,6 +100,7 @@ const PREFS="rdr2_prefs_v2", SESSION="rdr2_session";
 let prefs={hide:false};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
 let state={tab:"grupo",sub:"todos",search:""};
+var saveTimers={};
 
 const CAT_ICON={grupo:"🤝",combate:"⚔️",exploracion:"🗺️",social:"💬",botin:"💰",meme:"🤡",general:"🎯"};
 const PLAYER_ICON={Joel:"🦖",Cristina:"🐉",Carol:"🌿",Leomar:"💀",Uriol:"⛑️"};
@@ -186,6 +185,7 @@ function sha256hex(str){
   return hex;
 }
 
+function toArr(v){ if(Array.isArray(v))return v; if(v&&typeof v==="object")return Object.keys(v).map(function(k){return v[k];}); return []; }
 function isPlayer(l){return l.personaje&&PLAYERS.some(function(p){return p.key===l.personaje;});}
 function viewLogros(){
   if(state.tab==="grupo")return LOGROS.filter(function(l){return l.categoria==="grupo";});
@@ -194,71 +194,63 @@ function viewLogros(){
 }
 function stats(arr){var u=0;arr.forEach(function(l){if(unlocked[slug(l.nombre)])u++;});return{u:u,t:arr.length};}
 
+function setStatus(t){var s=document.getElementById("savestatus");if(s)s.textContent=t;}
+function fbPut(path,value){
+  return fetch(FB+"/estado/"+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(value)});
+}
+function saveProgreso(){
+  var slugs=Object.keys(unlocked).filter(function(k){return unlocked[k];}).sort();
+  setStatus("Guardando…");
+  fbPut("progreso",{completados:slugs}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error al guardar");}).catch(function(){setStatus("⚠ Sin conexión");});
+}
+function saveLogros(){
+  setStatus("Guardando…");
+  fbPut("logros",LOGROS).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error al guardar");}).catch(function(){setStatus("⚠ Sin conexión");});
+}
+function saveGuia(){
+  if(guiaEditing) guiaMD=document.getElementById("guia-edit").value;
+  setStatus("Guardando…");
+  fbPut("guia",guiaMD||"").then(function(r){setStatus(r.ok?"✓ Guía guardada":"⚠ Error al guardar");alert(r.ok?"✅ Guía guardada para todo el grupo.":"⚠ No se pudo guardar la guía.");}).catch(function(){setStatus("⚠ Sin conexión");});
+}
+function debounce(key,fn){ if(saveTimers[key])clearTimeout(saveTimers[key]); saveTimers[key]=setTimeout(fn,700); }
+
 function loadData(){
-  var t=new Date().getTime();
+  setStatus("Cargando…");
+  fetch(FB+"/estado.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(est){
+    if(est&&est.logros){
+      LOGROS=toArr(est.logros);
+      unlocked={};
+      var comp=(est.progreso&&est.progreso.completados)?toArr(est.progreso.completados):[];
+      comp.forEach(function(s){if(s)unlocked[s]=1;});
+      guiaMD=(typeof est.guia==="string")?est.guia:guiaMD;
+      setStatus("");
+      render();
+    } else { gitFallback(); }
+  }).catch(function(){ gitFallback(); });
+}
+function gitFallback(){
+  setStatus("⚠ Sin conexión con la nube (modo lectura)");
   Promise.all([
-    fetch("logros.json?cb="+t).then(function(r){return r.ok?r.json():null;}),
-    fetch("progreso.json?cb="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    fetch("logros.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];}),
+    fetch("progreso.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
-    LOGROS=res[0]||[];
-    unlocked={};
+    LOGROS=res[0]||[]; unlocked={};
     if(res[1]&&res[1].completados)res[1].completados.forEach(function(s){unlocked[s]=1;});
     render();
-  }).catch(function(){
-    document.getElementById("list").innerHTML='<div class="empty">No se pudo cargar logros.json. Súbelo al repositorio.</div>';
   });
 }
 
-function toggle(id){var y=window.scrollY;if(unlocked[id])delete unlocked[id];else unlocked[id]=1;render();window.scrollTo(0,y);}
-
-function copyText(txt,msg){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){alert(msg);}).catch(function(){window.prompt("Copia este texto:",txt);});
-  }else{window.prompt("Copia este texto:",txt);}
-}
-function getToken(){try{return localStorage.getItem("rdr2_gh_token")||"";}catch(e){return "";}}
-function setTokenPrompt(){
-  var cur=getToken();
-  var v=window.prompt(cur?"Ya hay un token guardado. Pega uno nuevo para cambiarlo, o deja vacío para borrarlo:":"Pega tu token de GitHub (con permiso de escritura en el repo). Se guarda SOLO en este navegador, nunca en la web:","");
-  if(v===null)return; v=v.trim();
-  try{ if(v)localStorage.setItem("rdr2_gh_token",v); else localStorage.removeItem("rdr2_gh_token"); }catch(e){}
-  alert(v?"Token guardado en este navegador. Ya puedes usar los botones de Guardar y se subirá solo.":"Token borrado.");
-}
-function b64utf8(s){return btoa(unescape(encodeURIComponent(s)));}
-function ghCommit(path,text,msg,t){
-  var base="https://api.github.com/repos/Jowy05/logros-rol-de-rol-2/contents/"+path;
-  var h={"Authorization":"Bearer "+t,"Accept":"application/vnd.github+json"};
-  return fetch(base,{headers:h}).then(function(r){return r.ok?r.json():null;}).then(function(ex){
-    var body={message:msg,content:b64utf8(text)};
-    if(ex&&ex.sha)body.sha=ex.sha;
-    return fetch(base,{method:"PUT",headers:h,body:JSON.stringify(body)}).then(function(r){if(!r.ok)return r.text().then(function(tx){throw new Error(r.status+" "+tx.slice(0,140));});return r.json();});
-  });
-}
-function doSave(path,text,okmsg){
-  if(currentUser===DM){
-    var t=getToken();
-    if(!t){ var v=(window.prompt("Para guardar automáticamente, pega tu token de GitHub (permiso de escritura en el repo). Se guarda SOLO en este navegador:","")||"").trim(); if(v){try{localStorage.setItem("rdr2_gh_token",v);}catch(e){} t=v;} }
-    if(t){
-      ghCommit(path,text,"Actualizar "+path+" desde la app",t)
-        .then(function(){alert(okmsg);})
-        .catch(function(e){alert("No se pudo guardar en GitHub ("+e.message+"). Revisa el token (permiso de escritura). Te copio el contenido para pegarlo a mano.");copyText(text,"Pega esto en "+path+" del repo y haz commit.");});
-      return;
-    }
-  }
-  copyText(text,"Copiado. Pega esto en "+path+" del repositorio y haz commit.");
-}
-function copyProgress(){
-  var slugs=Object.keys(unlocked).filter(function(k){return unlocked[k];}).sort();
-  doSave("progreso.json",JSON.stringify({completados:slugs},null,2),"✅ Progreso guardado en GitHub ("+slugs.length+" logros). En 1-2 min lo ve el grupo (Ctrl+F5).");
-}
-function copyLogros(){
-  doSave("logros.json",JSON.stringify(LOGROS,null,2),"✅ Logros guardados en GitHub ("+LOGROS.length+"). En 1-2 min lo ve el grupo (Ctrl+F5).");
+function toggle(id){
+  var y=window.scrollY;
+  if(unlocked[id])delete unlocked[id];else unlocked[id]=1;
+  render();window.scrollTo(0,y);
+  debounce("p",saveProgreso);
 }
 
 function deleteLogro(l){
-  if(!confirm('¿Borrar el logro "'+l.nombre+'"?'))return;
+  if(!confirm('¿Borrar el logro "'+l.nombre+'"? Se borra para todo el grupo.'))return;
   var i=LOGROS.indexOf(l);if(i>=0)LOGROS.splice(i,1);
-  render();
+  render(); saveLogros();
 }
 function addLogro(){
   var n=(document.getElementById("add-nombre").value||"").trim();
@@ -268,8 +260,28 @@ function addLogro(){
   else if(state.sub!=="todos"){nuevo.categoria="pj:"+state.sub;nuevo.personaje=state.sub;}
   else{nuevo.categoria="general";}
   LOGROS.push(nuevo);
-  render();
+  render(); saveLogros();
 }
+
+function mdRender(md){
+  try{ if(window.marked){ return marked.parse?marked.parse(md):marked(md); } }catch(e){}
+  return '<pre style="white-space:pre-wrap;word-break:break-word;">'+esc(md)+'</pre>';
+}
+function renderGuia(){
+  var v=document.getElementById("guia-view"),e=document.getElementById("guia-edit");
+  var eb=document.getElementById("guia-edit-btn"),sb=document.getElementById("guia-save-btn");
+  if(guiaEditing){ e.value=guiaMD||""; e.style.display="block"; v.style.display="none"; sb.style.display="inline-block"; eb.textContent="👁 Vista"; }
+  else { v.innerHTML=mdRender(guiaMD||"_(Guía vacía. Pulsa Editar para escribirla.)_"); v.style.display="block"; e.style.display="none"; sb.style.display="none"; eb.textContent="✏️ Editar"; }
+}
+function openGuia(){
+  document.getElementById("guia-modal").classList.add("open");
+  if(guiaMD===null){
+    document.getElementById("guia-view").innerHTML="Cargando…";
+    fetch("guia.md?x="+(new Date().getTime())).then(function(r){return r.ok?r.text():"";}).then(function(t){guiaMD=t;renderGuia();}).catch(function(){guiaMD="(No se pudo cargar la guía)";renderGuia();});
+  } else renderGuia();
+}
+function closeGuia(){ document.getElementById("guia-modal").classList.remove("open"); }
+function toggleGuiaEdit(){ if(guiaEditing){ guiaMD=document.getElementById("guia-edit").value; guiaEditing=false; } else { guiaEditing=true; } renderGuia(); }
 
 function renderTabs(){
   var sg=stats(LOGROS.filter(function(l){return l.categoria==="grupo";}));
@@ -297,7 +309,6 @@ function renderTabs(){
     st.appendChild(b);
   });
 }
-
 function buildAddForm(){
   var d=document.createElement("div");d.className="addbox";
   var dest=state.tab==="grupo"?"Grupo":(state.sub==="todos"?"Para todos":state.sub);
@@ -321,12 +332,11 @@ function buildCard(l){
   div.innerHTML=html;
   div.querySelector(".toggle input").addEventListener("change",function(){toggle(id);});
   if(editMode){
-    var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;});
+    var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;debounce("l",saveLogros);});
     var db=div.querySelector(".del");if(db)db.addEventListener("click",function(){deleteLogro(l);});
   }
   return div;
 }
-
 function renderList(){
   var arr=viewLogros();
   if(prefs.hide&&!editMode)arr=arr.filter(function(l){return !unlocked[slug(l.nombre)];});
@@ -334,10 +344,9 @@ function renderList(){
   if(q)arr=arr.filter(function(l){return norm(l.nombre+" "+l.descripcion).indexOf(q)>=0;});
   var list=document.getElementById("list");list.innerHTML="";
   if(editMode)list.appendChild(buildAddForm());
-  if(!arr.length){var e=document.createElement("div");e.className="empty";e.textContent="No hay logros que mostrar con estos filtros.";list.appendChild(e);return;}
+  if(!arr.length){var em=document.createElement("div");em.className="empty";em.textContent="No hay logros que mostrar con estos filtros.";list.appendChild(em);return;}
   arr.forEach(function(l){list.appendChild(buildCard(l));});
 }
-
 function renderGlobal(){
   var s=stats(LOGROS);
   document.getElementById("g-count").textContent=s.u+"/"+s.t;
@@ -345,33 +354,9 @@ function renderGlobal(){
   document.getElementById("g-fill").style.width=pct+"%";
   document.getElementById("g-perfect").textContent=(s.u===s.t&&s.t>0)?"🏅 ¡Todos los logros conseguidos!":(pct+"% completado");
 }
-
-function mdRender(md){
-  try{ if(window.marked){ return marked.parse?marked.parse(md):marked(md); } }catch(e){}
-  return '<pre style="white-space:pre-wrap;word-break:break-word;">'+esc(md)+'</pre>';
-}
-function renderGuia(){
-  var v=document.getElementById("guia-view"),e=document.getElementById("guia-edit");
-  var eb=document.getElementById("guia-edit-btn"),sb=document.getElementById("guia-save-btn");
-  if(guiaEditing){ e.value=guiaMD||""; e.style.display="block"; v.style.display="none"; sb.style.display="inline-block"; eb.textContent="👁 Vista"; }
-  else { v.innerHTML=mdRender(guiaMD||"_(Guía vacía. Pulsa Editar para escribirla.)_"); v.style.display="block"; e.style.display="none"; sb.style.display="none"; eb.textContent="✏️ Editar"; }
-}
-function openGuia(){
-  document.getElementById("guia-modal").classList.add("open");
-  if(guiaMD===null){
-    document.getElementById("guia-view").innerHTML="Cargando…";
-    fetch("guia.md?cb="+(new Date().getTime())).then(function(r){return r.ok?r.text():"";}).then(function(t){guiaMD=t;renderGuia();}).catch(function(){guiaMD="(No se pudo cargar guia.md)";renderGuia();});
-  } else renderGuia();
-}
-function closeGuia(){ document.getElementById("guia-modal").classList.remove("open"); }
-function toggleGuiaEdit(){ if(guiaEditing){ guiaMD=document.getElementById("guia-edit").value; guiaEditing=false; } else { guiaEditing=true; } renderGuia(); }
-function saveGuia(){ if(guiaEditing) guiaMD=document.getElementById("guia-edit").value; doSave("guia.md",guiaMD||"","✅ Guía guardada en GitHub. En 1-2 min se actualiza (Ctrl+F5)."); }
-
 function render(){
   document.getElementById("editwrap").style.display=(currentUser===DM)?"flex":"none";
-  document.getElementById("savelogros").style.display=(currentUser===DM&&editMode)?"inline-block":"none";
   document.getElementById("dm-fab").style.display=(currentUser===DM)?"inline-flex":"none";
-  document.getElementById("tokenbtn").style.display=(currentUser===DM)?"inline-block":"none";
   renderTabs();renderList();renderGlobal();
 }
 
@@ -379,12 +364,6 @@ document.getElementById("search").addEventListener("input",function(e){state.sea
 var th=document.getElementById("t-hide");th.checked=prefs.hide;
 th.addEventListener("change",function(e){prefs.hide=e.target.checked;try{localStorage.setItem(PREFS,JSON.stringify(prefs));}catch(x){}renderList();});
 document.getElementById("t-edit").addEventListener("change",function(e){editMode=e.target.checked;render();});
-document.getElementById("saveprog").addEventListener("click",copyProgress);
-document.getElementById("savelogros").addEventListener("click",copyLogros);
-document.getElementById("tokenbtn").addEventListener("click",setTokenPrompt);
-document.getElementById("reset").addEventListener("click",function(){
-  if(confirm("¿Desmarcar todos los logros en esta vista? (no afecta al repositorio hasta que guardes el progreso)")){unlocked={};render();}
-});
 
 function startApp(user){
   currentUser=user;editMode=false;
