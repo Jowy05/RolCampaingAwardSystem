@@ -1,34 +1,52 @@
-# 📖 Guía del DM — Logros de "Rol de Rol 2"
+# 📖 Guía de uso — Logros de "Rol de Rol 2"
 
-Panel de logros de la campaña. **Esta guía solo la ves tú (Didac)** y puedes editarla con el botón **✏️ Editar** de arriba; al guardar, se actualiza en la nube.
+Manual de la web. **Esta guía solo la ves tú (Didac)** y puedes editarla con el botón **✏️ Editar** de arriba.
 
-## Cómo entran los jugadores
-- Cada uno entra con su **nombre** y su **contraseña**.
-- Jugadores (**Joel, Cristina, Carol, Leomar, Oriol**) → contraseña `RoldeRol2Campaña`.
-- **Didac (DM)** → tu contraseña de máster (distinta).
+## Entrar
+Cada uno entra con su **nombre** y su **contraseña**. Jugadores: Joel, Cristina, Carol, Leomar, Oriol. DM: Didac.
 
-## Cómo funciona el progreso
-- **Cada jugador lleva SU propio progreso**: lo que marca uno es suyo.
-- Al **marcar** un logro hay **animación + sonido** de "¡Logro desbloqueado!", se **guarda solo en la nube** y queda con la **fecha** en que se consiguió.
-- Cada tarjeta muestra **👥 cuántos jugadores** lo han conseguido.
-- Arriba tienes **buscador** y **filtro** (Todos / Pendientes / Conseguidos).
+## Marcar logros
+- Pulsa **"Marcar"** en un logro para darlo por conseguido (se pone dorado y salta la celebración).
+- Se **guarda solo** en la nube; **cada jugador tiene su propio progreso**.
+- Pulsa de nuevo para desmarcarlo.
 
-## Recompensas
-- Cada logro tiene una **recompensa** (🎁). Por defecto: los de grupo/personaje → *"Punto de inspiración"*; los genéricos → *"XP extra"*.
-- **Tú decides** qué da cada una: cámbialas en modo edición y pon lo que quieras (p. ej. "500 XP").
+## Buscar y filtrar
+- **Buscador**: escribe para encontrar un logro por su nombre o descripción.
+- **Desplegable** (Todos / Pendientes / Conseguidos): filtra lo que se ve.
 
-## Modo edición (solo DM)
-Activa **"✏️ Modo edición"**. Podrás:
-- **Editar** el nombre, la descripción y la recompensa de cada logro (escribiendo en sus campos).
-- **Añadir** logros nuevos (formulario arriba; se añaden a la pestaña en la que estés: Grupo, Para todos o un personaje).
-- **Borrar** logros (🗑).
-- **Reordenar**: arrastra una tarjeta a otra posición, o usa las flechas **▲▼**.
-- Todo se **guarda solo** para todo el grupo.
+## Qué muestra cada logro
+- Icono, **nombre** y **descripción**.
+- 🎁 **Recompensa**.
+- Etiqueta de **dificultad** (si se la has puesto).
+- ✓ **Fecha** en que lo conseguiste.
+- 👥 **Cuántos jugadores** lo tienen.
 
-## Resumen de campaña 📊
-Con el botón **"📊 Resumen"** ves el progreso de cada jugador (cuántos logros lleva) y cuántos se han conseguido en total en la campaña.
+## Pestañas
+- **🛡️ Grupo**: logros de toda la party.
+- **👤 Individuales**: "Para todos" (cualquiera) + una pestaña por personaje.
 
-## Notas técnicas
-- Los datos (logros, progreso y esta guía) viven en **Firebase** (la nube) y se guardan automáticamente.
-- En el repositorio quedan `logros.json` y `progreso.json` como **copia de seguridad de solo lectura** por si Firebase fallara.
-- Las contraseñas se guardan como **hash** en el código (`index.html`, bloque `USERS`); para cambiarlas, mira la nota de ahí.
+## Modo edición (solo el DM)
+Activa la casilla **"✏️ Modo edición"** de arriba. En cada logro tendrás estos campos:
+- **Nombre**: el título del logro (campo de arriba).
+- **Descripción**: lo que hay que hacer (el recuadro de debajo).
+- **🎁 Recompensa**: lo que se llevan (escribe lo que quieras, p. ej. "500 XP").
+- **Dificultad**: desplegable para elegir **Común / Raro / Épico / Legendario** (o ninguna).
+- **🗑** (a la derecha): borra el logro.
+- **▲ / ▼** o **arrastrar** la tarjeta: cambia el orden.
+- **➕ Añadir** (recuadro de arriba de la lista): crea un logro nuevo en la pestaña en la que estés.
+
+Todo se **guarda solo** para todo el grupo en cuanto lo cambias.
+
+## Botones del DM
+- **📊 Resumen**: ver cuántos logros lleva cada jugador y el total de la campaña.
+- **Reiniciar**: desmarca **tus** logros (no toca los de los demás).
+
+## Tabla de dificultad
+Tú decides la dificultad de cada logro desde el modo edición.
+
+| Dificultad | Color | Para... |
+|---|---|---|
+| **Común** | gris | logros fáciles / del día a día |
+| **Raro** | azul | piden algo de esfuerzo |
+| **Épico** | morado | gestas importantes |
+| **Legendario** | dorado | hazañas únicas de la campaña |
