@@ -319,6 +319,14 @@
   .ach.on .ic.r-raro{border-color:#1f63a8;}
   .ach.on .ic.r-epico{border-color:#a653ff;}
   .ach.on .ic.r-legendario{border-color:#ff8c3c;}
+  .ic.r-mitica,.logro-tile.r-mitica,.ach.on .ic.r-mitica{border-color:#ff2d2d;box-shadow:0 0 11px rgba(255,45,45,.7);}
+  /* Marco del icono DESTACADO del perfil según la rareza del logro seleccionado */
+  .perfil-feat .fic.r-comun{border-color:#6ca8e0;}
+  .perfil-feat .fic.r-raro{border-color:#1f63a8;}
+  .perfil-feat .fic.r-epico{border-color:#a653ff;box-shadow:0 0 8px rgba(166,83,255,.5);}
+  .perfil-feat .fic.r-legendario{border-color:#ff8c3c;box-shadow:0 0 10px rgba(255,140,60,.55);}
+  .perfil-feat .fic.r-mitica{border-color:#ff2d2d;box-shadow:0 0 13px rgba(255,45,45,.75);}
+  .d-mitica{background:#4d0f0f;color:#ff6b6b;}
 
   /* ===== Logro oculto / bloqueado / herramientas de tarjeta ===== */
   .ach.oculto{opacity:.9;border-left-color:#5a4b7a;}
