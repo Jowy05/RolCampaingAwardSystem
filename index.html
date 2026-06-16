@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -221,7 +221,7 @@ function renderCuentas(){
         '<select class="cuenta-rol" data-u="'+esc(u)+'"'+(yo?' disabled title="No puedes cambiar tu propio rol"':'')+'>'+
           ['jugador','gm','owner'].map(function(rr){return '<option value="'+rr+'"'+(r===rr?' selected':'')+'>'+rr+'</option>';}).join('')+
         '</select>'+
-        '<button class="btn cuenta-pass" data-u="'+esc(u)+'" type="button" title="Restablecer contraseña">🔑</button>'+
+        '<button class="btn cuenta-pass" data-u="'+esc(u)+'" type="button"'+(yo?' disabled':'')+' title="Restablecer contraseña">🔑</button>'+
         '<button class="btn cuenta-del" data-u="'+esc(u)+'" type="button"'+(yo?' disabled':'')+' title="Borrar cuenta">🗑</button></div>';
     });
     html+='</div>';
@@ -238,7 +238,7 @@ function cambiarRolCuenta(u,rol){
     .then(function(r){if(r.ok)ROL[u]=rol;setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Error");});
 }
 function resetPassCuenta(u){
-  if(!esOwner())return;
+  if(!esOwner()||u===currentUser)return;
   var p=(window.prompt("Nueva contraseña para «"+u+"»:","")||"").trim();
   if(!p)return;
   setStatus("Guardando…");
@@ -481,7 +481,7 @@ function buildPjIconBox(){
   d.innerHTML='<span style="font-size:13px;color:var(--muted);width:100%;">Icono de <b style="color:#fff;">'+esc(m)+'</b> (se ve en su pestaña y en el resumen):</span><div style="width:100%">'+iconPicker(cur,"pj-ic",true)+'</div>';
   var picks=d.querySelectorAll(".pj-ic .icbtn");
   for(var i=0;i<picks.length;i++){(function(btn){btn.addEventListener("click",function(){
-    if(btn.getAttribute("data-img")){ pendingPjIcon=m; document.getElementById("icono-input").click(); return; }
+    if(btn.getAttribute("data-img")){ pendingPjIcon=m; iconoTarget=null; document.getElementById("icono-input").click(); return; }
     setPjIcon(m,btn.getAttribute("data-ic"));
   });})(picks[i]);}
   return d;
@@ -784,7 +784,7 @@ Guía rápida de esta pantalla. *(Algunos botones solo los ve el GM.)*
 | **Legendario** | naranja | hazañas únicas de la campaña |
 
 ## Tu perfil
-Pulsa tu **avatar** (arriba) para ver tu perfil estilo Steam: foto, logros y campañas. Clica un logro para verlo en grande con su descripción. Tu **Nivel** sube con la XP de tus logros (más XP cuanto más raro). Pulsa la **estrella ★** de un logro para fijarlo como **destacado**.
+Pulsa tu **avatar** (arriba) para ver tu perfil estilo Steam: foto, logros y campañas. Clica un logro para verlo en grande con su descripción. Tu **Nivel** sube con la XP de tus logros (más XP cuanto más raro). Pulsa la **estrella ★** de un logro para fijarlo como **destacado**. Desde el perfil también cambias tu **foto** (📷) y tu **contraseña** (🔑).
 
 ## Cadenas y logros ocultos
 - Algunos logros están **🔒 encadenados**: no puedes marcarlos hasta conseguir el anterior de la cadena.
@@ -829,7 +829,7 @@ El **creador** sale como GM fijo. Marca **GM** a quien quieras que te ayude a di
 Botón **🗂️ Cuentas**: ves **todas** las cuentas y puedes cambiar su **rol**, restablecer su **contraseña** (🔑) o **borrarlas** (🗑).
 
 ## Tu perfil
-Pulsa tu **avatar** (arriba a la derecha) para ver tu perfil y cambiar la foto con **📷 Cambiar foto**.
+Pulsa tu **avatar** (arriba a la derecha) para ver tu perfil, cambiar la foto con **📷 Cambiar foto** y tu contraseña con **🔑 Contraseña**.
 
 ## Entrar / Salir
 - **Entrar**: abre la campaña. **🔒 No asignado** = pídele a su GM que te añada.
@@ -998,7 +998,7 @@ function buildCard(l){
     var ds=div.querySelector(".ds-input");if(ds)ds.addEventListener("change",function(){l.descripcion=ds.value;debounce("l",saveLogros);});
     var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;debounce("l",saveLogros);});
     var di=div.querySelector(".dif-input");if(di)di.addEventListener("change",function(){if(di.value)l.dificultad=di.value;else delete l.dificultad;render();saveLogros();});
-    var cp=div.querySelectorAll(".card-ic .icbtn");for(var b3=0;b3<cp.length;b3++){(function(btn){btn.addEventListener("click",function(){ if(btn.getAttribute("data-img")){iconoTarget=l;document.getElementById("icono-input").click();return;} var v=btn.getAttribute("data-ic");if(v)l.icono=v;else delete l.icono;render();saveLogros();});})(cp[b3]);}
+    var cp=div.querySelectorAll(".card-ic .icbtn");for(var b3=0;b3<cp.length;b3++){(function(btn){btn.addEventListener("click",function(){ if(btn.getAttribute("data-img")){iconoTarget=l;pendingPjIcon=null;document.getElementById("icono-input").click();return;} var v=btn.getAttribute("data-ic");if(v)l.icono=v;else delete l.icono;render();saveLogros();});})(cp[b3]);}
     var dl=div.querySelector(".del");if(dl)dl.addEventListener("click",function(){deleteLogro(l);});
     var mb=div.querySelectorAll(".movebtn");for(var b=0;b<mb.length;b++){(function(btn){btn.addEventListener("click",function(){moveLogro(l,parseInt(btn.getAttribute("data-d"),10));});})(mb[b]);}
     div.setAttribute("draggable","true");
@@ -1092,7 +1092,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("whoami").addEventListener("click",openPerfil);
   document.getElementById("perfil-close").addEventListener("click",closePerfil);
   document.getElementById("perfil-modal").addEventListener("click",function(e){if(e.target.id==="perfil-modal")closePerfil();});
-  document.getElementById("perfil-foto-btn").addEventListener("click",function(){document.getElementById("foto-input").click();});
+  document.getElementById("perfil-foto-btn").addEventListener("click",function(){fotoCampId=null;document.getElementById("foto-input").click();});
   document.getElementById("perfil-pass-btn").addEventListener("click",cambiarPass);
   document.getElementById("foto-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(fotoCampId){cambiarFotoCampana(f,fotoCampId);fotoCampId=null;}else cambiarFoto(f);}e.target.value="";});
   document.getElementById("icono-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(pendingPjIcon){cambiarIconoPJ(f,pendingPjIcon);pendingPjIcon=null;}else cambiarIconoLogro(f);}e.target.value="";});
