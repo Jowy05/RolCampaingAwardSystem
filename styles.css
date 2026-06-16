@@ -288,6 +288,15 @@
   .cadena-step{display:inline-flex;align-items:center;gap:5px;background:#1d2c3a;border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:12.5px;}
   .cadena-arrow{color:var(--muted);}
   .cadena-undo{background:#3a1c1c;border:1px solid #6b2a2a;color:#ffb3b3;border-radius:6px;padding:1px 7px;font-size:11px;cursor:pointer;margin-left:3px;}
+  .ic-mini{width:18px;height:18px;border-radius:4px;object-fit:cover;vertical-align:middle;}
+  .camp-ic img{width:40px;height:40px;border-radius:8px;object-fit:cover;display:block;}
+  .camp-foto-mini{width:22px;height:22px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:7px;}
+  .cuentas-list{display:flex;flex-direction:column;gap:8px;}
+  .cuenta-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px;background:#16242f;border:1px solid var(--line);border-radius:8px;padding:8px 11px;}
+  .cuenta-nombre{font-size:14px;color:#fff;display:flex;align-items:center;gap:6px;min-width:0;}
+  .cuenta-rol{background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12.5px;cursor:pointer;}
+  .cuenta-row .btn{padding:5px 9px;}
+  .pjbox{align-items:center;}
 
   @media(max-width:600px){
     .feed{width:172px;left:10px;bottom:12px;}
