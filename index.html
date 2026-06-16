@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -25,14 +25,16 @@
 <div id="campaigns" class="campwrap" style="display:none;">
   <div class="camp-top">
     <div class="logo">🏆</div>
-    <div style="flex:1;min-width:160px;">
-      <h1 style="margin:0;font-size:24px;color:#fff;">Campañas</h1>
+    <h1>Campañas</h1>
+    <div class="camp-user">
+      <span class="who" id="camp-whoami" title="Ver mi perfil"></span>
+      <button class="btn" id="camp-logout">Salir</button>
     </div>
+  </div>
+  <div class="camp-actions-bar" id="camp-actions-bar">
     <button class="btn dm" id="crear-camp" style="display:none;">➕ Crear campaña</button>
     <button class="btn dm" id="crear-usuario" style="display:none;">➕ Crear usuario</button>
     <button class="btn dm" id="cuentas-btn" style="display:none;">🗂️ Cuentas</button>
-    <span class="who" id="camp-whoami" title="Ver mi perfil"></span>
-    <button class="btn" id="camp-logout">Salir</button>
   </div>
   <div id="camp-list"></div>
 </div>
@@ -63,11 +65,13 @@
     </select>
     <label class="ck" id="editwrap" style="display:none;"><input type="checkbox" id="t-edit"> ✏️ Modo edición</label>
     <button class="btn dm" id="resumenbtn" style="display:none;">📊 Resumen</button>
+    <button class="btn dm" id="lockbtn" style="display:none;">🔒 Bloquear</button>
     <span id="savestatus" style="font-size:12px;color:#9fd3a0;min-width:74px;"></span>
     <span class="who" id="whoami" title="Ver mi perfil"></span>
     <button class="btn" id="logout">Salir</button>
   </div>
 
+  <div class="lockbar" id="lockbar" style="display:none;">🔒 <b>Campaña bloqueada</b> — solo lectura. Nadie marca ni edita; solo el GM creador y el Owner pueden entrar.</div>
   <nav class="tabs" id="maintabs"></nav>
   <div id="subtabs"></div>
   <main id="list"></main>
@@ -187,6 +191,8 @@ function esOwner(){return rolDe(currentUser)==="owner";}
 // esGM: manda DENTRO de una campaña concreta (marca cualquier logro, edita, asigna).
 // El Owner manda en TODAS; un GM solo en las que creó (info.gm) o donde le dieron GM (info.gms).
 function esGM(info){ return rolDe(currentUser)==="owner" || !!(info&&(info.gm===currentUser||(info.gms&&info.gms[currentUser]))); }
+// esGMprincipal: solo el creador de la campaña (info.gm) y el Owner. Manda incluso con la campaña bloqueada.
+function esGMprincipal(info){ return rolDe(currentUser)==="owner" || !!(info&&info.gm===currentUser); }
 function rellenarDatalist(){var dl=document.getElementById("userlist");if(!dl)return;dl.innerHTML="";Object.keys(USERS).forEach(function(u){var o=document.createElement("option");o.value=u;dl.appendChild(o);});}
 function loadUsers(cb){
   fetch(FB+"/usuarios.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(obj){
@@ -556,6 +562,7 @@ function startSession(user){
   document.getElementById("crear-camp").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("crear-usuario").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("cuentas-btn").style.display=esOwner()?"inline-block":"none";
+  document.getElementById("camp-actions-bar").style.display=puedeCrear()?"flex":"none";
   updateWhoami();
   loadMiPerfil(updateWhoami);
   showCampaigns();
@@ -569,7 +576,7 @@ function loadCampaigns(){
     renderCampaigns(camps||{});
   }).catch(function(){list.innerHTML='<div class="empty">No se pudieron cargar las campañas.</div>';});
 }
-function puedeEntrar(info){ return esGM(info) || !!(info&&info.miembros&&info.miembros[currentUser]); }
+function puedeEntrar(info){ if(info&&info.bloqueada)return esGMprincipal(info); return esGM(info) || !!(info&&info.miembros&&info.miembros[currentUser]); }
 function renderCampaigns(camps){
   var list=document.getElementById("camp-list");list.innerHTML="";
   var ids=Object.keys(camps);
@@ -577,16 +584,16 @@ function renderCampaigns(camps){
   ids.forEach(function(id){
     var info=(camps[id]&&camps[id].info)?camps[id].info:{nombre:id};
     var ms=info.miembros?Object.keys(info.miembros):[];
-    var entra=puedeEntrar(info), manda=esGM(info);
+    var entra=puedeEntrar(info), manda=esGM(info)&&(!info.bloqueada||esGMprincipal(info));
     var d=document.createElement("div");d.className="camp-card"+(entra?"":" locked");
     var gms=info.gms?Object.keys(info.gms):[];
     var gmTxt=esc(info.gm||"—")+(gms.length?(" +"+gms.length+" GM"):"");
     var camIc=info.foto?('<img src="'+info.foto+'" alt="">'):'📜';
-    var html='<div class="camp-ic">'+camIc+'</div><div class="camp-info"><div class="camp-nombre">'+esc(info.nombre||id)+'</div><div class="camp-meta">GM: '+gmTxt+' · '+ms.length+' jugador(es)</div></div><div class="camp-actions"></div>';
+    var html='<div class="camp-ic">'+camIc+'</div><div class="camp-info"><div class="camp-nombre">'+esc(info.nombre||id)+'</div><div class="camp-meta">GM: '+gmTxt+' · '+ms.length+' jugador(es)'+(info.bloqueada?' · 🔒 Bloqueada':'')+'</div></div><div class="camp-actions"></div>';
     d.innerHTML=html;
     var act=d.querySelector(".camp-actions");
     if(entra){var b=document.createElement("button");b.className="btn";b.textContent="Entrar";b.onclick=function(){entrarCampana(id);};act.appendChild(b);}
-    else{var s=document.createElement("span");s.className="rol-badge";s.textContent="🔒 No asignado";act.appendChild(s);}
+    else{var s=document.createElement("span");s.className="rol-badge";s.textContent=info.bloqueada?"🔒 Bloqueada":"🔒 No asignado";act.appendChild(s);}
     if(manda){var mb=document.createElement("button");mb.className="btn dm";mb.textContent="👥 Miembros / GM";mb.onclick=function(){abrirMiembros(id,info);};act.appendChild(mb);}
     list.appendChild(d);
   });
@@ -691,7 +698,7 @@ function viewLogros(){
 }
 function isDone(l){return !!progreso[slug(l.nombre)];}
 function stats(arr){var u=0;arr.forEach(function(l){if(isDone(l))u++;});return{u:u,t:arr.length};}
-function puedeMarcar(l){ return esGM(campInfo) || !!(l.personaje && l.personaje===currentUser); }
+function puedeMarcar(l){ if(campInfo&&campInfo.bloqueada)return false; return esGM(campInfo) || !!(l.personaje && l.personaje===currentUser); }
 function bloqueado(l){ return !!(l.requiere && !progreso[l.requiere]); }
 function reqNombre(l){ if(!l.requiere)return ""; var p=LOGROS.find(function(x){return slug(x.nombre)===l.requiere;}); return p?p.nombre:"(?)"; }
 
@@ -797,6 +804,7 @@ Pulsa tu **avatar** (arriba) para ver tu perfil estilo Steam: foto, logros y cam
 - **Icono de personaje**: en la pestaña de un jugador (modo edición) puedes ponerle un emoji o **una imagen** como icono (se ve en su pestaña y en el Resumen).
 - **➕ Añadir**: crea un logro en la pestaña en la que estés.
 - **📊 Resumen**: cuántos logros lleva cada jugador y el total.
+- **🔒 Bloquear campaña** *(solo el GM creador y el Owner)*: la congela en **solo lectura** (nadie marca ni edita) y solo podéis entrar el creador y el Owner — para cuando la campaña termina. **🔓 Reabrir** la reactiva.
 - Al final de esta guía: **⬇️ Exportar** la campaña a JSON y **🔗 Ver cadenas** (para deshacerlas).`;
 
 // ===== GUÍA DEL GM en el menú principal (la ven todos; SOLO el Owner la edita; global en /guia_gm) =====
@@ -1032,13 +1040,25 @@ function renderGlobal(){
   document.getElementById("g-perfect").textContent=(s.u===s.t&&s.t>0)?"🏅 ¡Campaña completada!":(pct+"% de la campaña");
 }
 function render(){
-  var gm=esGM(campInfo);
-  document.getElementById("editwrap").style.display=gm?"flex":"none";
+  var gm=esGM(campInfo), blo=!!(campInfo&&campInfo.bloqueada), prin=esGMprincipal(campInfo);
+  if(((!gm)||blo)&&editMode){editMode=false;var te=document.getElementById("t-edit");if(te)te.checked=false;}
+  document.getElementById("editwrap").style.display=(gm&&!blo)?"flex":"none";
   document.getElementById("resumenbtn").style.display=gm?"inline-block":"none";
   document.getElementById("dm-fab").style.display="inline-flex";
-  if(!gm&&editMode){editMode=false;var te=document.getElementById("t-edit");if(te)te.checked=false;}
+  var lb=document.getElementById("lockbtn"); if(lb){lb.style.display=prin?"inline-block":"none"; lb.textContent=blo?"🔓 Reabrir":"🔒 Bloquear";}
+  document.getElementById("lockbar").style.display=blo?"block":"none";
   if(!editMode)chainSource=null;
   renderTabs();renderList();renderGlobal();
+}
+function toggleBloqueo(){
+  if(!esGMprincipal(campInfo))return;
+  var nuevo=!campInfo.bloqueada;
+  if(nuevo){ if(!confirm("¿Bloquear la campaña?\nQuedará en SOLO LECTURA: nadie podrá marcar ni editar logros, y solo tú (GM creador) y el Owner podréis entrar."))return; }
+  else { if(!confirm("¿Reabrir la campaña? Volverá a estar activa para sus miembros y GMs."))return; }
+  setStatus("Guardando…");
+  fetch(FB+"/campanas/"+currentCamp+"/info/bloqueada.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(nuevo)})
+    .then(function(r){if(!r.ok)throw 0; campInfo.bloqueada=nuevo; setStatus("✓ Guardado"); render(); alert(nuevo?"🔒 Campaña bloqueada.":"🔓 Campaña reabierta.");})
+    .catch(function(){setStatus("⚠ Error");alert("No se pudo cambiar el estado de la campaña.");});
 }
 // Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
 var liveTimer=null, liveBusy=false;
@@ -1060,6 +1080,7 @@ var fsel=document.getElementById("filtro");fsel.value=state.filtro;
 fsel.addEventListener("change",function(e){state.filtro=e.target.value;prefs.filtro=state.filtro;try{localStorage.setItem(PREFS,JSON.stringify(prefs));}catch(x){}renderList();});
 document.getElementById("t-edit").addEventListener("change",function(e){editMode=e.target.checked;render();});
 document.getElementById("resumenbtn").addEventListener("click",openResumen);
+document.getElementById("lockbtn").addEventListener("click",toggleBloqueo);
 document.getElementById("volver").addEventListener("click",function(){editMode=false;var te=document.getElementById("t-edit");if(te)te.checked=false;showCampaigns();});
 document.getElementById("crear-camp").addEventListener("click",crearCampana);
 document.getElementById("miembros-save").addEventListener("click",guardarMiembros);
