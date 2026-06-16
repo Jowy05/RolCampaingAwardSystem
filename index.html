@@ -37,8 +37,6 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
-  <div class="banner" id="banner">Cada jugador marca <b>su propia lista</b> (solo él y el GM/Owner). Todos veis las listas de todos. Se guarda solo en la nube.</div>
-
   <div class="top">
     <div class="brand">
       <div class="logo">🏆</div>
@@ -119,6 +117,7 @@
     <div class="modal-head">
       <h2>Mi perfil</h2>
       <button class="btn dm" id="perfil-foto-btn" type="button">📷 Cambiar foto</button>
+      <button class="btn" id="perfil-pass-btn" type="button">🔑 Contraseña</button>
       <button class="btn" id="perfil-close" type="button">✕ Cerrar</button>
     </div>
     <div class="modal-body" id="perfil-body"></div>
@@ -385,6 +384,21 @@ function cambiarFoto(file){
       .catch(function(){setStatus("⚠ Error");alert("No se pudo guardar la foto.");});
   };img.src=rd.result;};
   rd.readAsDataURL(file);
+}
+// Cambiar la propia contraseña (pide la actual y la nueva; se guarda como hash).
+function cambiarPass(){
+  var actual=window.prompt("Tu contraseña ACTUAL:","");
+  if(actual===null)return;
+  if(USERS[currentUser]!==sha256hex(actual)){alert("La contraseña actual no es correcta.");return;}
+  var nueva=(window.prompt("Nueva contraseña:","")||"").trim();
+  if(!nueva){alert("La nueva contraseña no puede estar vacía.");return;}
+  var rep=window.prompt("Repite la nueva contraseña:","");
+  if(rep===null)return;
+  if(nueva!==rep.trim()){alert("Las contraseñas no coinciden.");return;}
+  setStatus("Guardando…");
+  fetch(FB+"/usuarios/"+encodeURIComponent(currentUser)+"/pass.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(sha256hex(nueva))})
+    .then(function(r){if(!r.ok)throw 0; USERS[currentUser]=sha256hex(nueva); setStatus("✓ Guardado"); alert("✅ Contraseña cambiada. Úsala la próxima vez que entres.");})
+    .catch(function(){setStatus("⚠ Error"); alert("No se pudo cambiar la contraseña.");});
 }
 // ====== SELECTOR DE ICONO (emojis placeholder + subir imagen del PC) ======
 var EMOJIS_PICKER=["🏆","⚔️","🛡️","🔮","✨","💀","🐉","🎯"];
@@ -957,6 +971,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("perfil-close").addEventListener("click",closePerfil);
   document.getElementById("perfil-modal").addEventListener("click",function(e){if(e.target.id==="perfil-modal")closePerfil();});
   document.getElementById("perfil-foto-btn").addEventListener("click",function(){document.getElementById("foto-input").click();});
+  document.getElementById("perfil-pass-btn").addEventListener("click",cambiarPass);
   document.getElementById("foto-input").addEventListener("change",function(e){if(e.target.files&&e.target.files[0])cambiarFoto(e.target.files[0]);e.target.value="";});
   document.getElementById("icono-input").addEventListener("change",function(e){if(e.target.files&&e.target.files[0])cambiarIconoLogro(e.target.files[0]);e.target.value="";});
   loadUsers(function(){
