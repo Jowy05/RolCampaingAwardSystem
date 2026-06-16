@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
 
@@ -411,7 +411,7 @@ function computarCuenta(camps,user){
       else { esMio=(por===user); }
       if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); }
     });
-    if(!esMiembro && tiles.length===0) return;
+    if(!esMiembro) return;
     if(info.bloqueada){ prestigio++; xpCamp+=500; }
     total+=tiles.length; xpTotal+=xpCamp;
     misCamps.push({id:id,nombre:info.nombre||id,foto:info.foto||null,gm:info.gm,bloqueada:!!info.bloqueada,logros:tiles});
@@ -1135,10 +1135,11 @@ function openResumen(){
       var arr=LOGROS.filter(function(l){return l.personaje===m;});var n=doneIn(arr),t=arr.length,pct=t?Math.round(n/t*100):0;
       html+='<tr><td><span class="perfil-link" data-user="'+esc(m)+'">'+iconPJHTML(m)+' '+esc(m)+'</span></td><td class="num">'+n+' / '+t+'</td><td><div class="rbar"><i style="width:'+pct+'%"></i></div></td></tr>';
     });
-    var gr=LOGROS.filter(function(l){return l.categoria==="grupo";});var co=LOGROS.filter(function(l){return l.categoria!=="grupo"&&!isPlayer(l);});
-    var gn=doneIn(gr),cn=doneIn(co);
+    var gr=LOGROS.filter(function(l){return l.categoria==="grupo";});var co=LOGROS.filter(function(l){return l.categoria!=="grupo"&&l.categoria!=="gm"&&!isPlayer(l);});var gmr=LOGROS.filter(function(l){return l.categoria==="gm";});
+    var gn=doneIn(gr),cn=doneIn(co),gmn=doneIn(gmr);
     html+='<tr><td>🤝 Grupo</td><td class="num">'+gn+' / '+gr.length+'</td><td><div class="rbar"><i style="width:'+(gr.length?Math.round(gn/gr.length*100):0)+'%"></i></div></td></tr>';
     html+='<tr><td>🌐 Para todos</td><td class="num">'+cn+' / '+co.length+'</td><td><div class="rbar"><i style="width:'+(co.length?Math.round(cn/co.length*100):0)+'%"></i></div></td></tr>';
+    if(gmr.length)html+='<tr><td>🎲 GM</td><td class="num">'+gmn+' / '+gmr.length+'</td><td><div class="rbar"><i style="width:'+Math.round(gmn/gmr.length*100)+'%"></i></div></td></tr>';
     html+='</table>';
     var tot=Object.keys(prog).length;
     html+='<p style="margin-top:14px;color:var(--muted);font-size:13px;">Total de logros conseguidos en la campaña: <b style="color:var(--accent)">'+tot+' / '+LOGROS.length+'</b>.</p>';
