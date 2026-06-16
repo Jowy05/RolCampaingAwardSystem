@@ -759,6 +759,7 @@ function startSession(user){
   document.getElementById("crear-usuario").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("cuentas-btn").style.display="inline-block";
   document.getElementById("camp-actions-bar").style.display="flex";
+  document.getElementById("guiagm-fab").textContent=puedeCrear()?"📖 Guía GM":"📖 Ayuda";
   updateWhoami();
   loadMiPerfil(updateWhoami);
   showCampaigns();
@@ -1085,10 +1086,29 @@ Pulsa tu **avatar** (arriba a la derecha) para ver tu perfil, cambiar la foto co
 ## 💾 Copia de seguridad  *(solo Owner)*
 Al final de esta guía: **⬇️ Exportar TODO** descarga toda la base de datos como copia, e **⬆️ Importar / Sobrescribir** la restaura desde un archivo (reemplaza todo). Conviene exportar de vez en cuando.`;
 
+// Ayuda fija del menú para JUGADORES (los GM/Owner ven la guía de gestión editable).
+var GUIA_MENU_JUGADOR=`# 📖 Ayuda
+
+## Entrar a una campaña
+Aquí salen las campañas. Pulsa **Entrar** en las tuyas. Si ves **🔒 No asignado**, pídele a tu GM que te añada.
+
+## Tu cuenta
+- Pulsa tu **avatar** (arriba a la derecha) para ver tu **perfil**: foto, nivel, logros conseguidos, prestigio y recuerdos. Ahí también cambias tu **foto** (📷) y tu **contraseña** (🔑).
+- ¿No tienes cuenta? Créala con **«Crear cuenta nueva»** en la pantalla de inicio.
+
+## Ver a los demás
+- **🗂️ Cuentas**: lista de todas las personas con su nivel y nº de logros; pulsa a cualquiera para ver su perfil.
+- En el **feed** de abajo a la izquierda (últimos logros) también puedes pulsar para abrir el perfil de quien lo consiguió.
+
+## Dentro de la campaña
+Marca tus logros, mira el **📊 Resumen** y, cuando entres, el botón **«📖 Cómo funciona»** te explica todo lo demás.`;
+
 // Guía fija de la app (dentro de la campaña): solo lectura, la ven todos. Abajo, herramientas del GM.
 function openGuia(){
-  var html=mdRender(GUIA_APP);
-  if(esGM(campInfo)){
+  var gm=esGM(campInfo);
+  var txt=gm?GUIA_APP:GUIA_APP.split("## Solo el GM")[0].replace(/\s*---\s*$/,"");
+  var html=mdRender(txt);
+  if(gm){
     html+='<hr style="border:none;border-top:1px solid var(--line);margin:18px 0 12px;"><div class="guia-gmtools"><div style="font-size:13px;color:#fff;margin-bottom:8px;font-weight:600;">🛠️ Herramientas del GM</div><button class="btn dm" id="exp-camp" type="button">⬇️ Exportar campaña (JSON)</button> <button class="btn" id="ver-cadenas" type="button">🔗 Ver cadenas de logros</button> <button class="btn" id="ver-log" type="button">📜 Registro</button></div>';
   }
   document.getElementById("guia-view").innerHTML=html;
@@ -1148,6 +1168,7 @@ var guiaGM=null, guiaGMEditing=false;
 function loadGuiaGM(cb){ fetch(FB+"/guia_gm.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(g){ guiaGM=(typeof g==="string"&&g.trim())?g:GUIA_GM_DEFAULT; if(cb)cb(); }).catch(function(){ guiaGM=GUIA_GM_DEFAULT; if(cb)cb(); }); }
 function renderGuiaGM(){
   var v=document.getElementById("guiagm-view"),e=document.getElementById("guiagm-edit"),eb=document.getElementById("guiagm-edit-btn"),sb=document.getElementById("guiagm-save-btn");
+  if(!puedeCrear()){ guiaGMEditing=false; eb.style.display="none"; sb.style.display="none"; e.style.display="none"; v.style.display="block"; v.innerHTML=mdRender(GUIA_MENU_JUGADOR); return; }
   var puede=esOwner(); eb.style.display=puede?"inline-block":"none";
   if(guiaGMEditing&&puede){ e.value=guiaGM||""; e.style.display="block"; v.style.display="none"; sb.style.display="inline-block"; eb.textContent="👁 Vista"; }
   else{
@@ -1185,7 +1206,7 @@ function importarTodo(file){
   };
   rd.readAsText(file);
 }
-function openGuiaGM(){ document.getElementById("guiagm-modal").classList.add("open"); document.getElementById("guiagm-view").innerHTML="Cargando…"; guiaGMEditing=false; loadGuiaGM(renderGuiaGM); }
+function openGuiaGM(){ var h2=document.querySelector("#guiagm-modal .modal-head h2"); if(h2)h2.textContent=puedeCrear()?"📖 Guía del GM":"📖 Ayuda"; document.getElementById("guiagm-modal").classList.add("open"); document.getElementById("guiagm-view").innerHTML="Cargando…"; guiaGMEditing=false; loadGuiaGM(renderGuiaGM); }
 function closeGuiaGM(){ document.getElementById("guiagm-modal").classList.remove("open"); }
 function toggleGuiaGMEdit(){ if(!esOwner())return; if(guiaGMEditing){ guiaGM=document.getElementById("guiagm-edit").value; guiaGMEditing=false; } else guiaGMEditing=true; renderGuiaGM(); }
 function saveGuiaGM(){ if(!esOwner())return; if(guiaGMEditing)guiaGM=document.getElementById("guiagm-edit").value; setStatus("Guardando…"); fetch(FB+"/guia_gm.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(guiaGM||"")}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error"); guiaGMEditing=false; renderGuiaGM(); alert(r.ok?"✅ Guía guardada.":"⚠ No se pudo guardar.");}).catch(function(){setStatus("⚠ Sin conexión");}); }
