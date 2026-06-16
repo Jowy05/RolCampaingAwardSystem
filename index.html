@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 
@@ -285,8 +285,9 @@ function renderDirectorio(bodyId, users, admin){
     });
     html+='</div>';
     body.innerHTML=html;
+    var modalId=bodyId.replace("-body","-modal");
     var mains=body.querySelectorAll(".dir-main");
-    for(var i=0;i<mains.length;i++){(function(el){el.addEventListener("click",function(){openPerfil(el.getAttribute("data-user"));});})(mains[i]);}
+    for(var i=0;i<mains.length;i++){(function(el){el.addEventListener("click",function(){document.getElementById(modalId).classList.remove("open");openPerfil(el.getAttribute("data-user"),modalId);});})(mains[i]);}
     if(admin){
       var rols=body.querySelectorAll(".cuenta-rol");for(var j=0;j<rols.length;j++){(function(s){s.addEventListener("change",function(){cambiarRolCuenta(s.getAttribute("data-u"),s.value);});})(rols[j]);}
       var ps=body.querySelectorAll(".cuenta-pass");for(var k=0;k<ps.length;k++){(function(b){b.addEventListener("click",function(){resetPassCuenta(b.getAttribute("data-u"));});})(ps[k]);}
@@ -458,7 +459,7 @@ function show(which){
 }
 
 // ====== PERFIL ======
-var miPerfilFoto=null, perfilLogros=[], perfilUser=null, miNivelCuenta=1, pendingLogroSlug=null;
+var miPerfilFoto=null, perfilLogros=[], perfilUser=null, miNivelCuenta=1, pendingLogroSlug=null, perfilVolverA=null;
 function avatarChip(){ var mc=marcoNivel(miNivelCuenta),cls=mc?(" mn-"+mc):""; return miPerfilFoto?('<img class="avatar-sm'+cls+'" src="'+miPerfilFoto+'" alt="">'):('<span class="avatar-ini'+cls+'">'+esc((currentUser||"?").charAt(0).toUpperCase())+'</span>'); }
 function updateWhoami(){
   var base='<span class="who-name">'+esc(currentUser)+'</span>';
@@ -473,15 +474,20 @@ function loadMiPerfil(cb){
     fetch(FB+"/campanas.json?x="+t).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
   ]).then(function(a){ miPerfilFoto=(typeof a[0]==="string")?a[0]:null; miVitrina=Array.isArray(a[1])?a[1]:[]; miNivelCuenta=computarCuenta(a[2]||{},currentUser).nivel.lvl; if(cb)cb(); });
 }
-function openPerfil(user){
+function openPerfil(user,volverA){
   perfilUser=(typeof user==="string"&&user)?user:currentUser;
+  perfilVolverA=(typeof volverA==="string")?volverA:null;
   var propio=(perfilUser===currentUser);
   var h2=document.querySelector("#perfil-modal .modal-head h2"); if(h2)h2.textContent=propio?"Mi perfil":("Perfil de "+perfilUser);
   document.getElementById("perfil-foto-btn").style.display=propio?"inline-block":"none";
   document.getElementById("perfil-pass-btn").style.display=propio?"inline-block":"none";
   document.getElementById("perfil-modal").classList.add("open");renderPerfil();
 }
-function closePerfil(){document.getElementById("perfil-modal").classList.remove("open");}
+function closePerfil(){
+  document.getElementById("perfil-modal").classList.remove("open");
+  var v=perfilVolverA; perfilVolverA=null;
+  if(v==="jug-modal")openJugadores(); else if(v==="cuentas-modal")openCuentas(); else if(v==="resumen-modal")openResumen();
+}
 // Panel destacado tipo Steam: al pulsar un logro sube aquí con nombre y descripción.
 function renderFeatured(i){
   var f=document.getElementById("perfil-feat"); if(!f)return;
@@ -1126,15 +1132,15 @@ function openResumen(){
     html+='<p style="margin-top:14px;color:var(--muted);font-size:13px;">Total de logros conseguidos en la campaña: <b style="color:var(--accent)">'+tot+' / '+LOGROS.length+'</b>.</p>';
     body.innerHTML=html;
     var pls=body.querySelectorAll(".perfil-link");
-    for(var i=0;i<pls.length;i++){(function(el){el.addEventListener("click",function(){closeResumen();openPerfil(el.getAttribute("data-user"));});})(pls[i]);}
+    for(var i=0;i<pls.length;i++){(function(el){el.addEventListener("click",function(){closeResumen();openPerfil(el.getAttribute("data-user"),"resumen-modal");});})(pls[i]);}
   }).catch(function(){body.innerHTML="No se pudo cargar el resumen.";});
 }
 function closeResumen(){document.getElementById("resumen-modal").classList.remove("open");}
 // ====== Nominaciones (premios del grupo por sesión) ======
 function openNominaciones(){nomOpen=null;document.getElementById("nom-modal").classList.add("open");renderNominaciones();}
 function closeNominaciones(){document.getElementById("nom-modal").classList.remove("open");}
-var nomOpen=null;
-function capturaNomOpen(){ nomOpen={}; var ds=document.querySelectorAll("#nom-body details.nom-ses"); for(var i=0;i<ds.length;i++){var sid=ds[i].getAttribute("data-sid"); if(sid)nomOpen[sid]=ds[i].open;} }
+var nomOpen=null, nomDragSrc=null;
+function capturaNomOpen(){ nomOpen={}; var ds=document.querySelectorAll("#nom-body .nom-ses"); for(var i=0;i<ds.length;i++){var sid=ds[i].getAttribute("data-sid"); if(sid)nomOpen[sid]=ds[i].classList.contains("open");} }
 function ordNom(noms,sid){ var s=noms[sid]||{}; return (typeof s.orden==="number")?s.orden:(parseInt((sid||"s0").slice(1),10)||0); }
 function renderNominaciones(){
   var body=document.getElementById("nom-body");body.innerHTML="Cargando…";
@@ -1144,10 +1150,10 @@ function renderNominaciones(){
     noms=noms||{};
     var sids=Object.keys(noms).sort(function(a,b){return ordNom(noms,b)-ordNom(noms,a);});
     if(!sids.length){ body.innerHTML='<p style="color:var(--muted);font-size:13px;">No hay sesiones todavía.'+(gm?' Pulsa «➕ Nueva sesión».':'')+'</p>'; return; }
-    var html='<p style="color:var(--muted);font-size:12.5px;margin:0 0 12px;">Pulsa una sesión para desplegarla. Vota en cada categoría; el premio se lo lleva quien más votos tenga.</p>';
+    var html='<p style="color:var(--muted);font-size:12.5px;margin:0 0 12px;">Pulsa una sesión para plegarla/desplegarla'+(gm?'; arrástrala (⠿) para reordenarla':'')+'. El premio se lo lleva quien más votos tenga.</p>';
     sids.forEach(function(sid,idx){
       var s=noms[sid]||{}, votos=s.votos||{}, op=(nomOpen?!!nomOpen[sid]:idx===0);
-      html+='<details class="nom-ses" data-sid="'+esc(sid)+'"'+(op?" open":"")+'><summary class="nom-sum"><span class="nom-sum-t">'+esc(s.titulo||"Sesión")+' <span class="nom-sum-d">'+(s.fecha?fmtFecha(s.fecha):"")+'</span></span>'+(gm?('<span class="nom-sum-btns"><button class="nom-mini" data-mv="up" data-sid="'+esc(sid)+'" title="Subir">▲</button><button class="nom-mini" data-mv="down" data-sid="'+esc(sid)+'" title="Bajar">▼</button><button class="nom-mini del" data-del="'+esc(sid)+'" title="Borrar sesión">🗑</button></span>'):"")+'</summary><div class="nom-body2">';
+      html+='<div class="nom-ses'+(op?" open":"")+'" data-sid="'+esc(sid)+'"'+(gm?' draggable="true"':'')+'><div class="nom-sum"><span class="nom-arrow">'+(op?"▾":"▸")+'</span><span class="nom-sum-t">'+esc(s.titulo||"Sesión")+' <span class="nom-sum-d">'+(s.fecha?fmtFecha(s.fecha):"")+'</span></span>'+(gm?('<span class="nom-sum-btns"><span class="nom-drag" title="Arrastra para reordenar">⠿</span><button class="nom-mini del" data-del="'+esc(sid)+'" title="Borrar sesión">🗑</button></span>'):"")+'</div><div class="nom-body2"'+(op?"":' style="display:none"')+'>';
       NOM_CATS.forEach(function(cat){
         var v=votos[cat]||{}, tally={}, miVoto=v[currentUser]||"", mx=0;
         Object.keys(v).forEach(function(voter){var n=v[voter];if(n){tally[n]=(tally[n]||0)+1;if(tally[n]>mx)mx=tally[n];}});
@@ -1156,28 +1162,35 @@ function renderNominaciones(){
         var tal=nombres.length?nombres.map(function(n){var w=(tally[n]===mx);return '<span class="nom-vote'+(w?" win":"")+'">'+(w?"🏆 ":"")+esc(n)+' ×'+tally[n]+'</span>';}).join(' '):'<span style="color:var(--muted)">sin votos</span>';
         html+='<div class="nom-cat"><div class="nom-cat-n">'+esc(cat)+'</div><select class="nom-sel" data-sid="'+esc(sid)+'" data-cat="'+esc(cat)+'">'+opts+'</select><div class="nom-lead">'+tal+'</div></div>';
       });
-      html+='</div></details>';
+      html+='</div></div>';
     });
     body.innerHTML=html;
     var sels=body.querySelectorAll(".nom-sel");
     for(var i=0;i<sels.length;i++){(function(sel){sel.addEventListener("change",function(){votarNom(sel.getAttribute("data-sid"),sel.getAttribute("data-cat"),sel.value);});})(sels[i]);}
+    var sums=body.querySelectorAll(".nom-ses .nom-sum");
+    for(var u=0;u<sums.length;u++){(function(sum){sum.addEventListener("click",function(e){ if(e.target.closest&&(e.target.closest(".nom-mini")||e.target.closest(".nom-drag")))return; var ses=sum.parentNode,sid=ses.getAttribute("data-sid"),open=!ses.classList.contains("open"); ses.classList.toggle("open",open); var b2=ses.querySelector(".nom-body2"); if(b2)b2.style.display=open?"":"none"; var ar=sum.querySelector(".nom-arrow"); if(ar)ar.textContent=open?"▾":"▸"; if(!nomOpen)nomOpen={}; nomOpen[sid]=open; });})(sums[u]);}
     if(gm){
       var dels=body.querySelectorAll(".nom-mini.del");for(var d=0;d<dels.length;d++){(function(b){b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();borrarSesionNom(b.getAttribute("data-del"));});})(dels[d]);}
-      var mvs=body.querySelectorAll(".nom-mini[data-mv]");for(var m2=0;m2<mvs.length;m2++){(function(b){b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();moverSesionNom(b.getAttribute("data-sid"),b.getAttribute("data-mv"),noms);});})(mvs[m2]);}
+      var sess=body.querySelectorAll(".nom-ses");
+      for(var z=0;z<sess.length;z++){(function(ses){
+        ses.addEventListener("dragstart",function(e){nomDragSrc=ses.getAttribute("data-sid");ses.classList.add("dragging");try{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",nomDragSrc);}catch(x){}});
+        ses.addEventListener("dragend",function(){nomDragSrc=null;ses.classList.remove("dragging");var all=body.querySelectorAll(".nom-ses");for(var q=0;q<all.length;q++)all[q].classList.remove("drag-over");});
+        ses.addEventListener("dragover",function(e){e.preventDefault();ses.classList.add("drag-over");});
+        ses.addEventListener("dragleave",function(){ses.classList.remove("drag-over");});
+        ses.addEventListener("drop",function(e){e.preventDefault();ses.classList.remove("drag-over");reordenarNom(nomDragSrc,ses.getAttribute("data-sid"),noms);});
+      })(sess[z]);}
     }
   }).catch(function(){body.innerHTML="No se pudo cargar.";});
 }
 function borrarSesionNom(sid){ if(!esGM(campInfo)||!sid)return; if(!confirm("¿Borrar esta sesión de nominaciones y sus votos?"))return; capturaNomOpen(); fetch(FB+"/campanas/"+currentCamp+"/nominaciones/"+sid+".json",{method:"DELETE"}).then(function(){logEvento("🏅 borró sesión nominaciones","");renderNominaciones();}).catch(function(){}); }
-function moverSesionNom(sid,dir,noms){
-  if(!esGM(campInfo))return;
+function reordenarNom(src,tgt,noms){
+  if(!esGM(campInfo)||!src||!tgt||src===tgt)return;
   var sids=Object.keys(noms).sort(function(a,b){return ordNom(noms,b)-ordNom(noms,a);});
-  var i=sids.indexOf(sid); if(i<0)return; var j=(dir==="up")?i-1:i+1; if(j<0||j>=sids.length)return;
-  var other=sids[j], oA=ordNom(noms,sid), oB=ordNom(noms,other);
+  var from=sids.indexOf(src),to=sids.indexOf(tgt); if(from<0||to<0)return;
+  sids.splice(from,1); sids.splice(to,0,src);
   capturaNomOpen();
-  Promise.all([
-    fetch(FB+"/campanas/"+currentCamp+"/nominaciones/"+sid+"/orden.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(oB)}),
-    fetch(FB+"/campanas/"+currentCamp+"/nominaciones/"+other+"/orden.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(oA)})
-  ]).then(function(){renderNominaciones();}).catch(function(){});
+  var base=sids.length*10;
+  Promise.all(sids.map(function(sid,i){return fetch(FB+"/campanas/"+currentCamp+"/nominaciones/"+sid+"/orden.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(base-i*10)});})).then(function(){renderNominaciones();}).catch(function(){});
 }
 function nuevaSesionNom(){
   if(!esGM(campInfo))return;
