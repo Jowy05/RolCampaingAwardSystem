@@ -201,6 +201,17 @@
   </div>
 </div>
 
+<div class="modal" id="ganadores-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="ganadores-title">¿Quién lo consigue?</h2>
+      <button class="btn dm" id="ganadores-ok" type="button">✓ Conceder</button>
+      <button class="btn" id="ganadores-close" type="button">✕ Cerrar</button>
+    </div>
+    <div class="modal-body" id="ganadores-body"></div>
+  </div>
+</div>
+
 <div class="modal" id="logro-modal">
   <div class="modal-card">
     <div class="modal-head">
@@ -408,7 +419,7 @@ function computarCuenta(camps,user){
       if(cat==="grupo"){ esMio=esMiembro; }
       else if(cat==="gm"){ esMio=(info.gm===user); }
       else if(l.personaje){ esMio=(l.personaje===user); }
-      else { esMio=(por===user); }
+      else { esMio=(pe.ganadores?(pe.ganadores.indexOf(user)>=0):(por===user)); }
       if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); }
     });
     if(!esMiembro) return;
@@ -764,7 +775,7 @@ function renderFeed(camps){
     var c=camps[id]; if(!c||!c.info||!puedeEntrar(c.info))return;
     var logs=toArr(c.logros), prog=c.progreso||{}, bySlug={};
     logs.forEach(function(l){bySlug[slug(l.nombre)]=l;});
-    Object.keys(prog).forEach(function(s){ var p=prog[s],l=bySlug[s]; if(l&&p&&p.fecha&&!l.oculto) items.push({l:l,por:p.por,fecha:p.fecha,camp:c.info.nombre||id,target:(l.categoria==="grupo"?(c.info.gm||p.por):p.por)}); });
+    Object.keys(prog).forEach(function(s){ var p=prog[s],l=bySlug[s]; if(l&&p&&p.fecha&&!l.oculto){ var quien=(p.ganadores&&p.ganadores.length)?p.ganadores.join(", "):p.por, tg=(l.categoria==="grupo")?(c.info.gm||p.por):((p.ganadores&&p.ganadores[0])?p.ganadores[0]:p.por); items.push({l:l,por:quien,fecha:p.fecha,camp:c.info.nombre||id,target:tg}); } });
   });
   items.sort(function(a,b){return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0);});
   items=items.slice(0,3);
@@ -865,6 +876,8 @@ function isDone(l){return !!progreso[slug(l.nombre)];}
 function stats(arr){var u=0;arr.forEach(function(l){if(isDone(l))u++;});return{u:u,t:arr.length};}
 function puedeMarcar(l){ if(campInfo&&campInfo.bloqueada)return false; if(l.categoria==="gm")return esGMprincipal(campInfo); return esGM(campInfo) || !!(l.personaje && l.personaje===currentUser); }
 function bloqueado(l){ return !!(l.requiere && !progreso[l.requiere]); }
+// "Para todos" = logro general (sin personaje, no grupo, no gm). Lo marca el GM y elige a qué jugador(es) se lo lleva.
+function esParaTodos(l){ return !l.personaje && l.categoria!=="grupo" && l.categoria!=="gm"; }
 function reqNombre(l){ if(!l.requiere)return ""; var p=LOGROS.find(function(x){return slug(x.nombre)===l.requiere;}); return p?p.nombre:"(?)"; }
 
 function fbProg(id,val){
@@ -885,9 +898,33 @@ function toggle(l){
   }
   else {
     if(bloqueado(l)){ alert("Antes tienes que conseguir: "+reqNombre(l)); render(); window.scrollTo(0,y); return; }
+    if(esParaTodos(l)){ render(); window.scrollTo(0,y); abrirGanadores(l); return; }
     var o={por:currentUser,fecha:new Date().toISOString()}; progreso[id]=o; fbProg(id,o); logEvento("✓ marcó",l.nombre); render(); window.scrollTo(0,y); celebrate(l.nombre);
   }
 }
+// Selección de ganadores para un logro "Para todos" (lo marca el GM y elige a quién/quiénes).
+var ganadoresLogro=null;
+function abrirGanadores(l){
+  ganadoresLogro=l;
+  var prev=(progreso[slug(l.nombre)]||{}).ganadores||[];
+  document.getElementById("ganadores-title").textContent="¿Quién consigue «"+l.nombre+"»?";
+  var html='<p style="color:var(--muted);font-size:12.5px;margin:0 0 10px;">Marca a los jugadores que se llevan este logro (uno o varios).</p><div class="miembros-list">';
+  MIEMBROS.forEach(function(m){ html+='<label class="gan-row"><input type="checkbox" class="gan-chk" value="'+esc(m)+'"'+(prev.indexOf(m)>=0?" checked":"")+'> '+iconPJHTML(m)+' '+esc(m)+'</label>'; });
+  if(!MIEMBROS.length)html+='<p style="color:var(--muted);font-size:13px;">No hay jugadores en la campaña.</p>';
+  html+='</div>';
+  document.getElementById("ganadores-body").innerHTML=html;
+  document.getElementById("ganadores-modal").classList.add("open");
+}
+function concederGanadores(){
+  if(!ganadoresLogro)return;
+  var chks=document.querySelectorAll("#ganadores-body .gan-chk"), g=[];
+  for(var i=0;i<chks.length;i++){if(chks[i].checked)g.push(chks[i].value);}
+  if(!g.length){alert("Elige al menos un jugador.");return;}
+  var l=ganadoresLogro, id=slug(l.nombre), o={por:currentUser,fecha:new Date().toISOString(),ganadores:g};
+  progreso[id]=o; fbProg(id,o); logEvento("✓ concedió ("+g.join(", ")+")",l.nombre);
+  closeGanadores(); render(); celebrate(l.nombre);
+}
+function closeGanadores(){ document.getElementById("ganadores-modal").classList.remove("open"); ganadoresLogro=null; }
 function revelarLogro(l){ if(!esGM(campInfo))return; if(!confirm('¿Revelar "'+l.nombre+'" a todos los jugadores?'))return; delete l.oculto; logEvento("👁 reveló",l.nombre); render(); saveLogros(); }
 function clickCadena(l){
   if(!chainSource){ chainSource=l; render(); setStatus("🔗 Pulsa la cadena de OTRO logro para ponerlo DESPUÉS de este."); return; }
@@ -930,7 +967,7 @@ Guía rápida de esta pantalla. *(Algunos botones solo los ve el GM.)*
 
 ## Marcar logros
 - Pulsa **Marcar** en un logro para darlo por conseguido (se pone dorado, suena y salta confeti).
-- **Cada uno marca su propia lista**: marcas los de tu personaje; el GM puede marcar cualquiera. Los de **Grupo** y **Para todos** los marca el GM.
+- **Cada uno marca su propia lista**: marcas los de tu personaje; el GM puede marcar cualquiera. Los de **Grupo** los marca el GM (cuentan para todo el grupo). En **«Para todos»** el GM los marca y **elige a qué jugador(es)** se lo lleva (uno o varios).
 - Vuelve a pulsar para desmarcar. Se guarda solo en la nube y lo ve todo el grupo.
 - 🔒 = ese logro no te toca marcarlo a ti.
 
@@ -1222,14 +1259,16 @@ function votarNom(sid,cat,nominee){
 function openLogroDetalle(l){
   if(!l)return;
   var on=isDone(l), id=slug(l.nombre), p=progreso[id]||{}, rcls=l.dificultad?(" r-"+difKey(l.dificultad)):"";
-  var html='<div class="ld-top"><div class="ic ld-ic'+rcls+(on?"":" off")+'">'+iconHTML(l)+'</div><div class="ld-info"><div class="ld-nombre">'+esc(l.nombre)+difBadge(l)+'</div><div class="ld-estado '+(on?"on":"off")+'">'+(on?('✓ Conseguido'+(p.fecha?(' el '+fmtFecha(p.fecha)):'')+(p.por?(' · por '+esc(p.por)):'')):'⏳ Pendiente')+'</div></div></div>';
+  var qdet=(p.ganadores&&p.ganadores.length)?('🏅 '+esc(p.ganadores.join(", "))):(p.por?('por '+esc(p.por)):"");
+  var html='<div class="ld-top"><div class="ic ld-ic'+rcls+(on?"":" off")+'">'+iconHTML(l)+'</div><div class="ld-info"><div class="ld-nombre">'+esc(l.nombre)+difBadge(l)+'</div><div class="ld-estado '+(on?"on":"off")+'">'+(on?('✓ Conseguido'+(p.fecha?(' el '+fmtFecha(p.fecha)):'')+(qdet?(' · '+qdet):'')):'⏳ Pendiente')+'</div></div></div>';
   html+='<div class="ld-sec"><div class="ld-lbl">Cómo conseguirlo</div><div class="ld-desc">'+esc(l.descripcion||"—")+'</div></div>';
   if(l.recompensa)html+='<div class="ld-sec"><div class="ld-lbl">🎁 Recompensa</div><div class="ld-desc">'+esc(l.recompensa)+'</div></div>';
   if(l.requiere)html+='<div class="ld-sec"><div class="ld-lbl">🔗 Requiere antes</div><div class="ld-desc">'+esc(reqNombre(l))+'</div></div>';
-  html+='<div class="ld-sec"><button class="btn" id="ld-copiar" type="button">🔗 Copiar enlace</button></div>';
+  html+='<div class="ld-sec"><button class="btn" id="ld-copiar" type="button">🔗 Copiar enlace</button>'+((on&&esParaTodos(l)&&esGM(campInfo))?' <button class="btn dm" id="ld-editgan" type="button">✏️ Editar ganadores</button>':'')+'</div>';
   document.getElementById("logro-body").innerHTML=html;
   document.getElementById("logro-modal-title").textContent=on?"Logro conseguido":"Logro";
   var cp=document.getElementById("ld-copiar"); if(cp)cp.addEventListener("click",function(){copiarEnlaceLogro(l);});
+  var eg=document.getElementById("ld-editgan"); if(eg)eg.addEventListener("click",function(){closeLogroDetalle();abrirGanadores(l);});
   document.getElementById("logro-modal").classList.add("open");
 }
 function copiarEnlaceLogro(l){
@@ -1325,7 +1364,7 @@ function buildCard(l){
     html+='<div class="info"><div class="nm">'+esc(l.nombre)+difBadge(l)+'</div><div class="ds">'+esc(l.descripcion)+'</div>';
     if(l.recompensa)html+='<div class="rw">🎁 '+esc(l.recompensa)+'</div>';
     if(blq)html+='<div class="fecha">🔗 Completa antes: <b>'+esc(reqNombre(l))+'</b></div>';
-    if(on){var p=progreso[id]||{};html+='<div class="fecha">✓ Conseguido el '+fmtFecha(p.fecha)+(p.por?' · por '+esc(p.por):"")+'</div>';}
+    if(on){var p=progreso[id]||{};var quien=(p.ganadores&&p.ganadores.length)?('🏅 '+esc(p.ganadores.join(", "))):(p.por?('por '+esc(p.por)):"");html+='<div class="fecha">✓ Conseguido el '+fmtFecha(p.fecha)+(quien?(' · '+quien):"")+'</div>';}
     html+='</div>';
     if(gm&&oculto)html+='<button class="btn dm reveal-btn" type="button" title="Revelar a los jugadores">👁 Revelar</button>';
   }
@@ -1470,6 +1509,9 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("miembros-foto").addEventListener("click",function(){fotoCampId=miembrosCampId;document.getElementById("foto-input").click();});
   document.getElementById("logro-close").addEventListener("click",closeLogroDetalle);
   document.getElementById("logro-modal").addEventListener("click",function(e){if(e.target.id==="logro-modal")closeLogroDetalle();});
+  document.getElementById("ganadores-ok").addEventListener("click",concederGanadores);
+  document.getElementById("ganadores-close").addEventListener("click",closeGanadores);
+  document.getElementById("ganadores-modal").addEventListener("click",function(e){if(e.target.id==="ganadores-modal")closeGanadores();});
   loadUsers(function(){
     var sess="";try{sess=localStorage.getItem(SESSION)||"";}catch(e){}
     if(sess&&Object.prototype.hasOwnProperty.call(USERS,sess)){
