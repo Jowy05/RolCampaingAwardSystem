@@ -199,8 +199,11 @@
   .dir-sub{font-size:12px;color:var(--muted);margin-top:2px;}
   .dir-admin{display:flex;align-items:center;gap:6px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}
   .dir-admin .btn{padding:5px 9px;}
-  .nom-sum{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none;}
-  .nom-sum::-webkit-details-marker{display:none;}
+  .nom-ses.dragging{opacity:.45;}
+  .nom-ses.drag-over{border-top:2px solid var(--accent);}
+  .nom-sum{cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .nom-arrow{color:var(--muted);font-size:11px;width:14px;flex:0 0 auto;text-align:center;}
+  .nom-drag{cursor:grab;color:var(--muted);font-size:15px;padding:0 4px;}
   .nom-sum-t{flex:1;font-size:15px;font-weight:600;color:#fff;}
   .nom-sum-d{color:var(--muted);font-weight:400;font-size:12px;}
   .nom-sum-btns{display:flex;gap:4px;flex:0 0 auto;}
