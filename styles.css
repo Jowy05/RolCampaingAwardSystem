@@ -73,7 +73,7 @@
   .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:34px 30px;width:100%;max-width:360px;text-align:center;}
   .login-logo{font-size:48px;line-height:1;}
-  .login-card h2{color:#fff;font-size:21px;margin:8px 0 2px;font-weight:600;}
+  .login-card h2{color:#fff;font-size:21px;margin:8px 0 2px;font-weight:600;overflow-wrap:break-word;}
   .login-sub{color:var(--muted);font-size:13px;margin:0 0 22px;}
   .login-card input{width:100%;background:#0f1c27;border:1px solid var(--line);border-radius:7px;color:var(--text);padding:11px 13px;font-size:15px;margin-bottom:11px;outline:none;}
   .login-card input:focus{border-color:var(--accent);}
@@ -301,4 +301,6 @@
   @media(max-width:600px){
     .feed{width:172px;left:10px;bottom:12px;}
     .feed-title{display:none;}
+    .cuenta-row{grid-template-columns:1fr auto auto;gap:6px;}
+    .cuenta-nombre{grid-column:1 / -1;}
   }
