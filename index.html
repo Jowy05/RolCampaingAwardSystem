@@ -18,7 +18,8 @@
     <input id="li-pass" type="password" placeholder="Contraseña">
     <div id="li-err" class="login-err"></div>
     <button id="li-btn" class="login-btn">Entrar</button>
-    <div class="login-hint">¿No tienes credenciales? Pídeselas a tu GM.</div>
+    <button id="li-reg" class="btn" style="width:100%;margin-top:9px;">➕ Crear cuenta nueva</button>
+    <div class="login-hint">¿Nuevo? Pulsa «Crear cuenta». ¿Olvidaste la contraseña? Pídele a un GM que te la cambie.</div>
   </div>
 </div>
 
@@ -724,6 +725,22 @@ function doLogin(){
     document.getElementById("li-err").textContent="";document.getElementById("li-pass").value="";
     startSession(key);
   }else{ document.getElementById("li-err").textContent="Nombre o contraseña incorrectos."; }
+}
+// Autoregistro: cualquiera crea su cuenta (rol jugador) y entra directo.
+function registrarUsuario(){
+  var nombre=(window.prompt("Elige tu NOMBRE de usuario:","")||"").trim();
+  if(!nombre)return;
+  if(/[.#$\[\]\/]/.test(nombre)){alert("El nombre no puede contener . # $ [ ] /");return;}
+  if(Object.keys(USERS).some(function(u){return norm(u)===norm(nombre);})){alert("Ya existe un usuario con ese nombre. Elige otro.");return;}
+  var pass=(window.prompt("Elige tu CONTRASEÑA:","")||"").trim();
+  if(!pass){alert("Hace falta una contraseña.");return;}
+  var rep=window.prompt("Repite la contraseña:","");
+  if(rep===null)return;
+  if(pass!==rep.trim()){alert("Las contraseñas no coinciden.");return;}
+  document.getElementById("li-err").textContent="Creando cuenta…";
+  fetch(FB+"/usuarios/"+encodeURIComponent(nombre)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({pass:sha256hex(pass),rol:"jugador"})})
+    .then(function(r){if(!r.ok)throw 0; USERS[nombre]=sha256hex(pass); ROL[nombre]="jugador"; try{localStorage.setItem(SESSION,nombre);}catch(e){} document.getElementById("li-err").textContent=""; alert("✅ ¡Cuenta creada! Ya estás dentro. Pídele a un GM que te añada a una campaña."); startSession(nombre);})
+    .catch(function(){document.getElementById("li-err").textContent="No se pudo crear la cuenta.";});
 }
 function startSession(user){
   currentUser=user;miPerfilFoto=null;
@@ -1471,6 +1488,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
 
 (function(){
   document.getElementById("li-btn").addEventListener("click",doLogin);
+  document.getElementById("li-reg").addEventListener("click",registrarUsuario);
   document.getElementById("crear-usuario").addEventListener("click",function(){crearUsuario();});
   document.getElementById("miembros-nuevo").addEventListener("click",function(){crearUsuario(renderMiembrosList);});
   document.getElementById("li-pass").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
