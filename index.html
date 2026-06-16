@@ -31,6 +31,7 @@
     </div>
     <button class="btn dm" id="crear-camp" style="display:none;">➕ Crear campaña</button>
     <button class="btn dm" id="crear-usuario" style="display:none;">➕ Crear usuario</button>
+    <button class="btn" id="perfil-btn">👤 Mi perfil</button>
     <button class="btn" id="camp-logout">Salir</button>
   </div>
   <div id="camp-list"></div>
@@ -114,6 +115,18 @@
     <div class="modal-body" id="miembros-body"></div>
   </div>
 </div>
+
+<div class="modal" id="perfil-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>👤 Mi perfil</h2>
+      <button class="btn dm" id="perfil-foto-btn" type="button">📷 Cambiar foto</button>
+      <button class="btn" id="perfil-close" type="button">✕ Cerrar</button>
+    </div>
+    <div class="modal-body" id="perfil-body"></div>
+  </div>
+</div>
+<input type="file" id="foto-input" accept="image/*" style="display:none">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script>
@@ -241,6 +254,70 @@ function show(which){
   document.getElementById("dm-fab").style.display=(which==="app"&&isAdmin(currentUser))?"inline-flex":"none";
 }
 
+// ====== PERFIL ======
+var miPerfilFoto=null;
+function avatarSmHTML(){ return miPerfilFoto?('<img class="avatar-sm" src="'+miPerfilFoto+'" alt="">'):"👋 "; }
+function updateWhoami(){
+  var w1=document.getElementById("camp-whoami"); if(w1)w1.innerHTML=avatarSmHTML()+esc(currentUser)+" · "+rolDe(currentUser);
+  var w2=document.getElementById("whoami"); if(w2)w2.innerHTML=avatarSmHTML()+esc(currentUser);
+}
+function loadMiPerfil(cb){
+  fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/foto.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(f){miPerfilFoto=(typeof f==="string")?f:null;if(cb)cb();}).catch(function(){if(cb)cb();});
+}
+function openPerfil(){document.getElementById("perfil-modal").classList.add("open");renderPerfil();}
+function closePerfil(){document.getElementById("perfil-modal").classList.remove("open");}
+function renderPerfil(){
+  var body=document.getElementById("perfil-body");body.innerHTML="Cargando…";
+  fetch(FB+"/campanas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():{};}).then(function(camps){
+    camps=camps||{};var misCamps=[],total=0;
+    Object.keys(camps).forEach(function(id){
+      var c=camps[id];if(!c||!c.info)return;
+      var soy=isAdmin(currentUser)||(c.info.miembros&&c.info.miembros[currentUser]);
+      if(!soy)return;
+      var logros=toArr(c.logros),prog=c.progreso||{};
+      var mios=logros.filter(function(l){var s=slug(l.nombre);return prog[s]&&(l.personaje===currentUser||prog[s].por===currentUser);});
+      var miTotal=logros.filter(function(l){return l.personaje===currentUser;}).length;
+      total+=mios.length;misCamps.push({nombre:c.info.nombre||id,n:mios.length,total:miTotal,logros:mios});
+    });
+    var av=miPerfilFoto?('<img src="'+miPerfilFoto+'" alt="">'):esc((currentUser||"?").charAt(0).toUpperCase());
+    var html='<div class="perfil-head"><div class="avatar">'+av+'</div><div><div class="perfil-nombre">'+esc(currentUser)+'</div><span class="rol-badge rol-'+rolDe(currentUser)+'">'+rolDe(currentUser)+'</span></div></div>';
+    html+='<div class="perfil-stats"><div class="stat-box"><div class="stat-num">'+total+'</div><div class="stat-lbl">Logros conseguidos</div></div><div class="stat-box"><div class="stat-num">'+misCamps.length+'</div><div class="stat-lbl">Campañas</div></div></div>';
+    html+='<h3 style="color:#fff;font-size:16px;margin:16px 0 8px;">Mis campañas</h3>';
+    if(!misCamps.length)html+='<p style="color:var(--muted);font-size:13px;">No estás en ninguna campaña todavía.</p>';
+    misCamps.forEach(function(mc){
+      html+='<div class="perfil-camp"><h4>'+esc(mc.nombre)+' <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— '+mc.n+(mc.total?(" / "+mc.total+" de tu lista"):"")+' conseguidos</span></h4>';
+      if(mc.logros.length){html+='<div>';mc.logros.forEach(function(l){html+='<span class="logro-chip">'+getIcon(l)+' '+esc(l.nombre)+'</span>';});html+='</div>';}
+      else html+='<div style="color:var(--muted);font-size:12.5px;">Aún sin logros conseguidos aquí.</div>';
+      html+='</div>';
+    });
+    body.innerHTML=html;
+  }).catch(function(){body.innerHTML="No se pudo cargar el perfil.";});
+}
+function cambiarFoto(file){
+  if(!file)return;
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    var sz=128,cv=document.createElement("canvas");cv.width=sz;cv.height=sz;var ctx=cv.getContext("2d");
+    var s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2;
+    ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz);
+    var data=cv.toDataURL("image/jpeg",0.7);
+    if(data.length>140000){alert("La imagen sigue siendo muy grande. Prueba con otra más sencilla.");return;}
+    setStatus("Guardando foto…");
+    fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/foto.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+      .then(function(r){if(!r.ok)throw 0;miPerfilFoto=data;setStatus("✓ Guardado");updateWhoami();renderPerfil();})
+      .catch(function(){setStatus("⚠ Error");alert("No se pudo guardar la foto.");});
+  };img.src=rd.result;};
+  rd.readAsDataURL(file);
+}
+// ====== SELECTOR DE ICONO (placeholder; luego se cambiará por dibujos) ======
+var EMOJIS_PICKER=["🏆","⚔️","🛡️","🔮","✨","💀","🐉","🎯"];
+var addIcono="";
+function iconPicker(sel,cls){
+  var s='<div class="icpick '+cls+'"><span class="icpick-lbl">Icono:</span><button type="button" class="icbtn auto'+(!sel?" sel":"")+'" data-ic="">auto</button>';
+  for(var i=0;i<EMOJIS_PICKER.length;i++){var e=EMOJIS_PICKER[i];s+='<button type="button" class="icbtn'+(sel===e?" sel":"")+'" data-ic="'+e+'">'+e+'</button>';}
+  return s+'</div>';
+}
+
 // ====== LOGIN ======
 function doLogin(){
   var name=(document.getElementById("li-user").value||"").trim();
@@ -253,10 +330,11 @@ function doLogin(){
   }else{ document.getElementById("li-err").textContent="Nombre o contraseña incorrectos."; }
 }
 function startSession(user){
-  currentUser=user;
-  document.getElementById("camp-whoami").textContent="👋 "+user+" · "+rolDe(user);
+  currentUser=user;miPerfilFoto=null;
   document.getElementById("crear-camp").style.display=isAdmin(user)?"inline-block":"none";
   document.getElementById("crear-usuario").style.display=isAdmin(user)?"inline-block":"none";
+  updateWhoami();
+  loadMiPerfil(updateWhoami);
   showCampaigns();
 }
 
@@ -343,7 +421,7 @@ function entrarCampana(id){
     state.tab="grupo";state.sub="todos";
     document.getElementById("camp-nombre").textContent=esc(c.info.nombre||id);
     document.getElementById("camp-rol").textContent="Tú: "+currentUser+" ("+rolDe(currentUser)+")";
-    document.getElementById("whoami").textContent="👋 "+currentUser;
+    updateWhoami();
     show("app");setStatus("");render();
   }).catch(function(){alert("No se pudo cargar la campaña.");});
 }
@@ -391,10 +469,11 @@ function addLogro(){
   var n=(document.getElementById("add-nombre").value||"").trim();
   if(!n){alert("Pon al menos un nombre.");return;}
   var nuevo={nombre:n,descripcion:(document.getElementById("add-desc").value||"").trim(),recompensa:(document.getElementById("add-recompensa").value||"").trim()};
+  if(addIcono)nuevo.icono=addIcono;
   if(state.tab==="grupo"){nuevo.categoria="grupo";}
   else if(state.sub!=="todos"){nuevo.categoria="pj:"+state.sub;nuevo.personaje=state.sub;}
   else{nuevo.categoria="general";}
-  LOGROS.push(nuevo);render();saveLogros();
+  LOGROS.push(nuevo);addIcono="";render();saveLogros();
 }
 function moveLogro(l,dir){var view=viewLogros();var iv=view.indexOf(l);var t=iv+dir;if(t<0||t>=view.length)return;var other=view[t];var i1=LOGROS.indexOf(l),i2=LOGROS.indexOf(other);if(i1<0||i2<0)return;var tmp=LOGROS[i1];LOGROS[i1]=LOGROS[i2];LOGROS[i2]=tmp;render();debounce("ord",saveLogros);}
 
@@ -451,8 +530,11 @@ function renderTabs(){
 function buildAddForm(){
   var d=document.createElement("div");d.className="addbox";
   var dest=state.tab==="grupo"?"Grupo":(state.sub==="todos"?"Para todos":state.sub);
-  d.innerHTML='<input class="an" id="add-nombre" placeholder="Nombre del nuevo logro (va a: '+esc(dest)+')"><input class="ad" id="add-desc" placeholder="Descripción"><input class="ar" id="add-recompensa" placeholder="Recompensa"><button class="btn dm" id="add-btn" type="button">➕ Añadir</button>';
-  d.querySelector("#add-btn").addEventListener("click",addLogro);return d;
+  d.innerHTML='<input class="an" id="add-nombre" placeholder="Nombre del nuevo logro (va a: '+esc(dest)+')"><input class="ad" id="add-desc" placeholder="Descripción"><input class="ar" id="add-recompensa" placeholder="Recompensa"><div style="width:100%">'+iconPicker(addIcono,"add-ic")+'</div><button class="btn dm" id="add-btn" type="button">➕ Añadir</button>';
+  d.querySelector("#add-btn").addEventListener("click",addLogro);
+  var picks=d.querySelectorAll(".add-ic .icbtn");
+  for(var i=0;i<picks.length;i++){(function(btn){btn.addEventListener("click",function(){addIcono=btn.getAttribute("data-ic");var all=d.querySelectorAll(".add-ic .icbtn");for(var j=0;j<all.length;j++)all[j].classList.remove("sel");btn.classList.add("sel");});})(picks[i]);}
+  return d;
 }
 function buildCard(l){
   var id=slug(l.nombre),on=isDone(l),puede=puedeMarcar(l);
@@ -460,7 +542,7 @@ function buildCard(l){
   var html='<div class="ic">'+getIcon(l)+(on?'<span class="vbadge">✓</span>':"")+'</div>';
   if(editMode){
     html+='<div class="movebtns"><button class="movebtn" data-d="-1" title="Subir">▲</button><button class="movebtn" data-d="1" title="Bajar">▼</button></div>';
-    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div>'+difSelect(l)+'</div>';
+    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div>'+difSelect(l)+iconPicker(l.icono||"","card-ic")+'</div>';
     html+='<button class="del" type="button" title="Borrar">🗑</button>';
   } else {
     html+='<div class="info"><div class="nm">'+esc(l.nombre)+difBadge(l)+'</div><div class="ds">'+esc(l.descripcion)+'</div>';
@@ -477,6 +559,7 @@ function buildCard(l){
     var ds=div.querySelector(".ds-input");if(ds)ds.addEventListener("change",function(){l.descripcion=ds.value;debounce("l",saveLogros);});
     var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;debounce("l",saveLogros);});
     var di=div.querySelector(".dif-input");if(di)di.addEventListener("change",function(){if(di.value)l.dificultad=di.value;else delete l.dificultad;render();saveLogros();});
+    var cp=div.querySelectorAll(".card-ic .icbtn");for(var b3=0;b3<cp.length;b3++){(function(btn){btn.addEventListener("click",function(){var v=btn.getAttribute("data-ic");if(v)l.icono=v;else delete l.icono;render();saveLogros();});})(cp[b3]);}
     var dl=div.querySelector(".del");if(dl)dl.addEventListener("click",function(){deleteLogro(l);});
     var mb=div.querySelectorAll(".movebtn");for(var b=0;b<mb.length;b++){(function(btn){btn.addEventListener("click",function(){moveLogro(l,parseInt(btn.getAttribute("data-d"),10));});})(mb[b]);}
     div.setAttribute("draggable","true");
@@ -542,6 +625,11 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("guia-modal").addEventListener("click",function(e){if(e.target.id==="guia-modal")closeGuia();});
   document.getElementById("resumen-close").addEventListener("click",closeResumen);
   document.getElementById("resumen-modal").addEventListener("click",function(e){if(e.target.id==="resumen-modal")closeResumen();});
+  document.getElementById("perfil-btn").addEventListener("click",openPerfil);
+  document.getElementById("perfil-close").addEventListener("click",closePerfil);
+  document.getElementById("perfil-modal").addEventListener("click",function(e){if(e.target.id==="perfil-modal")closePerfil();});
+  document.getElementById("perfil-foto-btn").addEventListener("click",function(){document.getElementById("foto-input").click();});
+  document.getElementById("foto-input").addEventListener("change",function(e){if(e.target.files&&e.target.files[0])cambiarFoto(e.target.files[0]);e.target.value="";});
   loadUsers(function(){
     var sess="";try{sess=localStorage.getItem(SESSION)||"";}catch(e){}
     if(sess&&Object.prototype.hasOwnProperty.call(USERS,sess))startSession(sess); else show("login");
