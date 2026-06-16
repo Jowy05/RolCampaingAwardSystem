@@ -235,3 +235,61 @@
     .perfil-feat .fic{width:54px;height:54px;font-size:32px;}
     .dm-fab{bottom:16px;right:14px;padding:11px 16px;font-size:13px;}
   }
+
+  /* ===== Marcos por rareza ===== */
+  .ic.r-comun,.logro-tile.r-comun{border-color:#6ca8e0;}
+  .ic.r-raro,.logro-tile.r-raro{border-color:#1f63a8;}
+  .ic.r-epico,.logro-tile.r-epico{border-color:#a653ff;box-shadow:0 0 7px rgba(166,83,255,.45);}
+  .ic.r-legendario,.logro-tile.r-legendario{border-color:#ff8c3c;box-shadow:0 0 9px rgba(255,140,60,.5);}
+  .ach.on .ic.r-comun{border-color:#6ca8e0;}
+  .ach.on .ic.r-raro{border-color:#1f63a8;}
+  .ach.on .ic.r-epico{border-color:#a653ff;}
+  .ach.on .ic.r-legendario{border-color:#ff8c3c;}
+
+  /* ===== Logro oculto / bloqueado / herramientas de tarjeta ===== */
+  .ach.oculto{opacity:.9;border-left-color:#5a4b7a;}
+  .ach.oculto .ic{filter:none;background:#1a1626;border-color:#5a4b7a;}
+  .ach.bloqueado{opacity:.72;}
+  .ach.chain-src{outline:2px dashed var(--accent);outline-offset:2px;}
+  .ic .ocbadge{position:absolute;left:-7px;bottom:-7px;background:#5a4b7a;border-radius:50%;width:21px;height:21px;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid var(--card);}
+  .reveal-btn{flex:0 0 auto;align-self:center;}
+  .cardtools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;}
+  .ctbtn{background:#0f1c27;border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;}
+  .ctbtn:hover{background:#22384a;color:#dce8f2;}
+  .ctbtn.act{border-color:var(--accent);background:#1c3144;color:#dce8f2;}
+  .ctnote{font-size:11px;color:var(--muted);}
+
+  /* ===== Nivel / XP en el perfil ===== */
+  .nivel-badge{display:inline-block;margin-left:8px;background:#3a2c10;color:var(--gold);border:1px solid #6b5114;border-radius:12px;padding:1px 10px;font-size:12px;font-weight:600;vertical-align:middle;}
+  .xp-wrap{margin:2px 0 14px;}
+  .xp-bar{height:9px;background:#0c1722;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .xp-bar>i{display:block;height:100%;background:linear-gradient(90deg,#6b5114,var(--gold));transition:width .4s ease;}
+  .xp-lbl{font-size:11.5px;color:var(--muted);margin-top:4px;}
+
+  /* ===== Vitrina (favoritos) en el perfil ===== */
+  .logro-tilewrap{position:relative;display:inline-block;}
+  .fav-btn{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:#0f1923;color:#7f95a8;font-size:11px;line-height:18px;text-align:center;cursor:pointer;padding:0;z-index:2;}
+  .fav-btn.on{color:var(--gold);border-color:var(--gold);}
+  .logro-tile.fav{box-shadow:0 0 7px rgba(240,195,60,.5);}
+
+  /* ===== Feed de últimos logros (menú) ===== */
+  .feed{position:fixed;left:16px;bottom:16px;z-index:48;width:240px;pointer-events:none;display:none;}
+  .feed-title{font-size:10.5px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.6px;}
+  .feed-item{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:9px;padding:7px 11px;margin-bottom:6px;transform-origin:left bottom;box-shadow:0 4px 12px rgba(0,0,0,.45);}
+  .feed-ic{font-size:20px;width:24px;text-align:center;flex:0 0 auto;}
+  .feed-ic img{width:22px;height:22px;border-radius:5px;object-fit:cover;vertical-align:middle;}
+  .feed-tx{display:flex;flex-direction:column;min-width:0;}
+  .feed-tx b{font-size:12.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .feed-sub{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ===== Cadenas (modal) ===== */
+  .guia-gmtools{margin-top:6px;}
+  .cadena-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#16242f;border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:8px;}
+  .cadena-step{display:inline-flex;align-items:center;gap:5px;background:#1d2c3a;border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:12.5px;}
+  .cadena-arrow{color:var(--muted);}
+  .cadena-undo{background:#3a1c1c;border:1px solid #6b2a2a;color:#ffb3b3;border-radius:6px;padding:1px 7px;font-size:11px;cursor:pointer;margin-left:3px;}
+
+  @media(max-width:600px){
+    .feed{width:172px;left:10px;bottom:12px;}
+    .feed-title{display:none;}
+  }
