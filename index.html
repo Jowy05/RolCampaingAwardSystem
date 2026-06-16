@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logros — Rol de Rol</title>
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
@@ -78,6 +78,7 @@
 
 <button class="dm-fab" id="dm-fab" type="button">📖 Cómo funciona</button>
 <button class="dm-fab" id="guiagm-fab" type="button">📖 Guía GM</button>
+<div class="feed" id="feed"></div>
 
 <div class="modal" id="guia-modal">
   <div class="modal-card">
@@ -138,6 +139,16 @@
   </div>
 </div>
 
+<div class="modal" id="cadenas-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>🔗 Cadenas de logros</h2>
+      <button class="btn" id="cadenas-close" type="button">✕ Cerrar</button>
+    </div>
+    <div class="modal-body" id="cadenas-body"></div>
+  </div>
+</div>
+
 <input type="file" id="foto-input" accept="image/*" style="display:none">
 <input type="file" id="icono-input" accept="image/*" style="display:none">
 
@@ -188,7 +199,7 @@ function crearUsuario(after){
 
 let currentUser="", currentCamp=null, campInfo=null, MIEMBROS=[], GMname="";
 let LOGROS=[], progreso={}, guiaMD=null, editMode=false;
-var guiaEditing=false, dragSrc=null, saveTimers={};
+var guiaEditing=false, dragSrc=null, saveTimers={}, chainSource=null, miVitrina=[];
 const PREFS="rdr2_prefs_v3", SESSION="rdr2_session";
 let prefs={filtro:"todos"};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
@@ -233,6 +244,9 @@ var DIFS=[["","— Dificultad —"],["Común","Común"],["Raro","Raro"],["Épico
 function difKey(d){var n=norm(d);if(!n)return "";if(n.indexOf("legend")>=0)return "legendario";if(n.indexOf("epic")>=0)return "epico";if(n.indexOf("raro")>=0)return "raro";return "comun";}
 function difBadge(l){return l.dificultad?' <span class="dif d-'+difKey(l.dificultad)+'">'+esc(l.dificultad)+'</span>':"";}
 function difSelect(l){var s='<select class="dif-input">';for(var i=0;i<DIFS.length;i++){s+='<option value="'+esc(DIFS[i][0])+'"'+(((l.dificultad||"")===DIFS[i][0])?" selected":"")+'>'+esc(DIFS[i][1])+'</option>';}return s+'</select>';}
+// XP por rareza y curva de nivel (lvl1=50, +10 cada nivel).
+function xpDeRareza(d){var k=difKey(d);return k==="legendario"?150:(k==="epico"?60:(k==="raro"?25:10));}
+function nivelDeXP(xp){var lvl=1,need=50,acc=0;while(xp>=acc+need){acc+=need;lvl++;need+=10;}return {lvl:lvl,en:xp-acc,need:need,total:xp};}
 
 function utf8bytes(str){
   if(typeof TextEncoder!=="undefined")return new TextEncoder().encode(str);
@@ -274,6 +288,7 @@ function show(which){
   document.getElementById("app").style.display=(which==="app")?"block":"none";
   document.getElementById("dm-fab").style.display=(which==="app")?"inline-flex":"none";
   document.getElementById("guiagm-fab").style.display=(which==="camp")?"inline-flex":"none";
+  document.getElementById("feed").style.display=(which==="camp")?"block":"none";
 }
 
 // ====== PERFIL ======
@@ -285,7 +300,11 @@ function updateWhoami(){
   var w2=document.getElementById("whoami"); if(w2)w2.innerHTML=avatarChip()+base;
 }
 function loadMiPerfil(cb){
-  fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/foto.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(f){miPerfilFoto=(typeof f==="string")?f:null;if(cb)cb();}).catch(function(){if(cb)cb();});
+  var t=new Date().getTime();
+  Promise.all([
+    fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/foto.json?x="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/vitrina.json?x="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(a){ miPerfilFoto=(typeof a[0]==="string")?a[0]:null; miVitrina=Array.isArray(a[1])?a[1]:[]; if(cb)cb(); });
 }
 function openPerfil(){document.getElementById("perfil-modal").classList.add("open");renderPerfil();}
 function closePerfil(){document.getElementById("perfil-modal").classList.remove("open");}
@@ -301,17 +320,20 @@ function renderFeatured(i){
 function renderPerfil(){
   var body=document.getElementById("perfil-body");body.innerHTML="Cargando…";perfilLogros=[];
   fetch(FB+"/campanas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():{};}).then(function(camps){
-    camps=camps||{};var misCamps=[],total=0;
+    camps=camps||{};var misCamps=[],total=0,xpTotal=0;
     Object.keys(camps).forEach(function(id){
       var c=camps[id];if(!c||!c.info)return;
       if(!puedeEntrar(c.info))return;
       var logros=toArr(c.logros),prog=c.progreso||{};
       var mios=logros.filter(function(l){var s=slug(l.nombre);return prog[s]&&(l.personaje===currentUser||prog[s].por===currentUser);});
       var miTotal=logros.filter(function(l){return l.personaje===currentUser;}).length;
+      mios.forEach(function(l){xpTotal+=xpDeRareza(l.dificultad);});
       total+=mios.length;misCamps.push({nombre:c.info.nombre||id,n:mios.length,total:miTotal,logros:mios});
     });
+    var nv=nivelDeXP(xpTotal), pctxp=nv.need?Math.round(nv.en/nv.need*100):0;
     var av=miPerfilFoto?('<img src="'+miPerfilFoto+'" alt="">'):esc((currentUser||"?").charAt(0).toUpperCase());
-    var html='<div class="perfil-head"><div class="avatar">'+av+'</div><div><div class="perfil-nombre">'+esc(currentUser)+'</div><span class="rol-badge rol-'+rolDe(currentUser)+'">'+rolDe(currentUser)+'</span></div></div>';
+    var html='<div class="perfil-head"><div class="avatar">'+av+'</div><div><div class="perfil-nombre">'+esc(currentUser)+'<span class="nivel-badge">Nivel '+nv.lvl+'</span></div><span class="rol-badge rol-'+rolDe(currentUser)+'">'+rolDe(currentUser)+'</span></div></div>';
+    html+='<div class="xp-wrap"><div class="xp-bar"><i style="width:'+pctxp+'%"></i></div><div class="xp-lbl">'+nv.en+' / '+nv.need+' XP para el nivel '+(nv.lvl+1)+' · '+xpTotal+' XP totales</div></div>';
     html+='<div class="perfil-stats"><div class="stat-box"><div class="stat-num">'+total+'</div><div class="stat-lbl">Logros conseguidos</div></div><div class="stat-box"><div class="stat-num">'+misCamps.length+'</div><div class="stat-lbl">Campañas</div></div></div>';
     html+='<div class="perfil-feat" id="perfil-feat"></div>';
     html+='<h3 style="color:#fff;font-size:16px;margin:16px 0 8px;">Mis campañas</h3>';
@@ -320,8 +342,14 @@ function renderPerfil(){
     misCamps.forEach(function(mc){
       html+='<div class="perfil-camp"><h4>'+esc(mc.nombre)+' <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— '+mc.n+(mc.total?(" / "+mc.total+" de tu lista"):"")+' conseguidos</span></h4>';
       if(mc.logros.length){
+        mc.logros.sort(function(a,b){var fa=miVitrina.indexOf(slug(a.nombre))>=0?0:1,fb=miVitrina.indexOf(slug(b.nombre))>=0?0:1;return fa-fb;});
         html+='<div class="logro-grid">';
-        mc.logros.forEach(function(l){ perfilLogros.push({l:l,camp:mc.nombre}); html+='<button class="logro-tile" type="button" data-i="'+gi+'" title="'+esc(l.nombre)+'">'+iconHTML(l)+'</button>'; gi++; });
+        mc.logros.forEach(function(l){
+          var s=slug(l.nombre),fav=miVitrina.indexOf(s)>=0,rcls=l.dificultad?(" r-"+difKey(l.dificultad)):"";
+          perfilLogros.push({l:l,camp:mc.nombre});
+          html+='<div class="logro-tilewrap"><button class="logro-tile'+rcls+(fav?" fav":"")+'" type="button" data-i="'+gi+'" title="'+esc(l.nombre)+'">'+iconHTML(l)+'</button><button class="fav-btn'+(fav?" on":"")+'" type="button" data-fav="'+esc(s)+'" title="Fijar como destacado">'+(fav?"★":"☆")+'</button></div>';
+          gi++;
+        });
         html+='</div>';
       } else html+='<div style="color:var(--muted);font-size:12.5px;">Aún sin logros conseguidos aquí.</div>';
       html+='</div>';
@@ -329,8 +357,18 @@ function renderPerfil(){
     body.innerHTML=html;
     var tiles=body.querySelectorAll(".logro-tile");
     for(var t=0;t<tiles.length;t++){(function(btn){btn.addEventListener("click",function(){renderFeatured(parseInt(btn.getAttribute("data-i"),10));});})(tiles[t]);}
+    var favs=body.querySelectorAll(".fav-btn");
+    for(var k=0;k<favs.length;k++){(function(btn){btn.addEventListener("click",function(){toggleFav(btn.getAttribute("data-fav"));});})(favs[k]);}
     renderFeatured(perfilLogros.length?0:-1);
   }).catch(function(){body.innerHTML="No se pudo cargar el perfil.";});
+}
+function toggleFav(s){
+  if(!s)return;
+  var i=miVitrina.indexOf(s);
+  if(i>=0)miVitrina.splice(i,1);
+  else{ if(miVitrina.length>=6){alert("Máximo 6 logros destacados.");return;} miVitrina.push(s); }
+  fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/vitrina.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(miVitrina)}).catch(function(){});
+  renderPerfil();
 }
 function cambiarFoto(file){
   if(!file)return;
@@ -397,7 +435,7 @@ function startSession(user){
 }
 
 // ====== CAMPAÑAS ======
-function showCampaigns(){ currentCamp=null; show("camp"); loadCampaigns(); }
+function showCampaigns(){ stopLive(); currentCamp=null; show("camp"); loadCampaigns(); }
 function loadCampaigns(){
   var list=document.getElementById("camp-list");list.innerHTML="Cargando…";
   fetch(FB+"/campanas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(camps){
@@ -424,6 +462,28 @@ function renderCampaigns(camps){
     if(manda){var mb=document.createElement("button");mb.className="btn dm";mb.textContent="👥 Miembros / GM";mb.onclick=function(){abrirMiembros(id,info);};act.appendChild(mb);}
     list.appendChild(d);
   });
+  renderFeed(camps);
+}
+// Feed flotante (abajo-izquierda del menú): los 3 últimos logros conseguidos, apilados y degradados.
+function renderFeed(camps){
+  var fe=document.getElementById("feed"); if(!fe)return;
+  var items=[];
+  Object.keys(camps).forEach(function(id){
+    var c=camps[id]; if(!c||!c.info||!puedeEntrar(c.info))return;
+    var logs=toArr(c.logros), prog=c.progreso||{}, bySlug={};
+    logs.forEach(function(l){bySlug[slug(l.nombre)]=l;});
+    Object.keys(prog).forEach(function(s){ var p=prog[s],l=bySlug[s]; if(l&&p&&p.fecha&&!l.oculto) items.push({l:l,por:p.por,fecha:p.fecha,camp:c.info.nombre||id}); });
+  });
+  items.sort(function(a,b){return a.fecha<b.fecha?1:(a.fecha>b.fecha?-1:0);});
+  items=items.slice(0,3);
+  if(!items.length){fe.innerHTML="";return;}
+  var ord=items.slice().reverse();
+  var html='<div class="feed-title">🏆 Últimos logros</div>';
+  ord.forEach(function(it,i){
+    var depth=ord.length-1-i;
+    html+='<div class="feed-item" style="opacity:'+(1-depth*0.32).toFixed(2)+';transform:scale('+(1-depth*0.07).toFixed(2)+');"><span class="feed-ic">'+iconHTML(it.l)+'</span><span class="feed-tx"><b>'+esc(it.l.nombre)+'</b><span class="feed-sub">'+esc(it.por||"?")+' · '+esc(it.camp)+'</span></span></div>';
+  });
+  fe.innerHTML=html;
 }
 function crearCampana(){
   if(!puedeCrear())return;
@@ -490,7 +550,7 @@ function entrarCampana(id){
     document.getElementById("camp-nombre").textContent=esc(c.info.nombre||id);
     document.getElementById("camp-rol").textContent="Tú: "+currentUser+" ("+rolDe(currentUser)+")";
     updateWhoami();
-    show("app");setStatus("");render();
+    show("app");setStatus("");render();startLive();
   }).catch(function(){alert("No se pudo cargar la campaña.");});
 }
 
@@ -504,6 +564,8 @@ function viewLogros(){
 function isDone(l){return !!progreso[slug(l.nombre)];}
 function stats(arr){var u=0;arr.forEach(function(l){if(isDone(l))u++;});return{u:u,t:arr.length};}
 function puedeMarcar(l){ return esGM(campInfo) || !!(l.personaje && l.personaje===currentUser); }
+function bloqueado(l){ return !!(l.requiere && !progreso[l.requiere]); }
+function reqNombre(l){ if(!l.requiere)return ""; var p=LOGROS.find(function(x){return slug(x.nombre)===l.requiere;}); return p?p.nombre:"(?)"; }
 
 function fbProg(id,val){
   setStatus("Guardando…");
@@ -517,8 +579,22 @@ function debounce(key,fn){if(saveTimers[key])clearTimeout(saveTimers[key]);saveT
 function toggle(l){
   if(!puedeMarcar(l)){return;}
   var id=slug(l.nombre),y=window.scrollY;
-  if(progreso[id]){ delete progreso[id]; fbProg(id,null); render(); window.scrollTo(0,y); }
-  else { var o={por:currentUser,fecha:new Date().toISOString()}; progreso[id]=o; fbProg(id,o); render(); window.scrollTo(0,y); celebrate(l.nombre); }
+  if(progreso[id]){
+    if(!confirm('¿Desmarcar "'+l.nombre+'"? Volverá a quedar pendiente.')){ render(); window.scrollTo(0,y); return; }
+    delete progreso[id]; fbProg(id,null); render(); window.scrollTo(0,y);
+  }
+  else {
+    if(bloqueado(l)){ alert("Antes tienes que conseguir: "+reqNombre(l)); render(); window.scrollTo(0,y); return; }
+    var o={por:currentUser,fecha:new Date().toISOString()}; progreso[id]=o; fbProg(id,o); render(); window.scrollTo(0,y); celebrate(l.nombre);
+  }
+}
+function revelarLogro(l){ if(!esGM(campInfo))return; if(!confirm('¿Revelar "'+l.nombre+'" a todos los jugadores?'))return; delete l.oculto; render(); saveLogros(); }
+function clickCadena(l){
+  if(!chainSource){ chainSource=l; render(); setStatus("🔗 Pulsa la cadena de OTRO logro para ponerlo DESPUÉS de este."); return; }
+  if(chainSource===l){ chainSource=null; render(); setStatus(""); return; }
+  var mySlug=slug(l.nombre), cur=chainSource, guard=0;
+  while(cur&&cur.requiere&&guard++<200){ if(cur.requiere===mySlug){ alert("Eso crearía un bucle en la cadena."); return; } cur=LOGROS.find(function(x){return slug(x.nombre)===cur.requiere;}); }
+  l.requiere=slug(chainSource.nombre); chainSource=null; render(); saveLogros(); setStatus("✓ Encadenados");
 }
 
 function celebrate(nombre){ toast(nombre); playSound(); confetti(); }
@@ -571,22 +647,28 @@ Guía rápida de esta pantalla. *(Algunos botones solo los ve el GM.)*
 - Etiqueta de **rareza** (si se la han puesto).
 - ✓ **Fecha** y **quién** lo consiguió.
 
-## Rarezas
-| Rareza | Color | Para... |
+## Rarezas (marco del icono)
+| Rareza | Marco | Para... |
 |---|---|---|
-| **Común** | gris | logros del día a día |
-| **Raro** | azul | piden algo de esfuerzo |
+| **Común** | azul claro | logros del día a día |
+| **Raro** | azul oscuro | piden algo de esfuerzo |
 | **Épico** | morado | gestas importantes |
-| **Legendario** | dorado | hazañas únicas de la campaña |
+| **Legendario** | naranja | hazañas únicas de la campaña |
 
 ## Tu perfil
-Pulsa tu **avatar** (arriba) para ver tu perfil estilo Steam: foto, logros y campañas. Clica un logro para verlo en grande con su descripción.
+Pulsa tu **avatar** (arriba) para ver tu perfil estilo Steam: foto, logros y campañas. Clica un logro para verlo en grande con su descripción. Tu **Nivel** sube con la XP de tus logros (más XP cuanto más raro). Pulsa la **estrella ★** de un logro para fijarlo como **destacado**.
+
+## Cadenas y logros ocultos
+- Algunos logros están **🔒 encadenados**: no puedes marcarlos hasta conseguir el anterior de la cadena.
+- Otros aparecen como **??? Logro oculto** hasta que el GM los **revele**.
 
 ---
 ## Solo el GM
 - **✏️ Modo edición**: añade, edita, borra y reordena logros (arrastrando o con ▲▼). En cada logro puedes cambiar **nombre, descripción, 🎁 recompensa, rareza** y el **icono** (un emoji o **📷 una imagen** tuya).
+- **🔗 Cadena**: pulsa 🔗 en un logro y luego 🔗 en otro para encadenarlos (el 2º se desbloquea al conseguir el 1º). **👁/🙈**: oculta un logro a los jugadores; revélalo cuando quieras.
 - **➕ Añadir**: crea un logro en la pestaña en la que estés.
-- **📊 Resumen**: cuántos logros lleva cada jugador y el total de la campaña.`;
+- **📊 Resumen**: cuántos logros lleva cada jugador y el total.
+- Al final de esta guía: **⬇️ Exportar** la campaña a JSON y **🔗 Ver cadenas** (para deshacerlas).`;
 
 // ===== GUÍA DEL GM en el menú principal (la ven todos; SOLO el Owner la edita; global en /guia_gm) =====
 var GUIA_GM_DEFAULT=`# 📖 Guía del GM — Menú principal
@@ -620,9 +702,62 @@ Pulsa tu **avatar** (arriba a la derecha) para ver tu perfil y cambiar la foto c
 - **Entrar**: abre la campaña. **🔒 No asignado** = pídele a su GM que te añada.
 - **Salir**: cierra sesión.`;
 
-// Guía fija de la app (dentro de la campaña): solo lectura, la ven todos
-function openGuia(){ document.getElementById("guia-view").innerHTML=mdRender(GUIA_APP); document.getElementById("guia-modal").classList.add("open"); }
+// Guía fija de la app (dentro de la campaña): solo lectura, la ven todos. Abajo, herramientas del GM.
+function openGuia(){
+  var html=mdRender(GUIA_APP);
+  if(esGM(campInfo)){
+    html+='<hr style="border:none;border-top:1px solid var(--line);margin:18px 0 12px;"><div class="guia-gmtools"><div style="font-size:13px;color:#fff;margin-bottom:8px;font-weight:600;">🛠️ Herramientas del GM</div><button class="btn dm" id="exp-camp" type="button">⬇️ Exportar campaña (JSON)</button> <button class="btn" id="ver-cadenas" type="button">🔗 Ver cadenas de logros</button></div>';
+  }
+  document.getElementById("guia-view").innerHTML=html;
+  var e=document.getElementById("exp-camp"); if(e)e.addEventListener("click",exportarCampana);
+  var c=document.getElementById("ver-cadenas"); if(c)c.addEventListener("click",openCadenas);
+  document.getElementById("guia-modal").classList.add("open");
+}
 function closeGuia(){ document.getElementById("guia-modal").classList.remove("open"); }
+function exportarCampana(){
+  if(!esGM(campInfo)||!currentCamp)return;
+  setStatus("Exportando…");
+  fetch(FB+"/campanas/"+currentCamp+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(data){
+    if(!data){alert("No se pudo exportar.");return;}
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download="campana-"+currentCamp+"-"+(new Date().toISOString().slice(0,10))+".json";
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1500);
+    setStatus("✓ Exportado");
+  }).catch(function(){setStatus("⚠ Error");alert("No se pudo exportar.");});
+}
+// ===== Cadenas de logros (ver / deshacer) =====
+function construirCadenas(){
+  var childOf={},esHijo={};
+  LOGROS.forEach(function(l){ if(l.requiere){ childOf[l.requiere]=l; esHijo[slug(l.nombre)]=true; } });
+  var cadenas=[];
+  LOGROS.forEach(function(l){
+    var s=slug(l.nombre);
+    if(!esHijo[s]&&childOf[s]){ var seq=[l],cur=l,g=0; while(childOf[slug(cur.nombre)]&&g++<200){ cur=childOf[slug(cur.nombre)]; seq.push(cur); } cadenas.push(seq); }
+  });
+  return cadenas;
+}
+function renderCadenas(){
+  var body=document.getElementById("cadenas-body");
+  var cadenas=construirCadenas();
+  if(!cadenas.length){ body.innerHTML='<p style="color:var(--muted);font-size:13.5px;">No hay cadenas todavía. En <b>Modo edición</b>, pulsa 🔗 en un logro y luego 🔗 en otro para encadenarlos.</p>'; return; }
+  var html='<p style="color:var(--muted);font-size:12.5px;margin:0 0 12px;">El logro a la derecha de cada flecha no se puede marcar hasta conseguir el de su izquierda. Pulsa ✕ para soltar ese enlace.</p>';
+  cadenas.forEach(function(seq){
+    html+='<div class="cadena-row">';
+    seq.forEach(function(l,i){
+      if(i>0)html+='<span class="cadena-arrow">→</span>';
+      html+='<span class="cadena-step">'+iconHTML(l)+' '+esc(l.nombre)+(i>0?(' <button class="cadena-undo" data-undo="'+esc(slug(l.nombre))+'" title="Soltar este enlace">✕</button>'):'')+'</span>';
+    });
+    html+='</div>';
+  });
+  body.innerHTML=html;
+  var us=body.querySelectorAll(".cadena-undo");
+  for(var i=0;i<us.length;i++){(function(btn){btn.addEventListener("click",function(){desencadenar(btn.getAttribute("data-undo"));});})(us[i]);}
+}
+function openCadenas(){ document.getElementById("guia-modal").classList.remove("open"); document.getElementById("cadenas-modal").classList.add("open"); renderCadenas(); }
+function closeCadenas(){ document.getElementById("cadenas-modal").classList.remove("open"); }
+function desencadenar(s){ var l=LOGROS.find(function(x){return slug(x.nombre)===s;}); if(!l||!l.requiere)return; delete l.requiere; saveLogros(); renderCadenas(); if(editMode)render(); }
 
 // Guía del GM (menú principal): la leen todos, la edita SOLO el Owner
 var guiaGM=null, guiaGMEditing=false;
@@ -692,24 +827,40 @@ function buildAddForm(){
   return d;
 }
 function buildCard(l){
-  var id=slug(l.nombre),on=isDone(l),puede=puedeMarcar(l);
-  var div=document.createElement("div");div.className="ach"+(on?" on":"")+(editMode?" editing":"");
-  var html='<div class="ic">'+iconHTML(l)+(on?'<span class="vbadge">✓</span>':"")+'</div>';
+  var id=slug(l.nombre),on=isDone(l),gm=esGM(campInfo),oculto=!!l.oculto,blq=!on&&bloqueado(l);
+  // Logro OCULTO para quien NO es GM: tarjeta misteriosa
+  if(oculto && !gm){
+    var dh=document.createElement("div");dh.className="ach oculto";
+    dh.innerHTML='<div class="ic">❓</div><div class="info"><div class="nm">??? Logro oculto</div><div class="ds">Este logro aún no se ha revelado.</div></div><label class="toggle disabled"><span>🔒</span></label>';
+    return dh;
+  }
+  var puede=puedeMarcar(l)&&!blq;
+  var rcls=l.dificultad?(" r-"+difKey(l.dificultad)):"";
+  var div=document.createElement("div");div.className="ach"+(on?" on":"")+(editMode?" editing":"")+(blq?" bloqueado":"")+(chainSource===l?" chain-src":"");
+  var html='<div class="ic'+rcls+'">'+iconHTML(l)+(on?'<span class="vbadge">✓</span>':"")+(oculto?'<span class="ocbadge" title="Oculto para los jugadores">🙈</span>':"")+'</div>';
   if(editMode){
     html+='<div class="movebtns"><button class="movebtn" data-d="-1" title="Subir">▲</button><button class="movebtn" data-d="1" title="Bajar">▼</button></div>';
-    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div>'+difSelect(l)+iconPicker(l.icono||"","card-ic",true)+'</div>';
+    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div>'+difSelect(l)+iconPicker(l.icono||"","card-ic",true)+
+      '<div class="cardtools"><button class="ctbtn chainbtn'+(chainSource===l?" act":"")+'" type="button">🔗 '+(chainSource===l?"elige el siguiente…":"Cadena")+'</button>'+
+      '<button class="ctbtn ocbtn'+(oculto?" act":"")+'" type="button">'+(oculto?"🙈 Oculto":"👁 Visible")+'</button>'+
+      (l.requiere?('<span class="ctnote">🔗 tras: '+esc(reqNombre(l))+'</span>'):"")+'</div></div>';
     html+='<button class="del" type="button" title="Borrar">🗑</button>';
   } else {
     html+='<div class="info"><div class="nm">'+esc(l.nombre)+difBadge(l)+'</div><div class="ds">'+esc(l.descripcion)+'</div>';
     if(l.recompensa)html+='<div class="rw">🎁 '+esc(l.recompensa)+'</div>';
+    if(blq)html+='<div class="fecha">🔗 Completa antes: <b>'+esc(reqNombre(l))+'</b></div>';
     if(on){var p=progreso[id]||{};html+='<div class="fecha">✓ Conseguido el '+fmtFecha(p.fecha)+(p.por?' · por '+esc(p.por):"")+'</div>';}
     html+='</div>';
+    if(gm&&oculto)html+='<button class="btn dm reveal-btn" type="button" title="Revelar a los jugadores">👁 Revelar</button>';
   }
-  var tg='<label class="toggle'+(puede?"":" disabled")+'"'+(puede?"":' title="Solo lo marca su dueño o el GM"')+'><input type="checkbox"'+(on?" checked":"")+(puede?"":" disabled")+'><span>'+(on?"Conseguido":(puede?"Marcar":"🔒"))+'</span></label>';
+  var tg='<label class="toggle'+(puede?"":" disabled")+'"'+(puede?"":(blq?' title="Bloqueado por la cadena"':' title="Solo lo marca su dueño o el GM"'))+'><input type="checkbox"'+(on?" checked":"")+(puede?"":" disabled")+'><span>'+(on?"Conseguido":(puede?"Marcar":"🔒"))+'</span></label>';
   html+=tg;
   div.innerHTML=html;
   if(puede){var cb=div.querySelector(".toggle input");if(cb)cb.addEventListener("change",function(){toggle(l);});}
+  if(!editMode&&gm&&oculto){var rv=div.querySelector(".reveal-btn");if(rv)rv.addEventListener("click",function(){revelarLogro(l);});}
   if(editMode){
+    var chb=div.querySelector(".chainbtn");if(chb)chb.addEventListener("click",function(){clickCadena(l);});
+    var ocb=div.querySelector(".ocbtn");if(ocb)ocb.addEventListener("click",function(){l.oculto=!l.oculto;render();saveLogros();});
     var nm=div.querySelector(".nm-input");if(nm)nm.addEventListener("change",function(){l.nombre=nm.value;render();saveLogros();});
     var ds=div.querySelector(".ds-input");if(ds)ds.addEventListener("change",function(){l.descripcion=ds.value;debounce("l",saveLogros);});
     var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;debounce("l",saveLogros);});
@@ -750,7 +901,21 @@ function render(){
   document.getElementById("resumenbtn").style.display=gm?"inline-block":"none";
   document.getElementById("dm-fab").style.display="inline-flex";
   if(!gm&&editMode){editMode=false;var te=document.getElementById("t-edit");if(te)te.checked=false;}
+  if(!editMode)chainSource=null;
   renderTabs();renderList();renderGlobal();
+}
+// Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
+var liveTimer=null, liveBusy=false;
+function startLive(){ stopLive(); liveTimer=setInterval(liveTick,5000); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} }
+function liveTick(){
+  if(!currentCamp||document.hidden||liveBusy||editMode)return;
+  if(document.getElementById("app").style.display==="none")return;
+  liveBusy=true;
+  fetch(FB+"/campanas/"+currentCamp+"/progreso.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():undefined;}).then(function(p){
+    liveBusy=false; if(p===undefined)return; p=p||{};
+    if(JSON.stringify(p)!==JSON.stringify(progreso)){ var y=window.scrollY; progreso=p; renderTabs(); renderList(); renderGlobal(); window.scrollTo(0,y); }
+  }).catch(function(){liveBusy=false;});
 }
 
 // ====== wiring ======
@@ -785,6 +950,8 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("guiagm-modal").addEventListener("click",function(e){if(e.target.id==="guiagm-modal")closeGuiaGM();});
   document.getElementById("resumen-close").addEventListener("click",closeResumen);
   document.getElementById("resumen-modal").addEventListener("click",function(e){if(e.target.id==="resumen-modal")closeResumen();});
+  document.getElementById("cadenas-close").addEventListener("click",closeCadenas);
+  document.getElementById("cadenas-modal").addEventListener("click",function(e){if(e.target.id==="cadenas-modal")closeCadenas();});
   document.getElementById("camp-whoami").addEventListener("click",openPerfil);
   document.getElementById("whoami").addEventListener("click",openPerfil);
   document.getElementById("perfil-close").addEventListener("click",closePerfil);
