@@ -30,7 +30,6 @@
     </div>
     <button class="btn dm" id="crear-camp" style="display:none;">➕ Crear campaña</button>
     <button class="btn dm" id="crear-usuario" style="display:none;">➕ Crear usuario</button>
-    <button class="btn" id="guiagm-btn">📖 Guía GM</button>
     <span class="who" id="camp-whoami" title="Ver mi perfil"></span>
     <button class="btn" id="camp-logout">Salir</button>
   </div>
@@ -78,6 +77,7 @@
 </div>
 
 <button class="dm-fab" id="dm-fab" type="button">📖 Cómo funciona</button>
+<button class="dm-fab" id="guiagm-fab" type="button">📖 Guía GM</button>
 
 <div class="modal" id="guia-modal">
   <div class="modal-card">
@@ -273,6 +273,7 @@ function show(which){
   document.getElementById("campaigns").style.display=(which==="camp")?"block":"none";
   document.getElementById("app").style.display=(which==="app")?"block":"none";
   document.getElementById("dm-fab").style.display=(which==="app")?"inline-flex":"none";
+  document.getElementById("guiagm-fab").style.display=(which==="camp")?"inline-flex":"none";
 }
 
 // ====== PERFIL ======
@@ -777,7 +778,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("dm-fab").addEventListener("click",openGuia);
   document.getElementById("guia-close-btn").addEventListener("click",closeGuia);
   document.getElementById("guia-modal").addEventListener("click",function(e){if(e.target.id==="guia-modal")closeGuia();});
-  document.getElementById("guiagm-btn").addEventListener("click",openGuiaGM);
+  document.getElementById("guiagm-fab").addEventListener("click",openGuiaGM);
   document.getElementById("guiagm-close-btn").addEventListener("click",closeGuiaGM);
   document.getElementById("guiagm-edit-btn").addEventListener("click",toggleGuiaGMEdit);
   document.getElementById("guiagm-save-btn").addEventListener("click",saveGuiaGM);
