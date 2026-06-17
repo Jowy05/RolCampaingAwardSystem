@@ -328,14 +328,16 @@
   .perfil-feat .fic.r-legendario{border-color:#ff8c3c;box-shadow:0 0 10px rgba(255,140,60,.55);}
   .perfil-feat .fic.r-mitica{border-color:#ff2d2d;box-shadow:0 0 13px rgba(255,45,45,.75);}
   .d-mitica{background:#4d0f0f;color:#ff6b6b;}
-  /* ===== Inventario ===== */
-  .inv{max-width:560px;}
+  /* ===== Inventario (2 columnas: Objetos izq. ancho · Dinero der.) ===== */
+  .inv{display:flex;gap:18px;align-items:flex-start;}
+  .inv-objetos{flex:1 1 auto;min-width:0;}
+  .inv-dinero{flex:0 0 250px;background:#11202c;border:1px solid var(--line);border-radius:10px;padding:12px;}
   .inv-h{font-size:15px;font-weight:600;color:#fff;margin-bottom:8px;}
-  .inv-coins{display:flex;gap:10px;flex-wrap:wrap;}
-  .coin{display:flex;flex-direction:column;gap:3px;background:#16242f;border:1px solid var(--line);border-radius:8px;padding:8px 10px;}
+  .inv-coins{display:flex;flex-direction:column;gap:8px;}
+  .coin{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;background:#16242f;border:1px solid var(--line);border-radius:8px;padding:8px 10px;}
   .coin-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
   .coin-pt .coin-l{color:#dbe7f5;} .coin-or .coin-l{color:#f0c33c;} .coin-pl .coin-l{color:#cdd6df;} .coin-br .coin-l{color:#d08a52;}
-  .coin-in{width:78px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px;outline:none;}
+  .coin-in{width:96px;flex:0 0 auto;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px;outline:none;}
   .coin-in:focus{border-color:var(--accent);}
   .inv-add{margin-bottom:12px;}
   .inv-add .an{flex:2;min-width:120px;} .inv-add .ar{flex:0 0 auto;width:92px;}
@@ -350,7 +352,7 @@
   .inv-del{flex:0 0 auto;background:#3a1c1c;border:1px solid #6b2a2a;color:#ffb3b3;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px;}
   .inv-total{margin-top:14px;text-align:right;font-size:15px;color:var(--text);}
   .inv-total b{color:var(--accent);}
-  @media(max-width:600px){ .inv-nom-in{flex:1 1 100%;} .coin-in{width:62px;} .inv-add .ar{width:70px;} }
+  @media(max-width:600px){ .inv{flex-direction:column;} .inv-dinero{flex:1 1 auto;width:100%;box-sizing:border-box;} .inv-nom-in{flex:1 1 100%;} .inv-add .ar{width:70px;} }
 
   /* ===== Logro oculto / bloqueado / herramientas de tarjeta ===== */
   .ach.oculto{opacity:.9;border-left-color:#5a4b7a;}
