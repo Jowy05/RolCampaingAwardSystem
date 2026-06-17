@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
 
@@ -239,6 +239,8 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
+var APP_VER=21; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
   "Didac":{pass:"a2fc86bac4cec78448d73cbd19b5e77df108a861a5d553ac1a6663fa8069cfeb",rol:"gm"},
@@ -417,14 +419,14 @@ var NOM_CATS=["Mejor acción de la sesión","Peor acción de la sesión","Acció
 // Prestigio: +1 estrella y +500 XP por cada campaña EN LA QUE PARTICIPAS que esté bloqueada (terminada).
 function computarCuenta(camps,user){
   camps=camps||{};
-  var misCamps=[],total=0,xpTotal=0,prestigio=0,premios={};
+  var misCamps=[],total=0,xpTotal=0,prestigio=0,premios={},titulos=[];
   Object.keys(camps).forEach(function(id){
     var c=camps[id]; if(!c||!c.info)return; var info=c.info;
     // premios (nominaciones): el premio de cada categoría/sesión se lo lleva SOLO quien más votos tiene (empate: todos los líderes). Se cuenta siempre.
     var noms=c.nominaciones||{};
     Object.keys(noms).forEach(function(sid){ var v=noms[sid]&&noms[sid].votos; if(!v)return; Object.keys(v).forEach(function(cat){ var vv=v[cat]||{},tal={},mx=0; Object.keys(vv).forEach(function(voter){var n=vv[voter];if(n){tal[n]=(tal[n]||0)+1;if(tal[n]>mx)mx=tal[n];}}); if(mx>0&&tal[user]===mx)premios[cat]=(premios[cat]||0)+1; }); });
     var esMiembro=(info.gm===user)||(info.miembros&&info.miembros[user])||(info.gms&&info.gms[user]);
-    var logros=toArr(c.logros),prog=c.progreso||{},tiles=[],xpCamp=0;
+    var logros=toArr(c.logros),prog=c.progreso||{},tiles=[],xpCamp=0,titsCamp=[];
     logros.forEach(function(l){
       var s=slug(l.nombre),pe=prog[s]; if(!pe)return;
       var por=(pe&&typeof pe==="object")?pe.por:null, cat=l.categoria, esMio=false;
@@ -432,9 +434,10 @@ function computarCuenta(camps,user){
       else if(cat==="gm"){ esMio=(info.gm===user); }
       else if(l.personaje){ esMio=(l.personaje===user); }
       else { esMio=(pe.ganadores?(pe.ganadores.indexOf(user)>=0):(por===user)); }
-      if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); }
+      if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); if(l.titulo)titsCamp.push({t:l.titulo,r:difKey(l.dificultad)||"comun"}); }
     });
     if(!esMiembro) return;
+    titulos=titulos.concat(titsCamp);
     if(info.bloqueada){ prestigio++; xpCamp+=1000; }
     total+=tiles.length; xpTotal+=xpCamp;
     misCamps.push({id:id,nombre:info.nombre||id,foto:info.foto||null,gm:info.gm,bloqueada:!!info.bloqueada,logros:tiles});
@@ -442,7 +445,8 @@ function computarCuenta(camps,user){
   // Logro especial hardcodeado solo para el Owner (no está en la BD).
   var especiales=[];
   if(rolDe(user)==="owner"){ var esp={nombre:"Creador del todo",descripcion:"Logro obtenido por forjar este sistema de logros.",dificultad:"Mítica",icono:"👑",categoria:"especial"}; especiales.push(esp); total+=1; xpTotal+=xpDeRareza(esp.dificultad); }
-  return {misCamps:misCamps,total:total,xpTotal:xpTotal,nivel:nivelDeXP(xpTotal),prestigio:prestigio,premios:premios,especiales:especiales};
+  var titU=[],seenT={}; titulos.forEach(function(x){ if(x&&x.t&&!seenT[x.t]){seenT[x.t]=1;titU.push(x);} });
+  return {misCamps:misCamps,total:total,xpTotal:xpTotal,nivel:nivelDeXP(xpTotal),prestigio:prestigio,premios:premios,especiales:especiales,titulos:titU};
 }
 
 function utf8bytes(str){
@@ -479,6 +483,13 @@ function sha256hex(str){
 
 function toArr(v){ if(Array.isArray(v))return v; if(v&&typeof v==="object")return Object.keys(v).map(function(k){return v[k];}); return []; }
 function setStatus(t){var s=document.getElementById("savestatus");if(s)s.textContent=t;}
+// Auto-actualización: si /appver en Firebase es mayor que APP_VER, recarga con ?v= para saltarse la caché. Guarda contra bucles.
+function checkVersion(){
+  fetch(FB+"/appver.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(v){
+    v=Number(v)||0; if(v<=APP_VER)return;
+    try{ var u=new URL(location.href); if(u.searchParams.get("v")===String(v))return; u.searchParams.set("v",String(v)); location.replace(u.toString()); }catch(e){}
+  }).catch(function(){});
+}
 function show(which){
   document.getElementById("login").style.display=(which==="login")?"flex":"none";
   document.getElementById("campaigns").style.display=(which==="camp")?"block":"none";
@@ -493,17 +504,19 @@ var miPerfilFoto=null, perfilLogros=[], perfilUser=null, miNivelCuenta=1, pendin
 function avatarChip(){ var mc=marcoNivel(miNivelCuenta),cls=mc?(" mn-"+mc):""; return miPerfilFoto?('<img class="avatar-sm'+cls+'" src="'+miPerfilFoto+'" alt="">'):('<span class="avatar-ini'+cls+'">'+esc((currentUser||"?").charAt(0).toUpperCase())+'</span>'); }
 function updateWhoami(){
   var base='<span class="who-name">'+esc(currentUser)+'</span>';
+  var tit=(miTitulo&&miTitulo.t)?('<span class="who-titulo titulo r-'+(miTitulo.r||"comun")+'">'+esc(miTitulo.t)+'</span>'):'';
   var vj=(vistaJugador&&esOwnerReal());
-  var w1=document.getElementById("camp-whoami"); if(w1)w1.innerHTML=avatarChip()+base+'<span class="who-rol'+(vj?" vj":"")+'">'+(vj?"👁️ vista jugador":rolDe(currentUser))+'</span>';
-  var w2=document.getElementById("whoami"); if(w2)w2.innerHTML=avatarChip()+base;
+  var w1=document.getElementById("camp-whoami"); if(w1)w1.innerHTML=avatarChip()+base+tit+'<span class="who-rol'+(vj?" vj":"")+'">'+(vj?"👁️ vista jugador":rolDe(currentUser))+'</span>';
+  var w2=document.getElementById("whoami"); if(w2)w2.innerHTML=avatarChip()+base+tit;
 }
 function loadMiPerfil(cb){
   var t=new Date().getTime();
   Promise.all([
     fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/foto.json?x="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
     fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/vitrina.json?x="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
-    fetch(FB+"/campanas.json?x="+t).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
-  ]).then(function(a){ miPerfilFoto=(typeof a[0]==="string")?a[0]:null; miVitrina=Array.isArray(a[1])?a[1]:[]; miNivelCuenta=computarCuenta(a[2]||{},currentUser).nivel.lvl; if(cb)cb(); });
+    fetch(FB+"/campanas.json?x="+t).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};}),
+    fetch(FB+"/perfiles/"+encodeURIComponent(currentUser)+"/titulo.json?x="+t).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(a){ miPerfilFoto=(typeof a[0]==="string")?a[0]:null; miVitrina=Array.isArray(a[1])?a[1]:[]; miNivelCuenta=computarCuenta(a[2]||{},currentUser).nivel.lvl; miTitulo=(a[3]&&a[3].t)?a[3]:null; if(cb)cb(); });
 }
 function openPerfil(user,volverA){
   perfilUser=(typeof user==="string"&&user)?user:currentUser;
@@ -545,11 +558,22 @@ function renderPerfil(){
     var cu=computarCuenta(camps,user), nv=cu.nivel, pctxp=nv.need?Math.round(nv.en/nv.need*100):0;
     var mc=marcoNivel(nv.lvl), avcls=mc?(" mn-"+mc):"";
     if(propio)miNivelCuenta=nv.lvl;
+    var eqTit=(perf.titulo&&perf.titulo.t)?perf.titulo:null;
+    if(propio)miTitulo=eqTit;
+    var titHead=eqTit?('<div class="titulo-eq titulo r-'+(eqTit.r||"comun")+'">🏷️ '+esc(eqTit.t)+'</div>'):'';
     var av=foto?('<img src="'+foto+'" alt="">'):esc((user||"?").charAt(0).toUpperCase());
     var estr=cu.prestigio?(' <span class="prestigio" title="Prestigio: campañas terminadas">'+new Array(cu.prestigio+1).join("⭐")+'</span>'):'';
-    var html='<div class="perfil-head"><div class="avatar'+avcls+'">'+av+'</div><div><div class="perfil-nombre">'+esc(user)+'<span class="nivel-badge">Nivel '+nv.lvl+'</span></div><span class="rol-badge rol-'+rolDe(user)+'">'+rolDe(user)+'</span>'+estr+'</div></div>';
+    var html='<div class="perfil-head"><div class="avatar'+avcls+'">'+av+'</div><div><div class="perfil-nombre">'+esc(user)+'<span class="nivel-badge">Nivel '+nv.lvl+'</span></div><span class="rol-badge rol-'+rolDe(user)+'">'+rolDe(user)+'</span>'+estr+titHead+'</div></div>';
     html+='<div class="xp-wrap"><div class="xp-bar"><i style="width:'+pctxp+'%"></i></div><div class="xp-lbl">'+nv.en+' / '+nv.need+' XP para el nivel '+(nv.lvl+1)+' · '+cu.xpTotal+' XP totales</div></div>';
     html+='<div class="perfil-stats"><div class="stat-box"><div class="stat-num">'+cu.total+'</div><div class="stat-lbl">Logros</div></div><div class="stat-box"><div class="stat-num">'+cu.misCamps.length+'</div><div class="stat-lbl">Campañas</div></div><div class="stat-box"><div class="stat-num">'+cu.prestigio+'</div><div class="stat-lbl">Prestigio</div></div></div>';
+    if(propio){
+      html+='<div class="titulos-box"><h3 class="perfil-h3">🏷️ Título</h3>';
+      if(!cu.titulos||!cu.titulos.length) html+='<p style="color:var(--muted);font-size:12.5px;">Aún no tienes títulos. Consigue un logro que otorgue uno.</p>';
+      else { html+='<div class="titulo-chips"><button class="titulo-chip'+(!eqTit?" sel":"")+'" data-tit="" type="button">Ninguno</button>';
+        cu.titulos.forEach(function(x){ var on=eqTit&&eqTit.t===x.t; html+='<button class="titulo-chip titulo r-'+(x.r||"comun")+(on?" sel":"")+'" data-tit="'+esc(x.t)+'" data-r="'+esc(x.r||"comun")+'" type="button">'+esc(x.t)+'</button>'; });
+        html+='</div>'; }
+      html+='</div>';
+    }
     var pk=Object.keys(cu.premios);
     if(pk.length){ html+='<div class="premios"><h3 class="perfil-h3">🏅 Premios</h3>'; pk.forEach(function(cat){ html+='<span class="premio-chip">'+esc(cat)+' ×'+cu.premios[cat]+'</span>'; }); html+='</div>'; }
     html+='<div class="perfil-feat" id="perfil-feat"></div>';
@@ -590,6 +614,8 @@ function renderPerfil(){
     if(propio){
       var favs=body.querySelectorAll(".fav-btn[data-fav]");
       for(var k=0;k<favs.length;k++){(function(btn){btn.addEventListener("click",function(){toggleFav(btn.getAttribute("data-fav"));});})(favs[k]);}
+      var tchips=body.querySelectorAll(".titulo-chip");
+      for(var tc=0;tc<tchips.length;tc++){(function(btn){btn.addEventListener("click",function(){equiparTitulo(btn.getAttribute("data-tit"),btn.getAttribute("data-r"));});})(tchips[tc]);}
       var ar=document.getElementById("add-recuerdo"); if(ar)ar.addEventListener("click",function(){addRecuerdo(user);});
       var dels=body.querySelectorAll(".rec-del");
       for(var di=0;di<dels.length;di++){(function(btn){btn.addEventListener("click",function(){borrarRecuerdo(user,btn.getAttribute("data-rid"));});})(dels[di]);}
@@ -598,6 +624,11 @@ function renderPerfil(){
     for(var li=0;li<lks.length;li++){(function(btn){btn.addEventListener("click",function(){likeRecuerdo(user,btn.getAttribute("data-rid"));});})(lks[li]);}
     renderFeatured(perfilLogros.length?0:-1);
   }).catch(function(){body.innerHTML="No se pudo cargar el perfil.";});
+}
+function equiparTitulo(t,r){
+  var url=FB+"/perfiles/"+encodeURIComponent(currentUser)+"/titulo.json";
+  if(!t){ miTitulo=null; fetch(url,{method:"DELETE"}).then(function(){updateWhoami();renderPerfil();}).catch(function(){}); }
+  else { miTitulo={t:t,r:r||"comun"}; fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(miTitulo)}).then(function(){updateWhoami();renderPerfil();}).catch(function(){}); }
 }
 function addRecuerdo(user){
   if(user!==currentUser)return;
@@ -818,6 +849,10 @@ function renderCampaigns(camps){
     if(entra){var b=document.createElement("button");b.className="btn";b.textContent="Entrar";b.onclick=function(){entrarCampana(id);};act.appendChild(b);}
     else{var s=document.createElement("span");s.className="rol-badge";s.textContent=info.bloqueada?"🔒 Bloqueada":"🔒 No asignado";act.appendChild(s);}
     if(manda){var mb=document.createElement("button");mb.className="btn dm";mb.textContent="👥 Miembros / GM";mb.onclick=function(){abrirMiembros(id,info);};act.appendChild(mb);}
+    var wiki=(typeof info.wiki==="string"&&info.wiki)?info.wiki:"", gmDe=esGM(info);
+    if(wiki){ var wb=document.createElement("button");wb.className="btn";wb.textContent="📖 Wiki";wb.title="Abrir la documentación de la campaña";wb.onclick=function(){abrirWiki(wiki);};act.appendChild(wb);
+      if(gmDe){ var we=document.createElement("button");we.className="btn";we.textContent="✏️";we.title="Editar el enlace de la wiki";we.onclick=function(){editarWiki(id,wiki);};act.appendChild(we); } }
+    else if(gmDe){ var wb2=document.createElement("button");wb2.className="btn";wb2.textContent="📖 Añadir wiki";wb2.onclick=function(){editarWiki(id,"");};act.appendChild(wb2); }
     list.appendChild(d);
   });
   renderFeed(camps);
@@ -844,6 +879,17 @@ function renderFeed(camps){
   fe.innerHTML=html;
   var fis=fe.querySelectorAll(".feed-item");
   for(var i2=0;i2<fis.length;i2++){(function(el){var u=el.getAttribute("data-user");if(u)el.addEventListener("click",function(){openPerfil(u);});})(fis[i2]);}
+}
+function abrirWiki(url){ if(/^https?:\/\//i.test(url))window.open(url,"_blank","noopener"); else alert("El enlace de la wiki no es válido."); }
+function editarWiki(id,actual){
+  if(!id)return;
+  var raw=window.prompt("Pega el enlace a la wiki/documentación de la campaña (https://…).\nDéjalo vacío para quitarla:",actual||"");
+  if(raw===null)return; // cancelado
+  var url=raw.trim();
+  if(url && !/^https?:\/\//i.test(url)){ alert("El enlace debe empezar por http:// o https://"); return; }
+  setStatus("Guardando…");
+  var req=url?{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(url)}:{method:"DELETE"};
+  fetch(FB+"/campanas/"+id+"/info/wiki.json",req).then(function(r){if(!r.ok)throw 0;setStatus("✓ Guardado");logEvento(url?"📖 actualizó la wiki":"📖 quitó la wiki","",id);loadCampaigns();}).catch(function(){setStatus("⚠ Error");alert("No se pudo guardar el enlace.");});
 }
 function crearCampana(){
   if(!puedeCrear())return;
@@ -1456,7 +1502,7 @@ function buildCard(l){
   var html='<div class="ic'+rcls+'">'+iconHTML(l)+(on?'<span class="vbadge">✓</span>':"")+(oculto?'<span class="ocbadge" title="Oculto para los jugadores">🙈</span>':"")+gmBadge(l)+'</div>';
   if(editMode){
     html+='<div class="movebtns"><button class="movebtn" data-d="-1" title="Subir">▲</button><button class="movebtn" data-d="1" title="Bajar">▼</button></div>';
-    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div>'+difSelect(l)+iconPicker(l.icono||"","card-ic",true)+
+    html+='<div class="info"><input class="nm-input" value="'+esc(l.nombre)+'"><textarea class="ds-input" rows="2">'+esc(l.descripcion||"")+'</textarea><div class="rwedit">🎁 <input class="rw-input" value="'+esc(l.recompensa||"")+'" placeholder="Recompensa"></div><div class="rwedit">🏷️ <input class="tit-input" value="'+esc(l.titulo||"")+'" placeholder="Título que otorga (opcional)"></div>'+difSelect(l)+iconPicker(l.icono||"","card-ic",true)+
       '<div class="cardtools"><button class="ctbtn chainbtn'+(chainSource===l?" act":"")+'" type="button">🔗 '+(chainSource===l?"elige el siguiente…":"Cadena")+'</button>'+
       '<button class="ctbtn ocbtn'+(oculto?" act":"")+'" type="button">'+(oculto?"🙈 Oculto":"👁 Visible")+'</button>'+
       (l.requiere?('<span class="ctnote">🔗 tras: '+esc(reqNombre(l))+'</span>'):"")+'</div></div>';
@@ -1491,6 +1537,7 @@ function buildCard(l){
     });
     var ds=div.querySelector(".ds-input");if(ds)ds.addEventListener("change",function(){l.descripcion=ds.value;debounce("l",saveLogros);});
     var ri=div.querySelector(".rw-input");if(ri)ri.addEventListener("input",function(){l.recompensa=ri.value;debounce("l",saveLogros);});
+    var tti=div.querySelector(".tit-input");if(tti)tti.addEventListener("change",function(){var v=tti.value.trim();if(v)l.titulo=v;else delete l.titulo;saveLogros();});
     var di=div.querySelector(".dif-input");if(di)di.addEventListener("change",function(){if(di.value)l.dificultad=di.value;else delete l.dificultad;render();saveLogros();});
     var cp=div.querySelectorAll(".card-ic .icbtn");for(var b3=0;b3<cp.length;b3++){(function(btn){btn.addEventListener("click",function(){ if(btn.getAttribute("data-img")){iconoTarget=l;pendingPjIcon=null;document.getElementById("icono-input").click();return;} var v=btn.getAttribute("data-ic");if(v)l.icono=v;else delete l.icono;render();saveLogros();});})(cp[b3]);}
     var dl=div.querySelector(".del");if(dl)dl.addEventListener("click",function(){deleteLogro(l);});
@@ -1721,6 +1768,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("ganadores-ok").addEventListener("click",concederGanadores);
   document.getElementById("ganadores-close").addEventListener("click",closeGanadores);
   document.getElementById("ganadores-modal").addEventListener("click",function(e){if(e.target.id==="ganadores-modal")closeGanadores();});
+  checkVersion();
   loadUsers(function(){
     var sess="";try{sess=localStorage.getItem(SESSION)||"";}catch(e){}
     if(sess&&Object.prototype.hasOwnProperty.call(USERS,sess)){
