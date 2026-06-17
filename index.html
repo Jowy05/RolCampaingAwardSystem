@@ -239,7 +239,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=24; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=25; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -445,7 +445,7 @@ function computarCuenta(camps,user){
   // Logro especial hardcodeado solo para el Owner (no está en la BD).
   var especiales=[], rolU=rolDe(user);
   if(rolU==="owner"){ var esp={nombre:"Creador del todo",descripcion:"Logro obtenido por forjar este sistema de logros.",dificultad:"Mítica",icono:"👑",categoria:"especial",titulo:"Rey de reyes"}; especiales.push(esp); total+=1; xpTotal+=xpDeRareza(esp.dificultad); titulos.push({t:esp.titulo,r:difKey(esp.dificultad)||"comun"}); }
-  if(rolU==="gm"||rolU==="owner"){ var espGM={nombre:"GM",descripcion:"Logro por convertirse en Game Master",dificultad:"Épico",icono:"🎲",categoria:"especial"}; especiales.push(espGM); total+=1; xpTotal+=xpDeRareza(espGM.dificultad); }
+  if(rolU==="gm"||rolU==="owner"){ var espGM={nombre:"GM",descripcion:"Logro por convertirse en Game Master",dificultad:"Épico",icono:"🎲",categoria:"especial",titulo:"Maestro del Juego"}; especiales.push(espGM); total+=1; xpTotal+=xpDeRareza(espGM.dificultad); titulos.push({t:espGM.titulo,r:difKey(espGM.dificultad)||"comun"}); }
   var titU=[],seenT={}; titulos.forEach(function(x){ if(x&&x.t&&!seenT[x.t]){seenT[x.t]=1;titU.push(x);} });
   return {misCamps:misCamps,total:total,xpTotal:xpTotal,nivel:nivelDeXP(xpTotal),prestigio:prestigio,premios:premios,especiales:especiales,titulos:titU};
 }
