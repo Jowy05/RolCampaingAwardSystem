@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 
@@ -134,6 +134,7 @@
       <h2>Mi perfil</h2>
       <button class="btn dm" id="perfil-foto-btn" type="button">📷 Cambiar foto</button>
       <button class="btn" id="perfil-pass-btn" type="button">🔑 Contraseña</button>
+      <button class="btn" id="perfil-vista-btn" type="button" style="display:none;">👁️ Ver como jugador</button>
       <button class="btn" id="perfil-close" type="button">✕ Cerrar</button>
     </div>
     <div class="modal-body" id="perfil-body"></div>
@@ -237,6 +238,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // === CUENTAS: hash SHA-256 de la contraseña + rol ===
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
+var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
   "Didac":{pass:"a2fc86bac4cec78448d73cbd19b5e77df108a861a5d553ac1a6663fa8069cfeb",rol:"gm"},
@@ -247,7 +249,10 @@ const SEED_USERS={
 };
 function aplicarUsuarios(obj){ USERS={}; ROL={}; Object.keys(obj||{}).forEach(function(n){ var v=obj[n]||{}; USERS[n]=v.pass||""; ROL[n]=v.rol||"jugador"; }); }
 aplicarUsuarios(SEED_USERS);
-function rolDe(u){return ROL[u]||"jugador";}
+// rolDe: rol efectivo. Si el Owner activa "vista jugador", se ve a sí mismo como jugador (pierde el super-poder de owner; NO afecta a ser GM real de una campaña suya).
+function rolDe(u){ if(vistaJugador && u===currentUser) return "jugador"; return ROL[u]||"jugador"; }
+// esOwnerReal: rol REAL (ignora la vista jugador). Solo para mostrar el botón de alternar.
+function esOwnerReal(){ return ROL[currentUser]==="owner"; }
 // puedeCrear: por ROL GLOBAL — quién puede crear campañas y usuarios.
 function puedeCrear(){var r=rolDe(currentUser);return r==="owner"||r==="gm";}
 function esOwner(){return rolDe(currentUser)==="owner";}
@@ -486,7 +491,8 @@ var miPerfilFoto=null, perfilLogros=[], perfilUser=null, miNivelCuenta=1, pendin
 function avatarChip(){ var mc=marcoNivel(miNivelCuenta),cls=mc?(" mn-"+mc):""; return miPerfilFoto?('<img class="avatar-sm'+cls+'" src="'+miPerfilFoto+'" alt="">'):('<span class="avatar-ini'+cls+'">'+esc((currentUser||"?").charAt(0).toUpperCase())+'</span>'); }
 function updateWhoami(){
   var base='<span class="who-name">'+esc(currentUser)+'</span>';
-  var w1=document.getElementById("camp-whoami"); if(w1)w1.innerHTML=avatarChip()+base+'<span class="who-rol">'+rolDe(currentUser)+'</span>';
+  var vj=(vistaJugador&&esOwnerReal());
+  var w1=document.getElementById("camp-whoami"); if(w1)w1.innerHTML=avatarChip()+base+'<span class="who-rol'+(vj?" vj":"")+'">'+(vj?"👁️ vista jugador":rolDe(currentUser))+'</span>';
   var w2=document.getElementById("whoami"); if(w2)w2.innerHTML=avatarChip()+base;
 }
 function loadMiPerfil(cb){
@@ -504,6 +510,7 @@ function openPerfil(user,volverA){
   var h2=document.querySelector("#perfil-modal .modal-head h2"); if(h2)h2.textContent=propio?"Mi perfil":("Perfil de "+perfilUser);
   document.getElementById("perfil-foto-btn").style.display=propio?"inline-block":"none";
   document.getElementById("perfil-pass-btn").style.display=propio?"inline-block":"none";
+  var vb=document.getElementById("perfil-vista-btn"); if(vb){ vb.style.display=(esOwnerReal()&&propio)?"inline-block":"none"; vb.textContent=vistaJugador?"👑 Volver a Owner":"👁️ Ver como jugador"; }
   document.getElementById("perfil-modal").classList.add("open");renderPerfil();
 }
 function closePerfil(){
@@ -754,16 +761,30 @@ function registrarUsuario(){
     .then(function(r){if(!r.ok)throw 0; USERS[nombre]=sha256hex(pass); ROL[nombre]="jugador"; try{localStorage.setItem(SESSION,nombre);}catch(e){} document.getElementById("li-err").textContent=""; alert("✅ ¡Cuenta creada! Ya estás dentro. Pídele a un GM que te añada a una campaña."); startSession(nombre);})
     .catch(function(){document.getElementById("li-err").textContent="No se pudo crear la cuenta.";});
 }
-function startSession(user){
-  currentUser=user;miPerfilFoto=null;
+// aplicarRolUI: ajusta los botones del menú según el rol EFECTIVO (respeta la vista jugador).
+function aplicarRolUI(){
   document.getElementById("crear-camp").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("crear-usuario").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("cuentas-btn").style.display="inline-block";
   document.getElementById("camp-actions-bar").style.display="flex";
   document.getElementById("guiagm-fab").textContent=puedeCrear()?"📖 Guía GM":"📖 Ayuda";
+}
+function startSession(user){
+  currentUser=user;miPerfilFoto=null;vistaJugador=false;
+  aplicarRolUI();
   updateWhoami();
   loadMiPerfil(updateWhoami);
   showCampaigns();
+}
+// toggleVistaJugador: el Owner alterna entre vista de owner y vista de jugador normal.
+function toggleVistaJugador(){
+  if(!esOwnerReal())return;
+  vistaJugador=!vistaJugador;
+  aplicarRolUI(); updateWhoami();
+  var vb=document.getElementById("perfil-vista-btn"); if(vb)vb.textContent=vistaJugador?"👑 Volver a Owner":"👁️ Ver como jugador";
+  if(document.getElementById("app").style.display!=="none"){ render(); }
+  else if(document.getElementById("campaigns").style.display!=="none"){ loadCampaigns(); }
+  renderPerfil();
 }
 
 // ====== CAMPAÑAS ======
@@ -1607,6 +1628,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("perfil-modal").addEventListener("click",function(e){if(e.target.id==="perfil-modal")closePerfil();});
   document.getElementById("perfil-foto-btn").addEventListener("click",function(){fotoCampId=null;document.getElementById("foto-input").click();});
   document.getElementById("perfil-pass-btn").addEventListener("click",cambiarPass);
+  document.getElementById("perfil-vista-btn").addEventListener("click",toggleVistaJugador);
   document.getElementById("foto-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(fotoCampId){cambiarFotoCampana(f,fotoCampId);fotoCampId=null;}else cambiarFoto(f);}e.target.value="";});
   document.getElementById("icono-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(pendingPjIcon){cambiarIconoPJ(f,pendingPjIcon);pendingPjIcon=null;}else cambiarIconoLogro(f);}e.target.value="";});
   document.getElementById("backup-input").addEventListener("change",function(e){if(e.target.files&&e.target.files[0])importarTodo(e.target.files[0]);e.target.value="";});
