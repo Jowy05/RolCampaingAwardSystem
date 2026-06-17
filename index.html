@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 
@@ -239,7 +239,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=22; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=23; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -303,10 +303,10 @@ function renderDirectorio(bodyId, users, admin){
     var camps=a[0]||{}, perfiles=a[1]||{};
     var html='<div class="dir-list">';
     users.forEach(function(u){
-      var cu=computarCuenta(camps,u), pf=perfiles[u]||{}, foto=(typeof pf.foto==="string")?pf.foto:null;
+      var cu=computarCuenta(camps,u), pf=perfiles[u]||{}, foto=(typeof pf.foto==="string")?pf.foto:null, eqt=(pf.titulo&&pf.titulo.t)?pf.titulo:null;
       var avc=marcoNivel(cu.nivel.lvl), avcls=avc?(" mn-"+avc):"", yo=(u===currentUser);
       var av=foto?('<img class="avatar-sm'+avcls+'" src="'+foto+'" alt="">'):('<span class="avatar-ini'+avcls+'">'+esc(u.charAt(0).toUpperCase())+'</span>');
-      html+='<div class="dir-row"><div class="dir-main" data-user="'+esc(u)+'" title="Ver perfil">'+av+'<div class="dir-tx"><div class="dir-name">'+esc(u)+' <span class="rol-badge rol-'+rolDe(u)+'">'+rolDe(u)+'</span></div><div class="dir-sub">Nivel '+cu.nivel.lvl+' · '+cu.total+' logros'+(cu.prestigio?(' · '+cu.prestigio+'⭐'):'')+'</div></div></div>';
+      html+='<div class="dir-row"><div class="dir-main" data-user="'+esc(u)+'" title="Ver perfil">'+av+'<div class="dir-tx"><div class="dir-name">'+esc(u)+' <span class="rol-badge rol-'+rolDe(u)+'">'+rolDe(u)+'</span></div>'+(eqt?('<div class="dir-titulo titulo r-'+(eqt.r||"comun")+'">🏷️ '+esc(eqt.t)+'</div>'):'')+'<div class="dir-sub">Nivel '+cu.nivel.lvl+' · '+cu.total+' logros'+(cu.prestigio?(' · '+cu.prestigio+'⭐'):'')+'</div></div></div>';
       if(admin){ html+='<div class="dir-admin"><select class="cuenta-rol" data-u="'+esc(u)+'"'+(yo?' disabled':'')+'>'+['jugador','gm','owner'].map(function(rr){return '<option value="'+rr+'"'+(rolDe(u)===rr?' selected':'')+'>'+rr+'</option>';}).join('')+'</select><button class="btn cuenta-pass" data-u="'+esc(u)+'" type="button"'+(yo?' disabled':'')+' title="Restablecer contraseña">🔑</button><button class="btn cuenta-del" data-u="'+esc(u)+'" type="button"'+(yo?' disabled':'')+' title="Borrar cuenta">🗑</button></div>'; }
       html+='</div>';
     });
