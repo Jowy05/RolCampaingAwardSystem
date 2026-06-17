@@ -339,6 +339,11 @@
   .coin-pt .coin-l{color:#dbe7f5;} .coin-or .coin-l{color:#f0c33c;} .coin-pl .coin-l{color:#cdd6df;} .coin-br .coin-l{color:#d08a52;}
   .coin-in{width:96px;flex:0 0 auto;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:14px;outline:none;}
   .coin-in:focus{border-color:var(--accent);}
+  .inv-conv{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .convbtn{background:#1d2c3a;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 9px;font-size:12.5px;cursor:pointer;text-align:left;}
+  .convbtn:hover{background:var(--cardh);border-color:var(--accent2);}
+  .convbtn.compact{background:#2a4a2f;border-color:#3d6b45;color:#cdeccd;font-weight:600;margin-top:2px;}
+  .convbtn.compact:hover{background:#356238;}
   .inv-add{margin-bottom:12px;}
   .inv-add .an{flex:2;min-width:120px;} .inv-add .ar{flex:0 0 auto;width:92px;}
   .inv-list{display:flex;flex-direction:column;gap:6px;}
