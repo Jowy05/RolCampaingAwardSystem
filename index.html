@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=23">
+<link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
 
@@ -239,7 +239,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=29; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=31; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -291,6 +291,74 @@ function crearUsuario(after){
 // ====== PANEL DE CUENTAS (solo Owner): ver y modificar todas las cuentas ======
 function openCuentas(){ document.getElementById("cuentas-modal").classList.add("open"); renderCuentas(); }
 function closeCuentas(){ document.getElementById("cuentas-modal").classList.remove("open"); }
+// ====== PROPONER LOGRO (pestaña; cola de aprobación del GM) ======
+// Las propuestas viven en /campanas/{id}/info/propuestas/{pid} (subárbol info => escribible con las reglas actuales).
+function renderPropuestas(){
+  var props=(campInfo&&campInfo.propuestas)||{};
+  var gm=esGM(campInfo), bloq=!!(campInfo&&campInfo.bloqueada);
+  var puedeProponer=!bloq&&(esMiembroCampana()||gm);
+  var html='<div class="prop-wrap"><p class="prop-intro">💡 Propón logros para la campaña. El GM decide si los aprueba (al aprobar se crean como logro «Para todos», editable luego).</p>';
+  if(puedeProponer)html+='<button class="btn dm" id="prop-add" type="button">➕ Proponer logro</button>';
+  else if(bloq)html+='<p class="empty" style="padding:6px 0;">La campaña está bloqueada: no se pueden proponer logros.</p>';
+  else html+='<p class="empty" style="padding:6px 0;">Solo los miembros de la campaña pueden proponer.</p>';
+  var ids=Object.keys(props).sort(function(a,b){var fa=props[a].fecha||"",fb=props[b].fecha||"";return fa<fb?1:(fa>fb?-1:0);});
+  html+='<div class="prop-list">';
+  if(!ids.length)html+='<div class="empty" style="padding:16px;">No hay propuestas todavía.</div>';
+  ids.forEach(function(pid){ var p=props[pid]||{};
+    html+='<div class="prop-card"><div class="prop-main"><div class="prop-t">'+esc(p.titulo||"(sin título)")+'</div>'+(p.descripcion?('<div class="prop-d">'+esc(p.descripcion)+'</div>'):'')+'<div class="prop-by">✍️ '+esc(p.por||"?")+(p.fecha?(' · '+fmtFecha(p.fecha)):'')+'</div></div>';
+    if(gm)html+='<div class="prop-acts"><button class="btn dm prop-ok" data-pid="'+esc(pid)+'" type="button">✅ Aprobar</button><button class="btn prop-no" data-pid="'+esc(pid)+'" type="button">✖ Rechazar</button></div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  document.getElementById("list").innerHTML=html;
+  var add=document.getElementById("prop-add"); if(add)add.addEventListener("click",proponerLogro);
+  if(gm){
+    var oks=document.querySelectorAll("#list .prop-ok"); for(var i=0;i<oks.length;i++){(function(b){b.addEventListener("click",function(){aprobarPropuesta(b.getAttribute("data-pid"));});})(oks[i]);}
+    var nos=document.querySelectorAll("#list .prop-no"); for(var j=0;j<nos.length;j++){(function(b){b.addEventListener("click",function(){rechazarPropuesta(b.getAttribute("data-pid"));});})(nos[j]);}
+  }
+}
+function proponerLogro(){
+  if(campInfo&&campInfo.bloqueada)return;
+  if(!(esMiembroCampana()||esGM(campInfo))){alert("Solo los miembros de la campaña pueden proponer.");return;}
+  var t=(window.prompt("Título del logro que propones:","")||"").trim(); if(!t)return;
+  var sn=slug(t);
+  if(!sn){alert("Ese título no es válido. Usa letras o números.");return;}
+  if(LOGROS.some(function(l){return slug(l.nombre)===sn;})){alert("Ya existe un logro con un nombre equivalente.");return;}
+  if(Object.keys(campInfo.propuestas||{}).some(function(k){return slug((campInfo.propuestas[k].titulo)||"")===sn;})){alert("Ya hay una propuesta con un nombre equivalente.");return;}
+  var d=(window.prompt("Descripción / objetivo (opcional):","")||"").trim();
+  var pid="p"+(new Date().getTime())+"-"+Math.random().toString(36).slice(2,7);
+  var prop={titulo:t,descripcion:d,por:currentUser,fecha:new Date().toISOString()};
+  if(!campInfo.propuestas)campInfo.propuestas={};
+  campInfo.propuestas[pid]=prop;
+  setStatus("Enviando…");
+  fetch(FB+"/campanas/"+currentCamp+"/info/propuestas/"+pid+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(prop)}).then(function(r){setStatus(r.ok?"✓ Propuesta enviada":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");});
+  logEvento("💡 propuso logro",t);
+  render();
+}
+function aprobarPropuesta(pid){
+  if(!esGM(campInfo)||!pid)return;
+  var p=(campInfo.propuestas||{})[pid]; if(!p)return;
+  var sn=slug(p.titulo||""); if(!sn){alert("El título de la propuesta no es válido.");return;}
+  if(LOGROS.some(function(l){return slug(l.nombre)===sn;})){alert("Ya existe un logro con un nombre equivalente. Rechaza la propuesta o renómbrala.");return;}
+  var nuevo={nombre:p.titulo,descripcion:p.descripcion||"",categoria:"general",propuestoPor:p.por||""};
+  LOGROS.push(nuevo); render(); // optimista: muestra el logro ya
+  saveLogros().then(function(ok){
+    if(!ok){ var i=LOGROS.indexOf(nuevo); if(i>=0)LOGROS.splice(i,1); render(); alert("No se pudo guardar el logro; la propuesta sigue pendiente. Inténtalo de nuevo."); return; }
+    delete campInfo.propuestas[pid]; // solo se borra la propuesta TRAS guardar el logro con éxito
+    fetch(FB+"/campanas/"+currentCamp+"/info/propuestas/"+encodeURIComponent(pid)+".json",{method:"DELETE"}).catch(function(){});
+    logEvento("✅ aprobó propuesta",p.titulo);
+    render();
+  });
+}
+function rechazarPropuesta(pid){
+  if(!esGM(campInfo)||!pid)return;
+  var p=(campInfo.propuestas||{})[pid]; if(!p)return;
+  if(!confirm('¿Rechazar la propuesta "'+(p.titulo||"")+'"?'))return;
+  delete campInfo.propuestas[pid];
+  fetch(FB+"/campanas/"+currentCamp+"/info/propuestas/"+encodeURIComponent(pid)+".json",{method:"DELETE"}).catch(function(){});
+  logEvento("✖ rechazó propuesta",p.titulo);
+  render();
+}
 // Minijuegos: pestaña dentro de la campaña (tras Inventario). Sección preparada; los juegos llegarán después.
 function renderMinijuegos(){
   var juegos=[
@@ -1012,8 +1080,8 @@ function fbProg(id,val){
 function saveLogros(){
   var ver=new Date().getTime(); if(campInfo)campInfo.logrosVer=ver; // marca de versión: el refresco solo recarga /logros si esto cambió
   setStatus("Guardando…");
-  fetch(FB+"/campanas/"+currentCamp+"/logros.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(LOGROS)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");});
   fetch(FB+"/campanas/"+currentCamp+"/info/logrosVer.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(ver)}).catch(function(){});
+  return fetch(FB+"/campanas/"+currentCamp+"/logros.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(LOGROS)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");return r.ok;}).catch(function(){setStatus("⚠ Sin conexión");return false;});
 }
 function debounce(key,fn){if(saveTimers[key])clearTimeout(saveTimers[key]);saveTimers[key]=setTimeout(fn,700);}
 
@@ -1484,9 +1552,11 @@ function renderTabs(){
   var sg=stats(LOGROS.filter(function(l){return l.categoria==="grupo";}));
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
-  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null]].forEach(function(row){
+  var pend=Object.keys((campInfo&&campInfo.propuestas)||{}).length;
+  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["prop","💡 Propuestas",null],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
-    b.innerHTML=row[1]+(row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):"");
+    var badge=row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):((row[0]==="prop"&&pend)?(' <span class="c pend">'+pend+'</span>'):"");
+    b.innerHTML=row[1]+badge;
     b.onclick=function(){state.tab=row[0];render();};mt.appendChild(b);
   });
   var sw=document.getElementById("subtabs");
@@ -1585,6 +1655,7 @@ function buildCard(l){
 function renderList(){
   if(state.tab==="inv"){renderInventario();return;}
   if(state.tab==="mj"){renderMinijuegos();return;}
+  if(state.tab==="prop"){renderPropuestas();return;}
   var arr=viewLogros();
   if(state.filtro==="pend")arr=arr.filter(function(l){return !isDone(l);});
   else if(state.filtro==="hechos")arr=arr.filter(function(l){return isDone(l);});
