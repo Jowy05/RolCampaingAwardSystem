@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=17">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 
@@ -1530,13 +1530,11 @@ function renderInventario(){
   var sec=state.invSub||"__general__", puede=puedeEditarInv(sec);
   var d=INV[sec]||{}, dinero=d.dinero||{}, items=d.items||{};
   var COINS=[["pt","Platino"],["or","Oro"],["pl","Plata"],["br","Bronce"]];
-  var html='<div class="inv">';
-  html+='<div class="inv-h">💰 Dinero</div><div class="inv-coins">';
-  COINS.forEach(function(c){ html+='<div class="coin coin-'+c[0]+'"><span class="coin-l">'+c[1]+'</span><input class="coin-in" type="number" min="0" data-coin="'+c[0]+'" value="'+(Number(dinero[c[0]])||0)+'"'+(puede?"":" disabled")+'></div>'; });
-  html+='</div>';
-  html+='<div class="inv-h" style="margin-top:16px;">📋 Objetos</div>';
-  if(puede)html+='<div class="addbox inv-add"><input class="an" id="inv-nom" placeholder="Objeto"><input class="ar" id="inv-cant" type="number" min="1" value="1" title="Cantidad"><input class="ar" id="inv-peso" type="number" min="0" step="0.1" placeholder="Peso (kg)" title="Peso por unidad"><button class="btn dm" id="inv-add-btn" type="button">➕ Añadir</button></div>';
   var keys=Object.keys(items), total=0;
+  var html='<div class="inv">';
+  // ----- OBJETOS (izquierda, ancho) -----
+  html+='<div class="inv-objetos"><div class="inv-h">📋 Objetos</div>';
+  if(puede)html+='<div class="addbox inv-add"><input class="an" id="inv-nom" placeholder="Objeto"><input class="ar" id="inv-cant" type="number" min="1" value="1" title="Cantidad"><input class="ar" id="inv-peso" type="number" min="0" step="0.1" placeholder="Peso (kg)" title="Peso por unidad"><button class="btn dm" id="inv-add-btn" type="button">➕ Añadir</button></div>';
   html+='<div class="inv-list">';
   if(!keys.length)html+='<div class="empty" style="padding:18px;">Sin objetos todavía.</div>';
   keys.forEach(function(id){ var it=items[id]||{}, cant=Number(it.cantidad)||1, peso=Number(it.peso)||0; total+=cant*peso;
@@ -1548,7 +1546,12 @@ function renderInventario(){
   });
   html+='</div>';
   html+='<div class="inv-total">⚖️ Peso total: <b>'+total.toFixed(1)+' kg</b></div>';
-  html+='</div>';
+  html+='</div>'; // /inv-objetos
+  // ----- DINERO (derecha, columna) -----
+  html+='<div class="inv-dinero"><div class="inv-h">💰 Dinero</div><div class="inv-coins">';
+  COINS.forEach(function(c){ html+='<div class="coin coin-'+c[0]+'"><span class="coin-l">'+c[1]+'</span><input class="coin-in" type="number" min="0" data-coin="'+c[0]+'" value="'+(Number(dinero[c[0]])||0)+'"'+(puede?"":" disabled")+'></div>'; });
+  html+='</div></div>'; // /inv-coins /inv-dinero
+  html+='</div>'; // /inv
   document.getElementById("list").innerHTML=html;
   if(!puede)return;
   var coins=document.querySelectorAll("#list .coin-in");
