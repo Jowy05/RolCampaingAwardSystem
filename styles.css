@@ -321,6 +321,16 @@
   .ach.on .ic.r-epico{border-color:#a653ff;}
   .ach.on .ic.r-legendario{border-color:#ff8c3c;}
   .ic.r-mitica,.logro-tile.r-mitica,.ach.on .ic.r-mitica{border-color:#ff2d2d;box-shadow:0 0 11px rgba(255,45,45,.7);}
+  /* ===== Títulos forjables (color = rareza del logro) ===== */
+  .titulo{font-weight:700;letter-spacing:.3px;}
+  .titulo.r-comun{color:#b0c3d9;} .titulo.r-raro{color:#7fb2f0;} .titulo.r-epico{color:#c08bff;} .titulo.r-legendario{color:#f0c33c;} .titulo.r-mitica{color:#ff5a5a;}
+  .titulo-eq{font-size:13px;margin-top:3px;}
+  .who-titulo{font-size:11px;margin-left:6px;}
+  .titulos-box{margin:10px 0 4px;}
+  .titulo-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .titulo-chip{background:#1d2c3a;border:1px solid var(--line);border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer;}
+  .titulo-chip:hover{background:var(--cardh);}
+  .titulo-chip.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
   /* Marco del icono DESTACADO del perfil según la rareza del logro seleccionado */
   .perfil-feat .fic.r-comun{border-color:#6ca8e0;}
   .perfil-feat .fic.r-raro{border-color:#1f63a8;}
