@@ -39,7 +39,6 @@
     <button class="btn dm" id="crear-camp" style="display:none;">➕ Crear campaña</button>
     <button class="btn dm" id="crear-usuario" style="display:none;">➕ Crear usuario</button>
     <button class="btn dm" id="cuentas-btn" style="display:none;">🗂️ Cuentas</button>
-    <button class="btn" id="minijuegos-btn" style="display:none;">🎮 Minijuegos</button>
   </div>
   <div id="camp-list"></div>
 </div>
@@ -175,15 +174,6 @@
     <div class="modal-body" id="cuentas-body"></div>
   </div>
 </div>
-<div class="modal" id="minijuegos-modal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h2>🎮 Minijuegos</h2>
-      <button class="btn" id="minijuegos-close" type="button">✕ Cerrar</button>
-    </div>
-    <div class="modal-body" id="minijuegos-body"></div>
-  </div>
-</div>
 
 <div class="modal" id="jug-modal">
   <div class="modal-card">
@@ -249,7 +239,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=27; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=28; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -301,21 +291,19 @@ function crearUsuario(after){
 // ====== PANEL DE CUENTAS (solo Owner): ver y modificar todas las cuentas ======
 function openCuentas(){ document.getElementById("cuentas-modal").classList.add("open"); renderCuentas(); }
 function closeCuentas(){ document.getElementById("cuentas-modal").classList.remove("open"); }
-// Minijuegos (sección preparada; los juegos llegarán después).
-function openMinijuegos(){
+// Minijuegos: pestaña dentro de la campaña (tras Inventario). Sección preparada; los juegos llegarán después.
+function renderMinijuegos(){
   var juegos=[
     {ic:"✊",n:"Piedra, Papel o Tijera",d:"Reta a otro jugador a un duelo rápido."},
     {ic:"💪",n:"Pulsos",d:"Echa un pulso a quien se atreva."},
     {ic:"🥤",n:"¿Dónde está la bola?",d:"Sigue el vaso que esconde la bola."},
     {ic:"🎲",n:"Más por venir…",d:"Iremos añadiendo más minijuegos visuales."}
   ];
-  var html='<p style="color:var(--muted);font-size:13px;margin:0 0 12px;">Minijuegos visuales para picaros entre sesiones. ¡Próximamente!</p><div class="mj-grid">';
+  var html='<div class="mj-wrap"><p style="color:var(--muted);font-size:13px;margin:0 0 12px;">Minijuegos visuales para picaros entre sesiones. ¡Próximamente!</p><div class="mj-grid">';
   juegos.forEach(function(j){ html+='<div class="mj-card"><div class="mj-ic">'+j.ic+'</div><div class="mj-n">'+esc(j.n)+'</div><div class="mj-d">'+esc(j.d)+'</div><div class="mj-soon">🔒 Próximamente</div></div>'; });
-  html+='</div>';
-  document.getElementById("minijuegos-body").innerHTML=html;
-  document.getElementById("minijuegos-modal").classList.add("open");
+  html+='</div></div>';
+  document.getElementById("list").innerHTML=html;
 }
-function closeMinijuegos(){ document.getElementById("minijuegos-modal").classList.remove("open"); }
 function renderCuentas(){ loadUsers(function(){ renderDirectorio("cuentas-body", Object.keys(USERS).sort(function(a,b){return a.localeCompare(b);}), esOwner()); }); }
 // Directorio de usuarios: avatar, nombre, nivel y nº de logros; clic -> su perfil. Si admin (Owner), añade rol/🔑/🗑.
 function renderDirectorio(bodyId, users, admin){
@@ -830,7 +818,6 @@ function aplicarRolUI(){
   document.getElementById("crear-camp").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("crear-usuario").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("cuentas-btn").style.display="inline-block";
-  document.getElementById("minijuegos-btn").style.display="inline-block";
   document.getElementById("camp-actions-bar").style.display="flex";
   document.getElementById("guiagm-fab").textContent=puedeCrear()?"📖 Guía GM":"📖 Ayuda";
 }
@@ -1497,7 +1484,7 @@ function renderTabs(){
   var sg=stats(LOGROS.filter(function(l){return l.categoria==="grupo";}));
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
-  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null]].forEach(function(row){
+  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
     b.innerHTML=row[1]+(row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):"");
     b.onclick=function(){state.tab=row[0];render();};mt.appendChild(b);
@@ -1597,6 +1584,7 @@ function buildCard(l){
 }
 function renderList(){
   if(state.tab==="inv"){renderInventario();return;}
+  if(state.tab==="mj"){renderMinijuegos();return;}
   var arr=viewLogros();
   if(state.filtro==="pend")arr=arr.filter(function(l){return !isDone(l);});
   else if(state.filtro==="hechos")arr=arr.filter(function(l){return isDone(l);});
@@ -1806,9 +1794,6 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("cuentas-btn").addEventListener("click",openCuentas);
   document.getElementById("cuentas-close").addEventListener("click",closeCuentas);
   document.getElementById("cuentas-modal").addEventListener("click",function(e){if(e.target.id==="cuentas-modal")closeCuentas();});
-  document.getElementById("minijuegos-btn").addEventListener("click",openMinijuegos);
-  document.getElementById("minijuegos-close").addEventListener("click",closeMinijuegos);
-  document.getElementById("minijuegos-modal").addEventListener("click",function(e){if(e.target.id==="minijuegos-modal")closeMinijuegos();});
   document.getElementById("miembros-foto").addEventListener("click",function(){fotoCampId=miembrosCampId;document.getElementById("foto-input").click();});
   document.getElementById("logro-close").addEventListener("click",closeLogroDetalle);
   document.getElementById("logro-modal").addEventListener("click",function(e){if(e.target.id==="logro-modal")closeLogroDetalle();});
