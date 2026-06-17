@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
 
@@ -1526,6 +1526,13 @@ function setDinero(sec,coin,val){ if(!puedeEditarInv(sec))return; var d=invData(
 // Conversión de monedas PF1e (10 bronce=1 plata, 10 plata=1 oro, 10 oro=1 platino).
 function convMoneda(sec,low,high){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero; var n=Math.floor(Number(di[low])||0), sube=Math.floor(n/10); if(sube<=0){ setStatus("No hay suficiente para fusionar"); return; } di[low]=n-sube*10; di[high]=(Number(di[high])||0)+sube; saveInv(sec); render(); }
 function compactarMonedas(sec){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero, ch=false; function roll(l,h){ var n=Math.floor(Number(di[l])||0), s=Math.floor(n/10); if(s>0){ di[l]=n-s*10; di[h]=(Number(di[h])||0)+s; ch=true; } } roll("br","pl"); roll("pl","or"); roll("or","pt"); if(ch){ saveInv(sec); render(); } else setStatus("Nada que compactar"); }
+// Descompactar: parte TODA una moneda en la inferior (1 alta = 10 bajas).
+function descMoneda(sec,high,low){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero; var n=Math.floor(Number(di[high])||0); if(n<=0){ setStatus("No hay "+high+" que partir"); return; } di[high]=0; di[low]=(Number(di[low])||0)+n*10; saveInv(sec); render(); }
+// Total en bronce y formateo (1pt=1000br, 1or=100br, 1pl=10br, 1br=1br).
+function dineroABronce(di){ function v(x){return Math.floor(Number(x)||0);} return v(di.pt)*1000+v(di.or)*100+v(di.pl)*10+v(di.br); }
+function fmtMoneda(br){ br=Math.max(0,Math.floor(br)); var pt=Math.floor(br/1000);br%=1000; var or=Math.floor(br/100);br%=100; var pl=Math.floor(br/10);br%=10; var p=[]; if(pt)p.push(pt+" Pt"); if(or)p.push(or+" Or"); if(pl)p.push(pl+" Pl"); if(br)p.push(br+" Br"); return p.length?p.join(", "):"0"; }
+// Restar/gastar: convierte todo a bronce, comprueba que llega, resta y recoloca (auto-descompacta lo de arriba).
+function restarDinero(sec,sub){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero; var totalBr=dineroABronce(di), subBr=dineroABronce(sub); if(subBr<=0){ setStatus("Indica cuánto restar"); return; } if(subBr>totalBr){ alert("No tienes suficiente dinero.\nTienes "+fmtMoneda(totalBr)+" y quieres gastar "+fmtMoneda(subBr)+".\nTe faltan "+fmtMoneda(subBr-totalBr)+"."); return; } var rem=totalBr-subBr; di.pt=Math.floor(rem/1000); rem%=1000; di.or=Math.floor(rem/100); rem%=100; di.pl=Math.floor(rem/10); rem%=10; di.br=rem; saveInv(sec); render(); }
 function addItemInv(sec){ if(!puedeEditarInv(sec))return; var n=(document.getElementById("inv-nom").value||"").trim(); if(!n){alert("Pon el nombre del objeto.");return;} var cant=Math.max(1,Math.floor(Number(document.getElementById("inv-cant").value)||1)), peso=Math.max(0,Number(document.getElementById("inv-peso").value)||0); var d=invData(sec); d.items["i"+(new Date().getTime())]={nombre:n,cantidad:cant,peso:peso}; saveInv(sec); render(); }
 function editItemInv(sec,id,campo,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); if(!d.items[id])return; if(campo==="nombre")d.items[id].nombre=(val||"").trim(); else if(campo==="cantidad")d.items[id].cantidad=Math.max(1,Math.floor(Number(val)||1)); else d.items[id].peso=Math.max(0,Number(val)||0); saveInv(sec); render(); }
 function delItemInv(sec,id){ if(!puedeEditarInv(sec))return; var d=invData(sec); delete d.items[id]; saveInv(sec); render(); }
@@ -1556,11 +1563,17 @@ function renderInventario(){
   html+='</div>'; // /inv-coins
   if(puede){
     html+='<div class="inv-conv">';
-    html+='<button class="convbtn" data-conv="br-pl" type="button" title="10 bronce → 1 plata">⬆️ Bronce → Plata</button>';
-    html+='<button class="convbtn" data-conv="pl-or" type="button" title="10 plata → 1 oro">⬆️ Plata → Oro</button>';
-    html+='<button class="convbtn" data-conv="or-pt" type="button" title="10 oro → 1 platino">⬆️ Oro → Platino</button>';
+    html+='<button class="convbtn up" data-conv="br-pl" type="button" title="10 bronce → 1 plata">Br→Pl</button>';
+    html+='<button class="convbtn up" data-conv="pl-or" type="button" title="10 plata → 1 oro">Pl→Or</button>';
+    html+='<button class="convbtn up" data-conv="or-pt" type="button" title="10 oro → 1 platino">Or→Pt</button>';
+    html+='<button class="convbtn down" data-conv="pt-or" type="button" title="1 platino → 10 oro">Pt→Or</button>';
+    html+='<button class="convbtn down" data-conv="or-pl" type="button" title="1 oro → 10 plata">Or→Pl</button>';
+    html+='<button class="convbtn down" data-conv="pl-br" type="button" title="1 plata → 10 bronce">Pl→Br</button>';
     html+='<button class="convbtn compact" data-conv="all" type="button" title="Sube todo a la moneda más alta posible">✨ Compactar todo</button>';
     html+='</div>';
+    html+='<div class="inv-gastar"><div class="inv-gastar-h">💸 Restar / gastar</div><div class="inv-gastar-row">';
+    COINS.forEach(function(c){ html+='<input class="gastar-in" data-coin="'+c[0]+'" type="number" min="0" placeholder="'+(c[0].charAt(0).toUpperCase()+c[0].charAt(1))+'" title="'+c[1]+'">'; });
+    html+='</div><button class="convbtn restar" data-restar="1" type="button" title="Resta del total; si falta de una moneda, descompacta las de arriba">➖ Restar</button></div>';
   }
   html+='</div>'; // /inv-dinero
   html+='</div>'; // /inv
@@ -1578,7 +1591,12 @@ function renderInventario(){
     var pi=row.querySelector(".inv-peso-in"); if(pi)pi.addEventListener("change",function(){editItemInv(sec,id,"peso",pi.value);});
   })(rows[r]);}
   var convs=document.querySelectorAll("#list .convbtn");
-  for(var k=0;k<convs.length;k++){(function(b){b.addEventListener("click",function(){ var c=b.getAttribute("data-conv"); if(c==="all")compactarMonedas(sec); else { var pr=c.split("-"); convMoneda(sec,pr[0],pr[1]); } });})(convs[k]);}
+  for(var k=0;k<convs.length;k++){(function(b){b.addEventListener("click",function(){
+    if(b.classList.contains("compact")){ compactarMonedas(sec); return; }
+    if(b.classList.contains("restar")){ var sub={}, ins=document.querySelectorAll("#list .gastar-in"); for(var j=0;j<ins.length;j++){ sub[ins[j].getAttribute("data-coin")]=Math.floor(Number(ins[j].value)||0); } restarDinero(sec,sub); return; }
+    var pr=b.getAttribute("data-conv").split("-");
+    if(b.classList.contains("down")) descMoneda(sec,pr[0],pr[1]); else convMoneda(sec,pr[0],pr[1]);
+  });})(convs[k]);}
 }
 function renderGlobal(){
   var s=stats(LOGROS);
