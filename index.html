@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=18">
+<link rel="stylesheet" href="styles.css?v=19">
 </head>
 <body>
 
@@ -1523,6 +1523,9 @@ function renderList(){
 function invData(sec){ if(!INV[sec])INV[sec]={}; if(!INV[sec].dinero)INV[sec].dinero={}; if(!INV[sec].items)INV[sec].items={}; return INV[sec]; }
 function saveInv(sec){ setStatus("Guardando…"); fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(INV[sec]||{})}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");}); }
 function setDinero(sec,coin,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); d.dinero[coin]=Math.max(0,Math.floor(Number(val)||0)); saveInv(sec); }
+// Conversión de monedas PF1e (10 bronce=1 plata, 10 plata=1 oro, 10 oro=1 platino).
+function convMoneda(sec,low,high){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero; var n=Math.floor(Number(di[low])||0), sube=Math.floor(n/10); if(sube<=0){ setStatus("No hay suficiente para fusionar"); return; } di[low]=n-sube*10; di[high]=(Number(di[high])||0)+sube; saveInv(sec); render(); }
+function compactarMonedas(sec){ if(!puedeEditarInv(sec))return; var di=invData(sec).dinero, ch=false; function roll(l,h){ var n=Math.floor(Number(di[l])||0), s=Math.floor(n/10); if(s>0){ di[l]=n-s*10; di[h]=(Number(di[h])||0)+s; ch=true; } } roll("br","pl"); roll("pl","or"); roll("or","pt"); if(ch){ saveInv(sec); render(); } else setStatus("Nada que compactar"); }
 function addItemInv(sec){ if(!puedeEditarInv(sec))return; var n=(document.getElementById("inv-nom").value||"").trim(); if(!n){alert("Pon el nombre del objeto.");return;} var cant=Math.max(1,Math.floor(Number(document.getElementById("inv-cant").value)||1)), peso=Math.max(0,Number(document.getElementById("inv-peso").value)||0); var d=invData(sec); d.items["i"+(new Date().getTime())]={nombre:n,cantidad:cant,peso:peso}; saveInv(sec); render(); }
 function editItemInv(sec,id,campo,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); if(!d.items[id])return; if(campo==="nombre")d.items[id].nombre=(val||"").trim(); else if(campo==="cantidad")d.items[id].cantidad=Math.max(1,Math.floor(Number(val)||1)); else d.items[id].peso=Math.max(0,Number(val)||0); saveInv(sec); render(); }
 function delItemInv(sec,id){ if(!puedeEditarInv(sec))return; var d=invData(sec); delete d.items[id]; saveInv(sec); render(); }
@@ -1550,7 +1553,16 @@ function renderInventario(){
   // ----- DINERO (derecha, columna) -----
   html+='<div class="inv-dinero"><div class="inv-h">💰 Dinero</div><div class="inv-coins">';
   COINS.forEach(function(c){ html+='<div class="coin coin-'+c[0]+'"><span class="coin-l">'+c[1]+'</span><input class="coin-in" type="number" min="0" data-coin="'+c[0]+'" value="'+(Number(dinero[c[0]])||0)+'"'+(puede?"":" disabled")+'></div>'; });
-  html+='</div></div>'; // /inv-coins /inv-dinero
+  html+='</div>'; // /inv-coins
+  if(puede){
+    html+='<div class="inv-conv">';
+    html+='<button class="convbtn" data-conv="br-pl" type="button" title="10 bronce → 1 plata">⬆️ Bronce → Plata</button>';
+    html+='<button class="convbtn" data-conv="pl-or" type="button" title="10 plata → 1 oro">⬆️ Plata → Oro</button>';
+    html+='<button class="convbtn" data-conv="or-pt" type="button" title="10 oro → 1 platino">⬆️ Oro → Platino</button>';
+    html+='<button class="convbtn compact" data-conv="all" type="button" title="Sube todo a la moneda más alta posible">✨ Compactar todo</button>';
+    html+='</div>';
+  }
+  html+='</div>'; // /inv-dinero
   html+='</div>'; // /inv
   document.getElementById("list").innerHTML=html;
   if(!puede)return;
@@ -1565,6 +1577,8 @@ function renderInventario(){
     var ci=row.querySelector(".inv-cant-in"); if(ci)ci.addEventListener("change",function(){editItemInv(sec,id,"cantidad",ci.value);});
     var pi=row.querySelector(".inv-peso-in"); if(pi)pi.addEventListener("change",function(){editItemInv(sec,id,"peso",pi.value);});
   })(rows[r]);}
+  var convs=document.querySelectorAll("#list .convbtn");
+  for(var k=0;k<convs.length;k++){(function(b){b.addEventListener("click",function(){ var c=b.getAttribute("data-conv"); if(c==="all")compactarMonedas(sec); else { var pr=c.split("-"); convMoneda(sec,pr[0],pr[1]); } });})(convs[k]);}
 }
 function renderGlobal(){
   var s=stats(LOGROS);
