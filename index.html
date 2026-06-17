@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -342,11 +342,12 @@ function borrarCuenta(u){
 
 let currentUser="", currentCamp=null, campInfo=null, MIEMBROS=[], GMname="";
 let LOGROS=[], progreso={}, guiaMD=null, editMode=false;
+var INV={};
 var guiaEditing=false, dragSrc=null, saveTimers={}, chainSource=null, miVitrina=[], pendingPjIcon=null, fotoCampId=null;
 const PREFS="rdr2_prefs_v3", SESSION="rdr2_session";
 let prefs={filtro:"todos"};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
-let state={tab:"grupo",sub:"todos",search:"",filtro:prefs.filtro||"todos"};
+let state={tab:"grupo",sub:"todos",invSub:"__general__",search:"",filtro:prefs.filtro||"todos"};
 
 const CAT_ICON={grupo:"🤝",combate:"⚔️",exploracion:"🗺️",social:"💬",botin:"💰",meme:"🤡",general:"🎯"};
 const PLAYER_ICON={Joel:"🦖",Cristina:"🐉",Carol:"✨",Leomar:"💀",Oriol:"⛑️"};
@@ -883,8 +884,8 @@ function entrarCampana(id){
     if(!c||!c.info){alert("Campaña no encontrada.");return;}
     if(!puedeEntrar(c.info)){alert("No estás asignado a esta campaña.");return;}
     currentCamp=id;campInfo=c.info;GMname=c.info.gm||"";MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
-    LOGROS=toArr(c.logros);progreso=c.progreso||{};guiaMD=(typeof c.guia==="string")?c.guia:null;
-    state.tab="grupo";state.sub="todos";
+    LOGROS=toArr(c.logros);progreso=c.progreso||{};guiaMD=(typeof c.guia==="string")?c.guia:null;INV=c.inventario||{};
+    state.tab="grupo";state.sub="todos";state.invSub="__general__";
     document.getElementById("camp-nombre").textContent=esc(c.info.nombre||id);
     document.getElementById("camp-rol").textContent="Tú: "+currentUser+" ("+rolDe(currentUser)+")";
     updateWhoami();
@@ -905,6 +906,9 @@ function isDone(l){return !!progreso[slug(l.nombre)];}
 function stats(arr){var u=0;arr.forEach(function(l){if(isDone(l))u++;});return{u:u,t:arr.length};}
 function puedeMarcar(l){ if(campInfo&&campInfo.bloqueada)return false; if(l.categoria==="gm")return esGMprincipal(campInfo); return esGM(campInfo) || !!(l.personaje && l.personaje===currentUser); }
 function bloqueado(l){ return !!(l.requiere && !progreso[l.requiere]); }
+// Inventario: el General lo edita cualquier miembro; el de un jugador solo ese jugador; el GM/Owner todo. Bloqueada = solo lectura.
+function esMiembroCampana(){ return !!(campInfo&&campInfo.miembros&&campInfo.miembros[currentUser]); }
+function puedeEditarInv(sec){ if(campInfo&&campInfo.bloqueada)return false; if(esGM(campInfo))return true; if(sec==="__general__")return esMiembroCampana(); return sec===currentUser&&esMiembroCampana(); }
 // "Para todos" = logro general (sin personaje, no grupo, no gm). Lo marca el GM y elige a qué jugador(es) se lo lleva.
 function esParaTodos(l){ return !l.personaje && l.categoria!=="grupo" && l.categoria!=="gm"; }
 function reqNombre(l){ if(!l.requiere)return ""; var p=LOGROS.find(function(x){return slug(x.nombre)===l.requiere;}); return p?p.nombre:"(?)"; }
@@ -1363,12 +1367,19 @@ function renderTabs(){
   var sg=stats(LOGROS.filter(function(l){return l.categoria==="grupo";}));
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
-  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si]].forEach(function(row){
+  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
-    b.innerHTML=row[1]+'<span class="c">'+row[2].u+"/"+row[2].t+"</span>";
+    b.innerHTML=row[1]+(row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):"");
     b.onclick=function(){state.tab=row[0];render();};mt.appendChild(b);
   });
   var sw=document.getElementById("subtabs");
+  if(state.tab==="inv"){
+    sw.innerHTML='<div class="subtabs" id="st"></div>'; var sti=document.getElementById("st");
+    var gi2=[{key:"__general__",icon:"📦",label:"General"}];
+    MIEMBROS.forEach(function(m){gi2.push({key:m,icon:iconPJHTML(m),label:m});});
+    gi2.forEach(function(g){ var b2=document.createElement("button"); b2.className="subtab"+((state.invSub===g.key)?" active":""); b2.innerHTML=g.icon+" "+g.label; b2.onclick=function(){state.invSub=g.key;render();}; sti.appendChild(b2); });
+    return;
+  }
   if(state.tab!=="ind"){sw.innerHTML="";return;}
   sw.innerHTML='<div class="subtabs" id="st"></div>';
   var st=document.getElementById("st");
@@ -1444,6 +1455,7 @@ function buildCard(l){
   return div;
 }
 function renderList(){
+  if(state.tab==="inv"){renderInventario();return;}
   var arr=viewLogros();
   if(state.filtro==="pend")arr=arr.filter(function(l){return !isDone(l);});
   else if(state.filtro==="hechos")arr=arr.filter(function(l){return isDone(l);});
@@ -1456,6 +1468,50 @@ function renderList(){
   }
   if(!arr.length){var em=document.createElement("div");em.className="empty";em.textContent="No hay logros que mostrar con estos filtros.";list.appendChild(em);return;}
   arr.forEach(function(l){list.appendChild(buildCard(l));});
+}
+// ====== INVENTARIO ======
+function invData(sec){ if(!INV[sec])INV[sec]={}; if(!INV[sec].dinero)INV[sec].dinero={}; if(!INV[sec].items)INV[sec].items={}; return INV[sec]; }
+function saveInv(sec){ setStatus("Guardando…"); fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(INV[sec]||{})}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");}); }
+function setDinero(sec,coin,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); d.dinero[coin]=Math.max(0,Math.floor(Number(val)||0)); saveInv(sec); }
+function addItemInv(sec){ if(!puedeEditarInv(sec))return; var n=(document.getElementById("inv-nom").value||"").trim(); if(!n){alert("Pon el nombre del objeto.");return;} var cant=Math.max(1,Math.floor(Number(document.getElementById("inv-cant").value)||1)), peso=Math.max(0,Number(document.getElementById("inv-peso").value)||0); var d=invData(sec); d.items["i"+(new Date().getTime())]={nombre:n,cantidad:cant,peso:peso}; saveInv(sec); render(); }
+function editItemInv(sec,id,campo,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); if(!d.items[id])return; if(campo==="nombre")d.items[id].nombre=(val||"").trim(); else if(campo==="cantidad")d.items[id].cantidad=Math.max(1,Math.floor(Number(val)||1)); else d.items[id].peso=Math.max(0,Number(val)||0); saveInv(sec); render(); }
+function delItemInv(sec,id){ if(!puedeEditarInv(sec))return; var d=invData(sec); delete d.items[id]; saveInv(sec); render(); }
+function renderInventario(){
+  var sec=state.invSub||"__general__", puede=puedeEditarInv(sec);
+  var d=INV[sec]||{}, dinero=d.dinero||{}, items=d.items||{};
+  var COINS=[["pt","Platino"],["or","Oro"],["pl","Plata"],["br","Bronce"]];
+  var html='<div class="inv">';
+  html+='<div class="inv-h">💰 Dinero</div><div class="inv-coins">';
+  COINS.forEach(function(c){ html+='<div class="coin coin-'+c[0]+'"><span class="coin-l">'+c[1]+'</span><input class="coin-in" type="number" min="0" data-coin="'+c[0]+'" value="'+(Number(dinero[c[0]])||0)+'"'+(puede?"":" disabled")+'></div>'; });
+  html+='</div>';
+  html+='<div class="inv-h" style="margin-top:16px;">📋 Objetos</div>';
+  if(puede)html+='<div class="addbox inv-add"><input class="an" id="inv-nom" placeholder="Objeto"><input class="ar" id="inv-cant" type="number" min="1" value="1" title="Cantidad"><input class="ar" id="inv-peso" type="number" min="0" step="0.1" placeholder="Peso (kg)" title="Peso por unidad"><button class="btn dm" id="inv-add-btn" type="button">➕ Añadir</button></div>';
+  var keys=Object.keys(items), total=0;
+  html+='<div class="inv-list">';
+  if(!keys.length)html+='<div class="empty" style="padding:18px;">Sin objetos todavía.</div>';
+  keys.forEach(function(id){ var it=items[id]||{}, cant=Number(it.cantidad)||1, peso=Number(it.peso)||0; total+=cant*peso;
+    if(puede){
+      html+='<div class="inv-row" data-id="'+esc(id)+'"><input class="inv-nom-in" value="'+esc(it.nombre||"")+'" placeholder="Objeto"><input class="inv-cant-in" type="number" min="1" value="'+cant+'" title="Cantidad"><input class="inv-peso-in" type="number" min="0" step="0.1" value="'+peso+'" title="Peso por unidad"><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span><button class="inv-del" data-id="'+esc(id)+'" type="button">🗑</button></div>';
+    } else {
+      html+='<div class="inv-row ro"><span class="inv-nom">'+esc(it.nombre||"")+'</span><span class="inv-cant">×'+cant+'</span><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span></div>';
+    }
+  });
+  html+='</div>';
+  html+='<div class="inv-total">⚖️ Peso total: <b>'+total.toFixed(1)+' kg</b></div>';
+  html+='</div>';
+  document.getElementById("list").innerHTML=html;
+  if(!puede)return;
+  var coins=document.querySelectorAll("#list .coin-in");
+  for(var i=0;i<coins.length;i++){(function(inp){inp.addEventListener("change",function(){setDinero(sec,inp.getAttribute("data-coin"),inp.value);});})(coins[i]);}
+  var ab=document.getElementById("inv-add-btn"); if(ab)ab.addEventListener("click",function(){addItemInv(sec);});
+  var dels=document.querySelectorAll("#list .inv-del");
+  for(var d2=0;d2<dels.length;d2++){(function(b){b.addEventListener("click",function(){delItemInv(sec,b.getAttribute("data-id"));});})(dels[d2]);}
+  var rows=document.querySelectorAll("#list .inv-row[data-id]");
+  for(var r=0;r<rows.length;r++){(function(row){var id=row.getAttribute("data-id");
+    var ni=row.querySelector(".inv-nom-in"); if(ni)ni.addEventListener("change",function(){editItemInv(sec,id,"nombre",ni.value);});
+    var ci=row.querySelector(".inv-cant-in"); if(ci)ci.addEventListener("change",function(){editItemInv(sec,id,"cantidad",ci.value);});
+    var pi=row.querySelector(".inv-peso-in"); if(pi)pi.addEventListener("change",function(){editItemInv(sec,id,"peso",pi.value);});
+  })(rows[r]);}
 }
 function renderGlobal(){
   var s=stats(LOGROS);
