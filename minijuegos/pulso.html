@@ -23,6 +23,7 @@
   <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
     <div style="font-family:'Anton',sans-serif; font-size:40px; letter-spacing:2px; line-height:1; white-space:nowrap; text-transform:uppercase; background:linear-gradient(90deg,#22c55e 0%,#22c55e 45%,#ef4444 55%,#ef4444 100%); -webkit-background-clip:text; background-clip:text; color:transparent;">El Pulso</div>
     <div style="font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#7f95a8; font-weight:700;">Primero en llegar a +3 gana</div>
+    <div style="font-family:'Anton',sans-serif; font-size:26px; letter-spacing:2px; color:#7f95a8; margin-top:2px;">[ <span style="color:#22c55e;">{{ gWins }}</span> - <span style="color:#ef4444;">{{ rWins }}</span> ]</div>
   </div>
 
   <!-- Scoreboard -->
@@ -154,7 +155,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { pos: 0, winner: null };
+  state = { pos: 0, winner: null, gWins: 0, rWins: 0 };
 
   leftArm = React.createRef();
   rightArm = React.createRef();
@@ -273,12 +274,12 @@ class Component extends DCLogic {
   push(dir) {
     if (this.state.winner) return;
     let pos = Math.max(-3, Math.min(3, this.state.pos + dir));
-    let winner = null;
-    if (pos >= 3) winner = "green";
-    else if (pos <= -3) winner = "red";
+    let winner = null, gWins = this.state.gWins, rWins = this.state.rWins;
+    if (pos >= 3) { winner = "green"; gWins++; }
+    else if (pos <= -3) { winner = "red"; rWins++; }
     this.playPush(dir);
     this.squeeze();
-    this.setState({ pos, winner }, () => { if (winner) { this.shake(); this.playWin(); } });
+    this.setState({ pos, winner, gWins, rWins }, () => { if (winner) { this.shake(); this.playWin(); } });
   }
 
   renderVals() {
@@ -300,6 +301,8 @@ class Component extends DCLogic {
     return {
       greenScore: Math.max(0, pos),
       redScore: Math.max(0, -pos),
+      gWins: this.state.gWins,
+      rWins: this.state.rWins,
       over: !!winner,
       winnerLabel: winner === "green" ? "Verde" : (winner === "red" ? "Rojo" : ""),
       winColor: winner ? colorFor(winner) : "#ffffff",
