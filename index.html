@@ -255,7 +255,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=37; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=38; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -392,7 +392,7 @@ function renderMinijuegos(){
   var juegos=[
     {ic:"✊",n:"Piedra, Papel o Tijera",d:"Echa un duelo rápido a la suerte.",url:"minijuegos/ppt.html"},
     {ic:"🥤",n:"¿Dónde está la bola?",d:"Sigue el vaso que esconde la bola.",url:"minijuegos/vasos.html",w:640},
-    {ic:"💪",n:"Pulsos",d:"Tira de la cuerda: +1 verde vs +1 rojo.",url:"minijuegos/pulso.html"},
+    {ic:"💪",n:"Pulsos",d:"Animación de pulso (verde vs rojo).",url:"minijuegos/pulso.html"},
     {ic:"🎲",n:"Más por venir…",d:"Iremos añadiendo más minijuegos.",soon:true}
   ];
   var html='<div class="mj-wrap"><p style="color:var(--muted);font-size:13px;margin:0 0 12px;">Minijuegos para picaros entre sesiones. ¡Pulsa para jugar!</p><div class="mj-grid">';
@@ -402,7 +402,7 @@ function renderMinijuegos(){
   var cards=list.querySelectorAll(".mj-card.play");
   for(var k=0;k<cards.length;k++){(function(el){var i=parseInt(el.getAttribute("data-i"),10);el.addEventListener("click",function(){abrirMinijuego(juegos[i].url,juegos[i].ic+" "+juegos[i].n,juegos[i].w);});})(cards[k]);}
 }
-function abrirMinijuego(url,nombre,w){ if(!url)return; var box=document.querySelector("#mj-play .mj-play-box"); if(box)box.style.width="min("+(w||440)+"px,96vw)"; var f=document.getElementById("mj-frame"); f.src=url; var t=document.getElementById("mj-play-t"); if(t)t.textContent=nombre||"🎮 Minijuego"; document.getElementById("mj-play").classList.add("open"); }
+function abrirMinijuego(url,nombre,w){ if(!url)return; var box=document.querySelector("#mj-play .mj-play-box"); if(box)box.style.width="min("+(w||440)+"px,96vw)"; var f=document.getElementById("mj-frame"); f.src=url+(url.indexOf("?")>=0?"&":"?")+"v="+APP_VER; var t=document.getElementById("mj-play-t"); if(t)t.textContent=nombre||"🎮 Minijuego"; document.getElementById("mj-play").classList.add("open"); }
 function cerrarMinijuego(){ document.getElementById("mj-play").classList.remove("open"); var f=document.getElementById("mj-frame"); if(f)f.src="about:blank"; }
 function renderCuentas(){ loadUsers(function(){ renderDirectorio("cuentas-body", Object.keys(USERS).sort(function(a,b){return a.localeCompare(b);}), esOwner()); }); }
 // Directorio de usuarios: avatar, nombre, nivel y nº de logros; clic -> su perfil. Si admin (Owner), añade rol/🔑/🗑.
