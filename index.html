@@ -39,6 +39,7 @@
     <button class="btn dm" id="crear-camp" style="display:none;">➕ Crear campaña</button>
     <button class="btn dm" id="crear-usuario" style="display:none;">➕ Crear usuario</button>
     <button class="btn dm" id="cuentas-btn" style="display:none;">🗂️ Cuentas</button>
+    <button class="btn" id="progreso-btn" style="display:none;">🌟 Progreso del Aventurero</button>
   </div>
   <div id="camp-list"></div>
 </div>
@@ -174,6 +175,15 @@
     <div class="modal-body" id="cuentas-body"></div>
   </div>
 </div>
+<div class="modal" id="progreso-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>🌟 Progreso del Aventurero</h2>
+      <button class="btn" id="progreso-close" type="button">✕ Cerrar</button>
+    </div>
+    <div class="modal-body" id="progreso-body"></div>
+  </div>
+</div>
 
 <div class="modal" id="jug-modal">
   <div class="modal-card">
@@ -239,7 +249,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=33; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=34; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -291,6 +301,16 @@ function crearUsuario(after){
 // ====== PANEL DE CUENTAS (solo Owner): ver y modificar todas las cuentas ======
 function openCuentas(){ document.getElementById("cuentas-modal").classList.add("open"); renderCuentas(); }
 function closeCuentas(){ document.getElementById("cuentas-modal").classList.remove("open"); }
+// Progreso del Aventurero (logros generales de la app del usuario actual) desde la home.
+function openProgreso(){
+  var body=document.getElementById("progreso-body"); body.innerHTML="Cargando…";
+  document.getElementById("progreso-modal").classList.add("open");
+  fetch(FB+"/campanas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():{};}).then(function(camps){
+    var cu=computarCuenta(camps||{},currentUser), apps=logrosApp(cu), n=apps.filter(function(x){return x.on;}).length;
+    body.innerHTML='<p class="prop-intro">Insignias que desbloqueas jugando. Llevas <b>'+n+' / '+apps.length+'</b>.</p>'+appachGrid(apps);
+  }).catch(function(){body.innerHTML="No se pudo cargar.";});
+}
+function closeProgreso(){ document.getElementById("progreso-modal").classList.remove("open"); }
 // ====== PROPONER LOGRO (pestaña; cola de aprobación del GM) ======
 // Las propuestas viven en /campanas/{id}/info/propuestas/{pid} (subárbol info => escribible con las reglas actuales).
 function renderPropuestas(){
@@ -557,9 +577,24 @@ var LOGROS_APP=[
   {id:"c1",nombre:"Aventura terminada",desc:"Completa una campaña",icono:"🏁",dif:"raro",cond:function(c){return c.prestigio>=1;}},
   {id:"c2",nombre:"Trotamundos",desc:"Completa dos campañas",icono:"🧭",dif:"epico",cond:function(c){return c.prestigio>=2;}},
   {id:"p80",nombre:"Casi perfecto",desc:"Completa una campaña con +80% de tus logros",icono:"🎯",dif:"epico",cond:function(c){return c.camps80>=1;}},
-  {id:"p100",nombre:"Perfeccionista",desc:"Completa una campaña al 100% de tus logros",icono:"💎",dif:"legendario",cond:function(c){return c.camps100>=1;}}
+  {id:"p100",nombre:"Perfeccionista",desc:"Completa una campaña al 100% de tus logros",icono:"💎",dif:"legendario",cond:function(c){return c.camps100>=1;}},
+  {id:"l250",nombre:"Maestro coleccionista",desc:"Consigue 250 logros",icono:"🏆",dif:"mitica",cond:function(c){return c.total>=250;}},
+  {id:"raro10",nombre:"Buscador de rarezas",desc:"Consigue 10 logros raros",icono:"🔷",dif:"raro",cond:function(c){return (c.rar&&c.rar.raro||0)>=10;}},
+  {id:"ep5",nombre:"Épico recurrente",desc:"Consigue 5 logros épicos",icono:"🔮",dif:"epico",cond:function(c){return (c.rar&&c.rar.epico||0)>=5;}},
+  {id:"leg3",nombre:"Triple leyenda",desc:"Consigue 3 logros legendarios",icono:"🦁",dif:"legendario",cond:function(c){return (c.rar&&c.rar.legendario||0)>=3;}},
+  {id:"n5",nombre:"Iniciado",desc:"Alcanza el nivel 5",icono:"🌱",dif:"comun",cond:function(c){return c.nivel.lvl>=5;}},
+  {id:"n30",nombre:"Curtido",desc:"Alcanza el nivel 30",icono:"🛡️",dif:"epico",cond:function(c){return c.nivel.lvl>=30;}},
+  {id:"n75",nombre:"Casi leyenda",desc:"Alcanza el nivel 75",icono:"✴️",dif:"legendario",cond:function(c){return c.nivel.lvl>=75;}},
+  {id:"c3",nombre:"Viajero entre mundos",desc:"Completa tres campañas",icono:"🌍",dif:"legendario",cond:function(c){return c.prestigio>=3;}},
+  {id:"p100x2",nombre:"Doble perfección",desc:"Logra el 100% en dos campañas",icono:"💠",dif:"mitica",cond:function(c){return c.camps100>=2;}},
+  {id:"multi",nombre:"Aventurero errante",desc:"Participa en 3 campañas",icono:"🎒",dif:"raro",cond:function(c){return (c.misCamps||[]).length>=3;}},
+  {id:"prem1",nombre:"Nominado de honor",desc:"Gana tu primer premio de nominaciones",icono:"🏅",dif:"raro",cond:function(c){var p=c.premios||{},s=0;for(var k in p)s+=p[k];return s>=1;}},
+  {id:"prem5",nombre:"Ídolo del grupo",desc:"Gana 5 premios de nominaciones",icono:"🎖️",dif:"epico",cond:function(c){var p=c.premios||{},s=0;for(var k in p)s+=p[k];return s>=5;}},
+  {id:"tit3",nombre:"Portador de títulos",desc:"Ten 3 títulos disponibles",icono:"🏷️",dif:"epico",cond:function(c){return (c.titulos||[]).length>=3;}},
+  {id:"master5",nombre:"Máster de 5 estrellas",desc:"Media de 4,5★ o más (mín. 3 votos) como máster",icono:"🌠",dif:"legendario",cond:function(c){return !!(c.estrellasMaster&&c.estrellasMaster.n>=3&&c.estrellasMaster.avg>=4.5);}}
 ];
 function logrosApp(cu){ return LOGROS_APP.map(function(a){ var on=false; try{on=!!a.cond(cu);}catch(e){} return {a:a,on:on}; }); }
+function appachGrid(apps){ var html='<div class="appach-grid">'; apps.forEach(function(x){ var a=x.a; html+='<div class="appach'+(x.on?" on":"")+'" title="'+esc(a.desc)+'"><div class="appach-ic'+(x.on?(" r-"+difKey(a.dif)):"")+'">'+(x.on?a.icono:"🔒")+'</div><div class="appach-tx"><div class="appach-n">'+esc(a.nombre)+'</div><div class="appach-d">'+esc(a.desc)+'</div></div></div>'; }); html+='</div>'; return html; }
 function utf8bytes(str){
   if(typeof TextEncoder!=="undefined")return new TextEncoder().encode(str);
   var s=unescape(encodeURIComponent(str)),b=new Uint8Array(s.length);
@@ -696,9 +731,7 @@ function renderPerfil(){
       html+='</div></div>';
     }
     var apps=logrosApp(cu), nApp=apps.filter(function(x){return x.on;}).length;
-    html+='<h3 class="perfil-h3">🌟 Logros de la app <span style="color:var(--muted);font-weight:400;font-size:13px;">'+nApp+'/'+apps.length+'</span></h3><div class="appach-grid">';
-    apps.forEach(function(x){ var a=x.a; html+='<div class="appach'+(x.on?" on":"")+'" title="'+esc(a.desc)+'"><div class="appach-ic'+(x.on?(" r-"+difKey(a.dif)):"")+'">'+(x.on?a.icono:"🔒")+'</div><div class="appach-tx"><div class="appach-n">'+esc(a.nombre)+'</div><div class="appach-d">'+esc(a.desc)+'</div></div></div>'; });
-    html+='</div>';
+    html+='<h3 class="perfil-h3">🌟 Progreso del Aventurero <span style="color:var(--muted);font-weight:400;font-size:13px;">'+nApp+'/'+apps.length+'</span></h3>'+appachGrid(apps);
     html+='<h3 class="perfil-h3">'+(propio?'Mis campañas':'Campañas')+'</h3>';
     if(!cu.misCamps.length)html+='<p style="color:var(--muted);font-size:13px;">Sin campañas todavía.</p>';
     cu.misCamps.forEach(function(mcp){
@@ -917,6 +950,7 @@ function aplicarRolUI(){
   document.getElementById("crear-camp").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("crear-usuario").style.display=puedeCrear()?"inline-block":"none";
   document.getElementById("cuentas-btn").style.display="inline-block";
+  document.getElementById("progreso-btn").style.display="inline-block";
   document.getElementById("camp-actions-bar").style.display="flex";
   document.getElementById("guiagm-fab").textContent=puedeCrear()?"📖 Guía GM":"📖 Ayuda";
 }
@@ -1896,6 +1930,9 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("cuentas-btn").addEventListener("click",openCuentas);
   document.getElementById("cuentas-close").addEventListener("click",closeCuentas);
   document.getElementById("cuentas-modal").addEventListener("click",function(e){if(e.target.id==="cuentas-modal")closeCuentas();});
+  document.getElementById("progreso-btn").addEventListener("click",openProgreso);
+  document.getElementById("progreso-close").addEventListener("click",closeProgreso);
+  document.getElementById("progreso-modal").addEventListener("click",function(e){if(e.target.id==="progreso-modal")closeProgreso();});
   document.getElementById("miembros-foto").addEventListener("click",function(){fotoCampId=miembrosCampId;document.getElementById("foto-input").click();});
   document.getElementById("logro-close").addEventListener("click",closeLogroDetalle);
   document.getElementById("logro-modal").addEventListener("click",function(e){if(e.target.id==="logro-modal")closeLogroDetalle();});
