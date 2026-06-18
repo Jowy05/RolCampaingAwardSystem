@@ -352,6 +352,15 @@
   .prop-tit{flex:2 1 180px;min-width:0;} .prop-desc{flex:3 1 220px;min-width:0;} .prop-cat{flex:0 0 auto;}
   .prop-dest{font-size:11.5px;color:var(--muted);font-weight:400;}
   @media(max-width:600px){ .prop-form .prop-in,.prop-form .btn{flex:1 1 100%;} }
+  /* ===== Logros generales de la app ===== */
+  .appach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-bottom:6px;}
+  .appach{display:flex;gap:9px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 10px;opacity:.5;}
+  .appach.on{opacity:1;}
+  .appach-ic{font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:8px;flex:0 0 auto;background:#0f1c27;}
+  .appach-ic.r-comun{border-color:#6ca8e0;} .appach-ic.r-raro{border-color:#1f63a8;} .appach-ic.r-epico{border-color:#a653ff;} .appach-ic.r-legendario{border-color:#ff8c3c;} .appach-ic.r-mitica{border-color:#ff2d2d;}
+  .appach-tx{min-width:0;}
+  .appach-n{font-weight:600;color:#fff;font-size:13px;}
+  .appach-d{color:var(--muted);font-size:11.5px;}
   .prop-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
   .prop-card{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;}
   .prop-main{flex:1;min-width:0;}
