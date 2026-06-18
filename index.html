@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=25">
+<link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
 
@@ -239,7 +239,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=32; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=33; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -502,7 +502,7 @@ var NOM_CATS=["Mejor acción de la sesión","Peor acción de la sesión","Acció
 // Prestigio: +1 estrella y +500 XP por cada campaña EN LA QUE PARTICIPAS que esté bloqueada (terminada).
 function computarCuenta(camps,user){
   camps=camps||{};
-  var misCamps=[],total=0,xpTotal=0,prestigio=0,premios={},titulos=[],estrSum=0,estrN=0;
+  var misCamps=[],total=0,xpTotal=0,prestigio=0,premios={},titulos=[],estrSum=0,estrN=0,rar={comun:0,raro:0,epico:0,legendario:0,mitica:0},mejorPct=0,camps80=0,camps100=0;
   Object.keys(camps).forEach(function(id){
     var c=camps[id]; if(!c||!c.info)return; var info=c.info;
     // premios (nominaciones): el premio de cada categoría/sesión se lo lleva SOLO quien más votos tiene (empate: todos los líderes). Se cuenta siempre.
@@ -511,18 +511,23 @@ function computarCuenta(camps,user){
     // valoración como máster: media de estrellas en las campañas que dirige (info.gm===user)
     if(info.gm===user){ Object.keys(noms).forEach(function(sid){ var es=noms[sid]&&noms[sid].estrellas; if(es)Object.keys(es).forEach(function(v){ var x=Number(es[v])||0; if(x>=1&&x<=5){estrSum+=x;estrN++;} }); }); }
     var esMiembro=(info.gm===user)||(info.miembros&&info.miembros[user])||(info.gms&&info.gms[user]);
-    var logros=toArr(c.logros),prog=c.progreso||{},tiles=[],xpCamp=0,titsCamp=[];
+    var logros=toArr(c.logros),prog=c.progreso||{},tiles=[],xpCamp=0,titsCamp=[],relTot=0,relHe=0;
     logros.forEach(function(l){
-      var s=slug(l.nombre),pe=prog[s]; if(!pe)return;
+      var s=slug(l.nombre),pe=prog[s];
+      var rel=(l.categoria==="grupo")||(l.personaje===user)||(l.categoria==="gm"&&info.gm===user); // logros que ESTE usuario puede ganar por sí mismo
+      if(rel)relTot++;
+      if(!pe)return;
       var por=(pe&&typeof pe==="object")?pe.por:null, cat=l.categoria, esMio=false;
       if(cat==="grupo"){ esMio=esMiembro; }
       else if(cat==="gm"){ esMio=(info.gm===user); }
       else if(l.personaje){ esMio=(l.personaje===user); }
       else { esMio=(pe.ganadores?(pe.ganadores.indexOf(user)>=0):(por===user)); }
-      if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); if(l.titulo)titsCamp.push({t:l.titulo,r:difKey(l.dificultad)||"comun"}); }
+      if(esMio){ tiles.push(l); xpCamp+=xpDeRareza(l.dificultad); if(l.titulo)titsCamp.push({t:l.titulo,r:difKey(l.dificultad)||"comun"}); if(rel)relHe++; }
     });
     if(!esMiembro) return;
     titulos=titulos.concat(titsCamp);
+    tiles.forEach(function(t){ var rk=difKey(t.dificultad)||"comun"; if(rar[rk]!==undefined)rar[rk]++; });
+    var pct=relTot?(relHe/relTot):0; if(pct>mejorPct)mejorPct=pct; if(relTot>0&&pct>=0.8)camps80++; if(relTot>0&&pct>=1)camps100++;
     if(info.bloqueada){ prestigio++; xpCamp+=1000; }
     total+=tiles.length; xpTotal+=xpCamp;
     misCamps.push({id:id,nombre:info.nombre||id,foto:info.foto||null,gm:info.gm,bloqueada:!!info.bloqueada,logros:tiles});
@@ -532,9 +537,29 @@ function computarCuenta(camps,user){
   if(rolU==="owner"){ var esp={nombre:"Creador del todo",descripcion:"Logro obtenido por forjar este sistema de logros.",dificultad:"Mítica",icono:"👑",categoria:"especial",titulo:"Rey de reyes"}; especiales.push(esp); total+=1; xpTotal+=xpDeRareza(esp.dificultad); titulos.push({t:esp.titulo,r:difKey(esp.dificultad)||"comun"}); }
   if(rolU==="gm"||rolU==="owner"){ var espGM={nombre:"GM",descripcion:"Logro por convertirse en Game Master",dificultad:"Épico",icono:"🎲",categoria:"especial",titulo:"Maestro del Juego"}; especiales.push(espGM); total+=1; xpTotal+=xpDeRareza(espGM.dificultad); titulos.push({t:espGM.titulo,r:difKey(espGM.dificultad)||"comun"}); }
   var titU=[],seenT={}; titulos.forEach(function(x){ if(x&&x.t&&!seenT[x.t]){seenT[x.t]=1;titU.push(x);} });
-  return {misCamps:misCamps,total:total,xpTotal:xpTotal,nivel:nivelDeXP(xpTotal),prestigio:prestigio,premios:premios,especiales:especiales,titulos:titU,estrellasMaster:(estrN?{avg:estrSum/estrN,n:estrN}:null)};
+  return {misCamps:misCamps,total:total,xpTotal:xpTotal,nivel:nivelDeXP(xpTotal),prestigio:prestigio,premios:premios,especiales:especiales,titulos:titU,estrellasMaster:(estrN?{avg:estrSum/estrN,n:estrN}:null),rar:rar,mejorPct:mejorPct,camps80:camps80,camps100:camps100};
 }
 
+// Logros GENERALES de la app: insignias de cuenta automáticas (derivadas de computarCuenta; NO dan XP, para no crear bucles).
+var LOGROS_APP=[
+  {id:"l1",nombre:"Primer paso",desc:"Consigue tu primer logro",icono:"👣",dif:"comun",cond:function(c){return c.total>=1;}},
+  {id:"l5",nombre:"Coleccionista novato",desc:"Consigue 5 logros",icono:"📦",dif:"comun",cond:function(c){return c.total>=5;}},
+  {id:"l25",nombre:"Coleccionista",desc:"Consigue 25 logros",icono:"🗃️",dif:"raro",cond:function(c){return c.total>=25;}},
+  {id:"l50",nombre:"Cazalogros",desc:"Consigue 50 logros",icono:"🏹",dif:"epico",cond:function(c){return c.total>=50;}},
+  {id:"l100",nombre:"Centenario",desc:"Consigue 100 logros",icono:"💯",dif:"legendario",cond:function(c){return c.total>=100;}},
+  {id:"ep",nombre:"Toque épico",desc:"Consigue tu primer logro épico",icono:"🟣",dif:"epico",cond:function(c){return (c.rar&&c.rar.epico||0)>=1;}},
+  {id:"leg",nombre:"Leyenda viva",desc:"Consigue tu primer logro legendario",icono:"🟠",dif:"legendario",cond:function(c){return (c.rar&&c.rar.legendario||0)>=1;}},
+  {id:"mit",nombre:"Toque mítico",desc:"Consigue tu primer logro mítico",icono:"🔴",dif:"mitica",cond:function(c){return (c.rar&&c.rar.mitica||0)>=1;}},
+  {id:"n10",nombre:"Veterano",desc:"Alcanza el nivel 10",icono:"🔟",dif:"raro",cond:function(c){return c.nivel.lvl>=10;}},
+  {id:"n20",nombre:"Élite",desc:"Alcanza el nivel 20",icono:"⭐",dif:"epico",cond:function(c){return c.nivel.lvl>=20;}},
+  {id:"n50",nombre:"Maestro",desc:"Alcanza el nivel 50",icono:"🌟",dif:"legendario",cond:function(c){return c.nivel.lvl>=50;}},
+  {id:"n100",nombre:"Leyenda absoluta",desc:"Alcanza el nivel 100",icono:"👑",dif:"mitica",cond:function(c){return c.nivel.lvl>=100;}},
+  {id:"c1",nombre:"Aventura terminada",desc:"Completa una campaña",icono:"🏁",dif:"raro",cond:function(c){return c.prestigio>=1;}},
+  {id:"c2",nombre:"Trotamundos",desc:"Completa dos campañas",icono:"🧭",dif:"epico",cond:function(c){return c.prestigio>=2;}},
+  {id:"p80",nombre:"Casi perfecto",desc:"Completa una campaña con +80% de tus logros",icono:"🎯",dif:"epico",cond:function(c){return c.camps80>=1;}},
+  {id:"p100",nombre:"Perfeccionista",desc:"Completa una campaña al 100% de tus logros",icono:"💎",dif:"legendario",cond:function(c){return c.camps100>=1;}}
+];
+function logrosApp(cu){ return LOGROS_APP.map(function(a){ var on=false; try{on=!!a.cond(cu);}catch(e){} return {a:a,on:on}; }); }
 function utf8bytes(str){
   if(typeof TextEncoder!=="undefined")return new TextEncoder().encode(str);
   var s=unescape(encodeURIComponent(str)),b=new Uint8Array(s.length);
@@ -670,6 +695,10 @@ function renderPerfil(){
       cu.especiales.forEach(function(l){ var rc=l.dificultad?(" r-"+difKey(l.dificultad)):""; perfilLogros.push({l:l,camp:"Especial"}); html+='<div class="logro-tilewrap"><button class="logro-tile'+rc+'" type="button" data-i="'+gi+'" title="'+esc(l.nombre)+'">'+iconHTML(l)+'</button></div>'; gi++; });
       html+='</div></div>';
     }
+    var apps=logrosApp(cu), nApp=apps.filter(function(x){return x.on;}).length;
+    html+='<h3 class="perfil-h3">🌟 Logros de la app <span style="color:var(--muted);font-weight:400;font-size:13px;">'+nApp+'/'+apps.length+'</span></h3><div class="appach-grid">';
+    apps.forEach(function(x){ var a=x.a; html+='<div class="appach'+(x.on?" on":"")+'" title="'+esc(a.desc)+'"><div class="appach-ic'+(x.on?(" r-"+difKey(a.dif)):"")+'">'+(x.on?a.icono:"🔒")+'</div><div class="appach-tx"><div class="appach-n">'+esc(a.nombre)+'</div><div class="appach-d">'+esc(a.desc)+'</div></div></div>'; });
+    html+='</div>';
     html+='<h3 class="perfil-h3">'+(propio?'Mis campañas':'Campañas')+'</h3>';
     if(!cu.misCamps.length)html+='<p style="color:var(--muted);font-size:13px;">Sin campañas todavía.</p>';
     cu.misCamps.forEach(function(mcp){
@@ -1555,7 +1584,7 @@ function renderTabs(){
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
   var pend=Object.keys((campInfo&&campInfo.propuestas)||{}).length;
-  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["prop","💡 Propuestas",null],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null]].forEach(function(row){
+  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null],["prop","💡 Propuestas",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
     var badge=row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):((row[0]==="prop"&&pend)?(' <span class="c pend">'+pend+'</span>'):"");
     b.innerHTML=row[1]+badge;
