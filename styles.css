@@ -346,6 +346,12 @@
   /* ===== Proponer logro ===== */
   .prop-wrap{max-width:640px;}
   .prop-intro{color:var(--muted);font-size:13px;margin:0 0 12px;}
+  .prop-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px;}
+  .prop-in{background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;}
+  .prop-in:focus{border-color:var(--accent);}
+  .prop-tit{flex:2 1 180px;min-width:0;} .prop-desc{flex:3 1 220px;min-width:0;} .prop-cat{flex:0 0 auto;}
+  .prop-dest{font-size:11.5px;color:var(--muted);font-weight:400;}
+  @media(max-width:600px){ .prop-form .prop-in,.prop-form .btn{flex:1 1 100%;} }
   .prop-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
   .prop-card{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;}
   .prop-main{flex:1;min-width:0;}
