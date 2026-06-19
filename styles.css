@@ -637,3 +637,15 @@
   .tug-b.v{background:#2f9e44;color:#08120a;} .tug-b.v:hover{background:#37b350;}
   .tug-b.r{background:#e03131;color:#fff;} .tug-b.r:hover{background:#f04444;}
   .tug-b:active{transform:scale(.96);}
+  /* Pulso de brazos animado (recreado en SVG) — se inclina según pos, sincronizado por Firebase */
+  .pulso{background:radial-gradient(120% 80% at 50% 10%,#16222f,#0e1722);border:1px solid var(--line);border-radius:10px;padding:8px 8px 14px;margin:10px 0;}
+  .pl-svg{width:100%;height:auto;display:block;max-height:200px;}
+  .pl-table{fill:#152230;stroke:#2b3d4f;stroke-width:1;}
+  .pl-arms{transform-box:view-box;transform-origin:160px 92px;transition:transform .45s cubic-bezier(.34,1.25,.5,1);}
+  .pl-arm{fill:none;stroke-width:24;stroke-linecap:round;}
+  .pl-arm.v{stroke:#2f9e44;} .pl-arm.r{stroke:#e03131;}
+  .pl-elbow.v{fill:#247536;} .pl-elbow.r{fill:#b02525;}
+  .pl-fist{stroke-width:2.5;}
+  .pl-fist.v{fill:#37b24d;stroke:#1b5e20;} .pl-fist.r{fill:#f03e3e;stroke:#7d1f1f;}
+  .pulso.win-v .pl-arm.v,.pulso.win-v .pl-fist.v{filter:drop-shadow(0 0 7px #4ade80);}
+  .pulso.win-r .pl-arm.r,.pulso.win-r .pl-fist.r{filter:drop-shadow(0 0 7px #ff6b6b);}
