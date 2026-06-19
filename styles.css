@@ -595,11 +595,59 @@
   .logro-grid .logro-tile.r-mitica{animation:mitPulse 2.4s ease-in-out infinite;}
   @keyframes mitPulse{0%,100%{box-shadow:0 0 9px rgba(255,45,45,.55)}50%{box-shadow:0 0 18px rgba(255,45,45,.95)}}
 
-  /* ===== Decoración estacional / aniversario ===== */
-  .decor-layer{position:fixed;inset:0;pointer-events:none;z-index:39;overflow:hidden;}
-  .snow{position:absolute;top:-22px;color:#dff1ff;opacity:.85;animation:snowfall linear infinite;}
-  @keyframes snowfall{to{transform:translateY(108vh) rotate(360deg);}}
-  .decor-corner{position:fixed;font-size:30px;pointer-events:none;z-index:40;opacity:.8;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+  /* ===== Decoración estacional / aniversario (temas a pantalla completa) ===== */
+  body{transition:background .6s ease;}
+  #decor{position:fixed;inset:0;z-index:36;pointer-events:none;overflow:hidden;}
+  #decor-fx{position:fixed;inset:0;z-index:36;pointer-events:none;}
+  .decor-corner{position:fixed;z-index:37;font-size:34px;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));}
+  /* Fondos por tema */
+  body[data-theme="halloween"]{background:radial-gradient(70% 55% at 50% 0%,#3a1452 0%,transparent 55%),radial-gradient(90% 60% at 50% 125%,#5a2a06 0%,transparent 55%),#0b0712;}
+  body[data-theme="navidad"]{background:radial-gradient(80% 60% at 50% -10%,#16324a 0%,transparent 60%),radial-gradient(60% 50% at 50% 120%,#0e2a22,transparent 60%),#0a1018;}
+  body[data-theme="anionuevo"]{background:radial-gradient(100% 80% at 50% 120%,#1a1030 0%,transparent 60%),#07060d;}
+  body[data-theme="sanjuan"]{background:radial-gradient(70% 55% at 50% 122%,#7a3406 0%,transparent 52%),radial-gradient(100% 70% at 50% -12%,#10294a,transparent 60%),#0a0d16;}
+  body[data-theme="reyes"]{background:radial-gradient(80% 70% at 50% -10%,#16224a 0%,transparent 60%),#060814;}
+  body[data-theme="carnaval"]{background:radial-gradient(60% 55% at 25% 5%,#6a1a7a 0%,transparent 55%),radial-gradient(60% 55% at 82% 16%,#0a6a7a 0%,transparent 55%),radial-gradient(60% 50% at 55% 122%,#7a1a4a 0%,transparent 55%),#100a1a;}
+  body[data-theme="semanasanta"]{background:radial-gradient(82% 60% at 50% -6%,#2a1640 0%,transparent 60%),radial-gradient(72% 55% at 50% 122%,#3a2a08 0%,transparent 55%),#0a0812;}
+  body[data-theme="aniversario"]{background:radial-gradient(75% 60% at 50% -10%,#3a2c10 0%,transparent 60%),radial-gradient(60% 50% at 50% 120%,#2a1a3a,transparent 60%),#0e151e;}
+  /* Halloween */
+  .moon{position:absolute;top:7%;right:11%;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff 0%,#ffe9b0 55%,#e7c98a 100%);box-shadow:0 0 60px 16px rgba(255,228,150,.32);}
+  .moon::after{content:"";position:absolute;top:18%;left:55%;width:24px;height:24px;border-radius:50%;background:rgba(180,150,90,.45);box-shadow:16px 20px 0 -6px rgba(180,150,90,.4),-9px 28px 0 -4px rgba(180,150,90,.35);}
+  .fog{position:absolute;left:-20%;width:140%;height:150px;filter:blur(10px);}
+  .fog.f1{bottom:-40px;background:radial-gradient(closest-side,rgba(120,80,160,.16),transparent);animation:fogmove 28s linear infinite;}
+  .fog.f2{bottom:30px;background:radial-gradient(closest-side,rgba(200,110,40,.12),transparent);animation:fogmove 40s linear infinite reverse;}
+  @keyframes fogmove{0%{transform:translateX(-8%)}50%{transform:translateX(8%)}100%{transform:translateX(-8%)}}
+  .bat{position:absolute;font-size:28px;will-change:transform;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));}
+  .bat span{display:inline-block;animation:batflap .28s ease-in-out infinite;}
+  @keyframes batflap{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.55)}}
+  @keyframes batfly1{0%{transform:translate(-12vw,22vh)}100%{transform:translate(112vw,12vh)}}
+  @keyframes batfly2{0%{transform:translate(112vw,40vh)}100%{transform:translate(-12vw,30vh)}}
+  @keyframes batfly3{0%{transform:translate(-12vw,60vh)}100%{transform:translate(112vw,50vh)}}
+  /* Navidad */
+  .xwire{position:absolute;top:14px;left:0;right:0;height:2px;background:#2b3d4f;}
+  .xlights{position:absolute;top:0;left:0;right:0;height:46px;display:flex;justify-content:space-around;align-items:flex-start;}
+  .xlights .bulb{width:13px;height:17px;border-radius:50%;margin-top:14px;position:relative;animation:xtwinkle 1.8s ease-in-out infinite;}
+  .xlights .bulb::before{content:"";position:absolute;top:-9px;left:4px;width:6px;height:9px;background:#2b3d4f;border-radius:2px;}
+  @keyframes xtwinkle{0%,100%{opacity:.45;filter:brightness(.7)}50%{opacity:1;filter:brightness(1.6) drop-shadow(0 0 7px currentColor)}}
+  /* San Juan */
+  .bonfire{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:240px;height:220px;}
+  .firelight{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);width:520px;height:330px;background:radial-gradient(closest-side,rgba(255,140,40,.18),transparent);animation:flick 1.4s ease-in-out infinite;}
+  .logs{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:140px;height:24px;}
+  .logs span{position:absolute;bottom:0;left:50%;width:120px;height:15px;border-radius:8px;background:linear-gradient(#5a3a1a,#3a2410);}
+  .logs span:nth-child(1){transform:translateX(-50%) rotate(18deg);} .logs span:nth-child(2){transform:translateX(-50%) rotate(-18deg);}
+  .flame{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);border-radius:50%/60% 60% 40% 40%;filter:blur(2px);mix-blend-mode:screen;animation:flick 1.2s ease-in-out infinite;}
+  .flame.f1{width:115px;height:165px;background:radial-gradient(closest-side,#ffd24a 10%,#ff7a18 45%,rgba(255,60,0,0) 75%);}
+  .flame.f2{width:78px;height:125px;background:radial-gradient(closest-side,#fff2a8 8%,#ffae29 45%,rgba(255,90,0,0) 78%);animation-duration:.9s;}
+  .flame.f3{width:44px;height:86px;background:radial-gradient(closest-side,#fff 5%,#ffe07a 50%,rgba(255,160,0,0) 80%);animation-duration:.7s;}
+  @keyframes flick{0%,100%{transform:translateX(-50%) scale(1,1)}25%{transform:translateX(-53%) scale(.92,1.08)}50%{transform:translateX(-47%) scale(1.06,.94)}75%{transform:translateX(-51%) scale(.96,1.05)}}
+  /* Reyes */
+  .shooting{position:absolute;top:-10%;left:-10%;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px #fff,0 0 24px 8px rgba(240,195,60,.6);animation:shoot 5s linear infinite;}
+  .shooting::after{content:"";position:absolute;right:3px;top:50%;width:150px;height:2px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),rgba(240,195,60,.6));}
+  @keyframes shoot{0%{transform:translate(0,0) rotate(28deg);opacity:0}8%{opacity:1}45%{transform:translate(70vw,52vh) rotate(28deg);opacity:1}60%{opacity:0}100%{opacity:0}}
+  /* Semana Santa */
+  .candleglow{position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);width:560px;height:300px;background:radial-gradient(closest-side,rgba(255,180,70,.12),transparent);animation:flick 3s ease-in-out infinite;}
+  /* Aniversario */
+  .bigcake{position:absolute;bottom:46px;left:50%;transform:translateX(-50%);font-size:92px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));animation:cakeb 2.6s ease-in-out infinite;}
+  @keyframes cakeb{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-9px)}}
   .toast.aniv{border-color:var(--gold);border-left-color:var(--gold);}
   .aniv-box{font-size:12.5px;color:var(--muted);margin:8px 0 2px;display:flex;align-items:center;gap:8px;}
   .aniv-box b{color:#fff;}
