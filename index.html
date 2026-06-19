@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=29">
+<link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
 
@@ -277,7 +277,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=42; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=43; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -423,7 +423,7 @@ function renderMinijuegos(){
   ];
   var abiertas=Object.keys(DUELOS).filter(function(id){return DUELOS[id]&&DUELOS[id].estado!=="cerrado";}).length;
   var html='<div class="mj-wrap"><p style="color:var(--muted);font-size:13px;margin:0 0 12px;">Minijuegos para picaros entre sesiones. ¡Pulsa para jugar!</p>';
-  html+='<div class="mj-duelo"><div class="mj-duelo-ic">⚔️</div><div class="mj-duelo-tx"><div class="mj-n">Mesa de Duelo <span class="mj-live">apuestas en vivo</span></div><div class="mj-d">Abre una mesa de dados, apuesta dinero de tu inventario y que tire todo el mundo. Se ve en directo, sin compartir pantalla.</div></div><button class="btn dm" id="mj-duelo-btn" type="button">⚔️ '+(abiertas?("Entrar ("+abiertas+")"):"Abrir mesa")+'</button></div>';
+  html+='<div class="mj-duelo"><div class="mj-duelo-ic">⚔️</div><div class="mj-duelo-tx"><div class="mj-n">Mesa de Apuestas <span class="mj-live">verde vs rojo</span></div><div class="mj-d">Apostad al 🟢 verde o al 🔴 rojo con dinero de tu inventario; se juega el pulso en directo (primero a +3) y el bote del bando perdedor se reparte entre los que acertaron.</div></div><button class="btn dm" id="mj-duelo-btn" type="button">⚔️ '+(abiertas?("Entrar ("+abiertas+")"):"Abrir mesa")+'</button></div>';
   html+='<div class="mj-grid">';
   juegos.forEach(function(j,i){ if(j.soon){ html+='<div class="mj-card"><div class="mj-ic">'+j.ic+'</div><div class="mj-n">'+esc(j.n)+'</div><div class="mj-d">'+esc(j.d)+'</div><div class="mj-soon">🔒 Próximamente</div></div>'; } else { html+='<div class="mj-card play" data-i="'+i+'"><div class="mj-ic">'+j.ic+'</div><div class="mj-n">'+esc(j.n)+'</div><div class="mj-d">'+esc(j.d)+'</div><div class="mj-go">▶ Jugar</div></div>'; } });
   html+='</div></div>';
@@ -1917,8 +1917,8 @@ function toggleBloqueo(){
 }
 // Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
 var liveTimer=null, liveBusy=false, liveN=0, duelTimer=null;
-function startLive(){ stopLive(); liveN=0; liveTimer=setInterval(liveTick,5000); duelTimer=setInterval(duelosTick,2500); duelosTick(); }
-function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearInterval(duelTimer);duelTimer=null;} DUELOS={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
+function startLive(){ stopLive(); liveN=0; liveTimer=setInterval(liveTick,5000); duelLoop(); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearTimeout(duelTimer);duelTimer=null;} DUELOS={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
 function repintarLive(changed){ if(!changed)return; var y=window.scrollY; renderEdicto(); renderTabs(); renderList(); renderGlobal(); if(document.getElementById("cadenas-modal").classList.contains("open"))renderCadenas(); window.scrollTo(0,y); }
 function liveTick(){
   if(!currentCamp||document.hidden||liveBusy||editMode)return;
@@ -1989,21 +1989,23 @@ function saveEdictos(){
 
 // ====== Mesa de Duelo (apuestas con dados, en vivo y espectable) ======
 // Los duelos viven en /campanas/{id}/info/duelos/{did} (subárbol info => escribible con las reglas actuales).
-var DUELOS={}, duelState={view:null,pend:{}}, duelResolving={}, duelAutoArmed={}, duelCanceling={}, duelRolling={};
-var DADOS=[4,6,8,10,12,20,100], COIN_NAMES={pt:"Platino",or:"Oro",pl:"Plata",br:"Bronce"};
+var DUELOS={}, duelState={view:null,pend:{}}, duelResolving={}, duelAutoArmed={}, duelCanceling={};
+var COIN_NAMES={pt:"Platino",or:"Oro",pl:"Plata",br:"Bronce"};
+// Sondeo en vivo auto-reprogramado: más rápido (1,2s) con el modal abierto para ver el pulso en directo.
 function duelosTick(){
-  if(!currentCamp||document.hidden)return;
-  if(document.getElementById("app").style.display==="none")return;
-  fetch(FB+"/campanas/"+currentCamp+"/info/duelos.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
+  if(!currentCamp||document.hidden)return Promise.resolve();
+  if(document.getElementById("app").style.display==="none")return Promise.resolve();
+  return fetch(FB+"/campanas/"+currentCamp+"/info/duelos.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
     DUELOS=d||{};
     renderDueloAviso();
     if(document.getElementById("duelo-modal").classList.contains("open")){
-      // refresca el saldo propio (fresco) para que la apuesta muestre lo que realmente tienes
-      fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(currentUser)+"/dinero.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(di){ if(di!=null)invData(currentUser).dinero=di; renderDueloModal(); }).catch(function(){ renderDueloModal(); });
+      return fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(currentUser)+"/dinero.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(di){ if(di!=null)invData(currentUser).dinero=di; renderDueloModal(); }).catch(function(){ renderDueloModal(); });
     }
   }).catch(function(){});
 }
-function duelPot(d){ var p=0,js=(d&&d.jugadores)||{}; Object.keys(js).forEach(function(u){p+=Math.floor(Number(js[u].apuesta)||0);}); return p; }
+function duelLoop(){ duelosTick(); var fast=document.getElementById("duelo-modal").classList.contains("open"); duelTimer=setTimeout(duelLoop, fast?1200:2800); }
+function duelPoolLado(d,lado){ var p=Math.floor(Number(((d&&d.npc)||{})[lado])||0); var ap=(d&&d.apuestas)||{}; Object.keys(ap).forEach(function(u){ if(ap[u]&&ap[u].lado===lado)p+=Math.floor(Number(ap[u].monto)||0); }); return p; }
+function duelPlayersLado(d,lado){ var ap=(d&&d.apuestas)||{}; return Object.keys(ap).filter(function(u){return ap[u]&&ap[u].lado===lado;}); }
 function duelAbiertos(){ return Object.keys(DUELOS).filter(function(id){return DUELOS[id]&&DUELOS[id].estado!=="cerrado";}); }
 function renderDueloAviso(){
   var av=document.getElementById("duelo-aviso"); if(!av)return;
@@ -2011,8 +2013,8 @@ function renderDueloAviso(){
   var ids=duelAbiertos();
   if(!ids.length){ av.classList.remove("show"); return; }
   ids.sort(function(a,b){var fa=DUELOS[a].fecha||"",fb=DUELOS[b].fecha||"";return fa<fb?1:-1;});
-  var d=DUELOS[ids[0]];
-  av.innerHTML='⚔️ <b>'+esc(d.host||"?")+'</b> abrió una mesa de duelo'+(ids.length>1?(' (+'+(ids.length-1)+')'):'')+': «'+esc(d.titulo||"Duelo")+'» <button class="btn" id="duelo-aviso-btn" type="button">Entrar</button>';
+  var d=DUELOS[ids[0]], est=(d.estado==="jugando")?"💪 ¡pulso en juego!":"apostando";
+  av.innerHTML='🟢🔴 <b>'+esc(d.host||"?")+'</b> abrió una mesa de apuestas'+(ids.length>1?(' (+'+(ids.length-1)+')'):'')+': «'+esc(d.titulo||"Apuestas")+'» <span style="opacity:.85">'+est+'</span> <button class="btn" id="duelo-aviso-btn" type="button">Entrar</button>';
   av.classList.add("show");
   var b=document.getElementById("duelo-aviso-btn"); if(b)b.addEventListener("click",function(){ abrirDueloModal(ids.length===1?ids[0]:null); });
 }
@@ -2023,24 +2025,23 @@ function renderDueloModal(){
   var back=document.getElementById("duelo-back"), title=document.getElementById("duelo-title");
   var did=duelState.view, d=did?DUELOS[did]:null;
   if(did&&!d){ duelState.view=null; did=null; }
-  if(did&&d){ if(back)back.style.display="inline-block"; if(title)title.textContent="⚔️ "+(d.titulo||"Duelo"); renderDueloRoom(body,did,d); }
-  else { if(back)back.style.display="none"; if(title)title.textContent="⚔️ Mesa de Duelo"; renderDueloLobby(body); }
+  if(did&&d){ if(back)back.style.display="inline-block"; if(title)title.textContent="⚔️ "+(d.titulo||"Apuestas"); renderDueloRoom(body,did,d); }
+  else { if(back)back.style.display="none"; if(title)title.textContent="⚔️ Mesa de Apuestas"; renderDueloLobby(body); }
 }
 function renderDueloLobby(body){
   var puede=!(campInfo&&campInfo.bloqueada)&&(esMiembroCampana()||esGM(campInfo));
-  var html='<p class="prop-intro">⚔️ Abre una mesa de duelo de dados. A todos les salta un aviso, entran y <b>apuestan dinero de su inventario</b>. Cada uno tira su dado (1 jugador) y la mayor tirada se lleva el bote. Se ve en directo, sin compartir pantalla.</p>';
+  var html='<p class="prop-intro">🟢🔴 Abre una mesa de apuestas. A todos les salta un aviso, entran y <b>apuestan al verde o al rojo</b> con dinero de su inventario. Luego se juega el <b>pulso</b> (primero a +3 gana) y el bote del bando perdedor se reparte (proporcional a lo apostado) entre los que acertaron.</p>';
   if(puede){
-    html+='<div class="duelo-form"><input class="prop-in" id="duelo-tit" placeholder="¿Qué se juega? (p. ej. Pulso a muerte)" maxlength="60">';
-    html+='<select class="prop-in" id="duelo-dado">'+DADOS.map(function(x){return '<option value="'+x+'"'+(x===20?' selected':'')+'>d'+x+'</option>';}).join('')+'</select>';
+    html+='<div class="duelo-form"><input class="prop-in" id="duelo-tit" placeholder="¿Qué se juega? (p. ej. Joel vs Dídac)" maxlength="60">';
     html+='<select class="prop-in" id="duelo-coin">'+["or","pt","pl","br"].map(function(c){return '<option value="'+c+'">'+COIN_NAMES[c]+'</option>';}).join('')+'</select>';
     html+='<button class="btn dm" id="duelo-crear" type="button">⚔️ Abrir mesa</button></div>';
-  } else html+='<p class="empty" style="padding:6px 0;">Solo los miembros de la campaña pueden abrir o entrar a duelos.</p>';
+  } else html+='<p class="empty" style="padding:6px 0;">Solo los miembros de la campaña pueden abrir o entrar a mesas.</p>';
   var ids=Object.keys(DUELOS).sort(function(a,b){var fa=DUELOS[a].fecha||"",fb=DUELOS[b].fecha||"";return fa<fb?1:-1;});
   html+='<div class="duelo-list">';
   if(!ids.length)html+='<div class="empty" style="padding:16px;">No hay mesas todavía.</div>';
-  ids.forEach(function(id){ var d=DUELOS[id]||{}, js=d.jugadores||{}, nP=Object.keys(js).length, pot=duelPot(d);
-    var est=d.estado==="cerrado"?'🏁 Terminado':(d.estado==="tirando"?'🎲 Tirando':'🟢 Abierto');
-    html+='<div class="duelo-card"><div class="duelo-cmain"><div class="duelo-ct">⚔️ '+esc(d.titulo||"Duelo")+' <span class="duelo-est">'+est+'</span></div><div class="duelo-cmeta">Anfitrión: '+esc(d.host||"?")+' · d'+(d.dado||20)+' · '+nP+' jugador(es) · bote '+pot+' '+(COIN_NAMES[d.coin]||"")+'</div></div><button class="btn duelo-enter" data-did="'+esc(id)+'" type="button">'+(d.estado==="cerrado"?"Ver":"Entrar")+'</button></div>';
+  ids.forEach(function(id){ var d=DUELOS[id]||{}, poolV=duelPoolLado(d,"verde"), poolR=duelPoolLado(d,"rojo");
+    var est=d.estado==="cerrado"?'🏁 Terminado':(d.estado==="jugando"?'💪 En juego':'🟢 Apostando');
+    html+='<div class="duelo-card"><div class="duelo-cmain"><div class="duelo-ct">⚔️ '+esc(d.titulo||"Apuestas")+' <span class="duelo-est">'+est+'</span></div><div class="duelo-cmeta">Anfitrión: '+esc(d.host||"?")+' · 🟢 '+poolV+' vs 🔴 '+poolR+' '+(COIN_NAMES[d.coin]||"")+'</div></div><button class="btn duelo-enter" data-did="'+esc(id)+'" type="button">'+(d.estado==="cerrado"?"Ver":"Entrar")+'</button></div>';
   });
   html+='</div>';
   body.innerHTML=html;
@@ -2049,76 +2050,76 @@ function renderDueloLobby(body){
 }
 function crearDuelo(){
   if(campInfo&&campInfo.bloqueada)return;
-  if(!(esMiembroCampana()||esGM(campInfo))){ alert("Solo los miembros pueden abrir duelos."); return; }
-  var t=(document.getElementById("duelo-tit").value||"").trim()||"Duelo de dados";
-  var dado=parseInt(document.getElementById("duelo-dado").value,10)||20;
+  if(!(esMiembroCampana()||esGM(campInfo))){ alert("Solo los miembros pueden abrir mesas."); return; }
+  var t=(document.getElementById("duelo-tit").value||"").trim()||"Apuestas verde vs rojo";
   var coin=document.getElementById("duelo-coin").value||"or"; if(["pt","or","pl","br"].indexOf(coin)<0)coin="or";
   var did="d"+(new Date().getTime())+"-"+Math.random().toString(36).slice(2,6);
-  var d={titulo:t,dado:dado,coin:coin,host:currentUser,estado:"abierto",fecha:new Date().toISOString(),jugadores:{}};
+  var d={titulo:t,host:currentUser,coin:coin,estado:"abierto",fecha:new Date().toISOString(),apuestas:{},npc:{verde:0,rojo:0},pos:0};
   setStatus("Abriendo mesa…");
   fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(function(r){
     setStatus(r.ok?"✓ Mesa abierta":"⚠ Error");
-    if(r.ok){ DUELOS[did]=d; duelState.view=did; logEvento("⚔️ abrió una mesa de duelo",t); renderDueloModal(); }
+    if(r.ok){ DUELOS[did]=d; duelState.view=did; logEvento("⚔️ abrió una mesa de apuestas",t); renderDueloModal(); }
   }).catch(function(){ setStatus("⚠ Sin conexión"); });
 }
 function renderDueloRoom(body,did,d){
-  var js=d.jugadores||{}, coin=d.coin||"or", cn=COIN_NAMES[coin]||"", esHost=(d.host===currentUser), gm=esGM(campInfo);
+  var coin=d.coin||"or", cn=COIN_NAMES[coin]||"", esHost=(d.host===currentUser), gm=esGM(campInfo);
   var puede=!(campInfo&&campInfo.bloqueada)&&(esMiembroCampana()||gm);
-  var yoJuego=!!js[currentUser], pot=duelPot(d);
+  var ap=d.apuestas||{}, npc=d.npc||{};
+  var poolV=duelPoolLado(d,"verde"), poolR=duelPoolLado(d,"rojo");
   var miSaldo=Math.floor(Number((((INV[currentUser]||{}).dinero||{})[coin]))||0);
-  var html='<div class="duelo-room"><div class="duelo-rtop"><b>⚔️ '+esc(d.titulo||"Duelo")+'</b><div class="duelo-cmeta">d'+(d.dado||20)+' · bote <b>'+pot+' '+cn+'</b> · '+(d.estado==="abierto"?'🟢 Abierto':(d.estado==="tirando"?'🎲 Tirando':'🏁 Terminado'))+'</div></div>';
-  html+='<div class="duelo-players">';
-  var orden=Object.keys(js);
-  if(!orden.length)html+='<div class="empty" style="padding:10px;">Aún no se ha apuntado nadie. ¡Apuesta para entrar!</div>';
-  orden.forEach(function(u){
-    var pj=js[u]||{}, tir=(pj.tirada===0||pj.tirada)?pj.tirada:null;
-    var gan=!!(d.ganador&&d.ganador.indexOf&&d.ganador.indexOf(u)>=0);
-    var puedeTirar=d.estado==="tirando"&&tir===null&&!(campInfo&&campInfo.bloqueada)&&(u===currentUser||esHost||gm);
-    html+='<div class="duelo-prow'+(gan?" win":"")+'"><span class="duelo-pn">'+iconPJHTML(u)+' '+esc(u)+(u===d.host?' <span class="duelo-hostb">anfitrión</span>':'')+'</span><span class="duelo-pbet">'+Math.floor(Number(pj.apuesta)||0)+' '+cn+'</span><span class="dado'+(gan?" win":"")+'" data-dado="'+esc(u)+'">'+(tir===null?'—':tir)+'</span>'+(puedeTirar?'<button class="btn dm duelo-roll" data-u="'+esc(u)+'" type="button">🎲 Tirar</button>':'')+'</div>';
-  });
-  html+='</div>';
+  var miApuesta=ap[currentUser], mineMonto=miApuesta?Math.floor(Number(miApuesta.monto)||0):0;
+  var html='<div class="duelo-room"><div class="duelo-rtop"><b>⚔️ '+esc(d.titulo||"Apuestas")+'</b><div class="duelo-cmeta">moneda: '+cn+' · '+(d.estado==="abierto"?'🟢 Apostando':(d.estado==="jugando"?'💪 ¡Pulso en juego!':'🏁 Terminado'))+'</div></div>';
+  html+='<div class="duelo-pools"><div class="duelo-pool v'+(d.ganador==="verde"?" win":"")+'">🟢 Verde<b>'+poolV+' '+cn+'</b></div><div class="duelo-pool r'+(d.ganador==="rojo"?" win":"")+'">🔴 Rojo<b>'+poolR+' '+cn+'</b></div></div>';
+  var us=Object.keys(ap);
+  if(us.length){ html+='<div class="duelo-aplist">'; us.forEach(function(u){ var a=ap[u]; html+='<span class="duelo-apchip '+(a.lado==="rojo"?"r":"v")+'">'+iconPJHTML(u)+' '+esc(u)+': '+Math.floor(Number(a.monto)||0)+'</span>'; }); html+='</div>'; }
+  if((Math.floor(Number(npc.verde)||0))||(Math.floor(Number(npc.rojo)||0)))html+='<div class="duelo-cmeta" style="margin-bottom:10px;">🏠 Casa (NPC) — 🟢 '+(Math.floor(Number(npc.verde)||0))+' · 🔴 '+(Math.floor(Number(npc.rojo)||0))+' '+cn+'</div>';
   if(d.estado==="abierto"){
     if(puede){
-      var mine=Math.floor(Number((js[currentUser]||{}).apuesta)||0), cap=miSaldo+mine;
-      var pend=duelState.pend[did]; if(pend===undefined||pend===null)pend=mine||1; if(pend<1)pend=1; if(pend>cap&&cap>0)pend=cap; duelState.pend[did]=pend;
-      html+='<div class="duelo-bet"><div class="duelo-bet-h">💰 Tu apuesta ('+cn+') — tienes '+miSaldo+' '+cn+'</div><div class="duelo-bet-row"><button class="btn duelo-minus" type="button">−</button><span class="duelo-amt">'+pend+'</span><button class="btn duelo-plus" type="button">＋</button><button class="btn dm duelo-apostar" type="button">'+(yoJuego?('Actualizar a '+pend):'Apostar y entrar')+'</button></div>';
-      if(yoJuego&&currentUser!==d.host)html+='<button class="btn duelo-retirar" type="button">↩ Retirar mi apuesta</button>';
+      var pend=duelState.pend[did]; if(!pend){ pend={lado:(miApuesta&&miApuesta.lado==="rojo")?"rojo":"verde", monto:(mineMonto||1)}; duelState.pend[did]=pend; }
+      if(pend.monto<1)pend.monto=1; var cap=miSaldo+mineMonto; if(cap>0&&pend.monto>cap)pend.monto=cap;
+      html+='<div class="duelo-bet"><div class="duelo-bet-h">💰 Tu apuesta ('+cn+') — tienes '+miSaldo+'</div>';
+      html+='<div class="duelo-ladosel"><button class="lado-btn v'+(pend.lado==="verde"?" sel":"")+'" data-lado="verde" type="button">🟢 Verde</button><button class="lado-btn r'+(pend.lado==="rojo"?" sel":"")+'" data-lado="rojo" type="button">🔴 Rojo</button></div>';
+      html+='<div class="duelo-bet-row"><button class="btn duelo-minus" type="button">−</button><span class="duelo-amt">'+pend.monto+'</span><button class="btn duelo-plus" type="button">＋</button><button class="btn dm duelo-apostar" type="button">'+(miApuesta?"Actualizar":"Apostar")+'</button></div>';
+      if(miApuesta)html+='<button class="btn duelo-retirar" type="button">↩ Retirar mi apuesta</button>';
       html+='</div>';
     }
     if(esHost||gm){
+      html+='<div class="duelo-npc"><div class="duelo-bet-h">🏠 Dinero de la casa (NPC, virtual)</div><div class="duelo-npc-row"><label>🟢 <input class="npc-in" id="npc-verde" type="number" min="0" value="'+(Math.floor(Number(npc.verde)||0))+'"></label><label>🔴 <input class="npc-in" id="npc-rojo" type="number" min="0" value="'+(Math.floor(Number(npc.rojo)||0))+'"></label></div></div>';
       html+='<div class="duelo-host">';
-      if(esHost)html+='<button class="btn dm duelo-start" type="button"'+((orden.length>=2)?"":' disabled title="Hacen falta 2 jugadores apostando"')+'>🎲 ¡A tirar!</button>';
-      html+='<button class="btn duelo-cancel" type="button">🗑 Cancelar mesa (devuelve apuestas)</button></div>';
+      if(esHost)html+='<button class="btn dm duelo-empezar" type="button">💪 ¡Empezar el pulso!</button>';
+      html+='<button class="btn duelo-cancel" type="button">🗑 Cancelar (devuelve apuestas)</button></div>';
     }
-  } else if(d.estado==="tirando"){
-    var allRolled=orden.length>=2&&orden.every(function(u){var t=js[u].tirada;return t===0||!!t;});
-    html+='<div class="duelo-host">';
-    if(esHost&&allRolled)html+='<button class="btn dm duelo-resolve" type="button">🏆 Resolver duelo</button>';
-    else if(!allRolled)html+='<div class="duelo-cmeta">Esperando a que tiren los jugadores…</div>';
-    if(esHost||gm)html+='<button class="btn duelo-cancel" type="button">🗑 Cancelar (devuelve apuestas)</button>';
+  } else if(d.estado==="jugando"){
+    var pos=Math.floor(Number(d.pos)||0), pct=50-(pos/3*44);
+    html+='<div class="tug"><div class="tug-row"><span class="tug-lbl">🟢</span><div class="tug-track"><div class="tug-goal gl"></div><div class="tug-goal gr"></div><div class="tug-knob" style="left:'+pct+'%">🔘</div></div><span class="tug-lbl">🔴</span></div><div class="tug-pos">'+(pos>0?("Verde gana por "+pos):(pos<0?("Rojo gana por "+(-pos)):"empate (0)"))+' · primero a 3 gana</div>';
+    if(puede)html+='<div class="tug-btns"><button class="tug-b v" data-lado="verde" type="button">💪 +1 Verde</button><button class="tug-b r" data-lado="rojo" type="button">+1 Rojo 💪</button></div>';
     html+='</div>';
+    if(esHost||gm)html+='<div class="duelo-host"><button class="btn duelo-cancel" type="button">🗑 Cancelar (devuelve apuestas)</button></div>';
   } else {
-    var gnames=(d.ganador||[]).join(", ");
-    html+='<div class="duelo-result">🏆 <b>'+esc(gnames||"—")+'</b> se lleva el bote de <b>'+pot+' '+cn+'</b>'+((d.ganador&&d.ganador.length>1)?' (repartido)':'')+'</div>';
+    if(d.devuelto)html+='<div class="duelo-result">↩ Solo había apuestas a un bando — <b>se devolvió el dinero</b>.</div>';
+    else {
+      var pagos=d.pagos||{}, winners=duelPlayersLado(d,d.ganador);
+      html+='<div class="duelo-result">🏆 Gana <b>'+(d.ganador==="verde"?"🟢 Verde":"🔴 Rojo")+'</b></div>';
+      if(winners.length){ html+='<div class="duelo-aplist">'; winners.forEach(function(u){ var stake=Math.floor(Number((ap[u]||{}).monto)||0), share=Math.floor(Number(pagos[u])||0); html+='<span class="duelo-apchip v">'+iconPJHTML(u)+' '+esc(u)+': +'+share+' '+cn+' (recupera '+stake+')</span>'; }); html+='</div>'; }
+      else html+='<div class="duelo-cmeta">Nadie del bando ganador era jugador.</div>';
+    }
     if(esHost||gm)html+='<div class="duelo-host"><button class="btn duelo-quitar" type="button">🗑 Quitar mesa</button></div>';
   }
   html+='</div>';
   body.innerHTML=html;
-  var roll=body.querySelectorAll(".duelo-roll"); for(var i=0;i<roll.length;i++){(function(b){b.addEventListener("click",function(){tirarDado(did,b.getAttribute("data-u"));});})(roll[i]);}
-  var minus=body.querySelector(".duelo-minus"); if(minus)minus.addEventListener("click",function(){duelState.pend[did]=Math.max(1,(duelState.pend[did]||1)-1);renderDueloModal();});
-  var plus=body.querySelector(".duelo-plus"); if(plus)plus.addEventListener("click",function(){ var mine=Math.floor(Number(((d.jugadores||{})[currentUser]||{}).apuesta)||0), cap=miSaldo+mine, nv=(duelState.pend[did]||1)+1; if(cap>0&&nv>cap)nv=cap; duelState.pend[did]=Math.max(1,nv); renderDueloModal(); });
-  var ap=body.querySelector(".duelo-apostar"); if(ap)ap.addEventListener("click",function(){apostarDuelo(did);});
+  var lados=body.querySelectorAll(".lado-btn"); for(var i=0;i<lados.length;i++){(function(b){b.addEventListener("click",function(){ if(!duelState.pend[did])duelState.pend[did]={lado:"verde",monto:1}; duelState.pend[did].lado=b.getAttribute("data-lado"); renderDueloModal(); });})(lados[i]);}
+  var minus=body.querySelector(".duelo-minus"); if(minus)minus.addEventListener("click",function(){ var p=duelState.pend[did]||{lado:"verde",monto:1}; p.monto=Math.max(1,(p.monto||1)-1); duelState.pend[did]=p; renderDueloModal(); });
+  var plus=body.querySelector(".duelo-plus"); if(plus)plus.addEventListener("click",function(){ var p=duelState.pend[did]||{lado:"verde",monto:1}; var cap=miSaldo+mineMonto, nv=(p.monto||1)+1; if(cap>0&&nv>cap)nv=cap; p.monto=Math.max(1,nv); duelState.pend[did]=p; renderDueloModal(); });
+  var apb=body.querySelector(".duelo-apostar"); if(apb)apb.addEventListener("click",function(){apostarLado(did);});
   var rt=body.querySelector(".duelo-retirar"); if(rt)rt.addEventListener("click",function(){retirarDuelo(did);});
-  var st=body.querySelector(".duelo-start"); if(st)st.addEventListener("click",function(){empezarTiradas(did);});
+  var nvf=body.querySelector("#npc-verde"); if(nvf)nvf.addEventListener("change",function(){setNpcDuelo(did,"verde",nvf.value);});
+  var nrf=body.querySelector("#npc-rojo"); if(nrf)nrf.addEventListener("change",function(){setNpcDuelo(did,"rojo",nrf.value);});
+  var emp=body.querySelector(".duelo-empezar"); if(emp)emp.addEventListener("click",function(){empezarPulso(did);});
+  var tb=body.querySelectorAll(".tug-b"); for(var j=0;j<tb.length;j++){(function(b){b.addEventListener("click",function(){empujarPulso(did,b.getAttribute("data-lado"));});})(tb[j]);}
   var cl=body.querySelector(".duelo-cancel"); if(cl)cl.addEventListener("click",function(){cancelarDuelo(did);});
-  var rs=body.querySelector(".duelo-resolve"); if(rs)rs.addEventListener("click",function(){resolverDuelo(did);});
   var qt=body.querySelector(".duelo-quitar"); if(qt)qt.addEventListener("click",function(){quitarDuelo(did);});
-  if(d.estado==="tirando"&&esHost&&!(campInfo&&campInfo.bloqueada)){
-    var all=orden.length>=2&&orden.every(function(u){var t=js[u].tirada;return t===0||!!t;});
-    if(all&&!duelAutoArmed[did]&&!duelResolving[did]){ duelAutoArmed[did]=true; setTimeout(function(){ duelAutoArmed[did]=false; resolverDuelo(did); },800); }
-  }
+  if(d.estado==="jugando"&&esHost&&Math.abs(Number(d.pos)||0)>=3&&!duelAutoArmed[did]&&!duelResolving[did]){ duelAutoArmed[did]=true; setTimeout(function(){ duelAutoArmed[did]=false; resolverApuestas(did); },350); }
 }
-// Ajusta el dinero de una sección de inventario en Firebase (delta + o -). opts.strict=true => falla si no llega.
 // Ajusta UNA moneda de una sección leyéndola fresca y escribiendo SOLO esa sub-ruta (no pisa objetos ni otras monedas). opts.strict => falla si no llega.
 function duelAjustarDinero(sec,coin,delta,opts){
   if(!delta)return Promise.resolve(true);
@@ -2132,102 +2133,105 @@ function duelAjustarDinero(sec,coin,delta,opts){
     });
   }).catch(function(){ return false; });
 }
-function apostarDuelo(did){
+// Apostar a un lado (verde/rojo): descuenta de tu inventario solo la diferencia; cambiar de lado no cuesta. Relee fresco (evita doble cargo entre pestañas).
+function apostarLado(did){
   var d0=DUELOS[did]; if(!d0)return;
   if(campInfo&&campInfo.bloqueada)return;
   if(!(esMiembroCampana()||esGM(campInfo))){ alert("Solo los miembros pueden apostar."); return; }
-  var coin=d0.coin||"or", nuevo=Math.floor(Number(duelState.pend[did])||0);
+  var coin=d0.coin||"or", pend=duelState.pend[did]||{}, lado=(pend.lado==="rojo")?"rojo":"verde", nuevo=Math.floor(Number(pend.monto)||0);
   if(nuevo<1){ alert("La apuesta debe ser al menos 1."); return; }
   setStatus("Apostando…");
-  // releer la mesa FRESCA: la subida/bajada se calcula contra la apuesta REAL del servidor (evita doble cargo entre pestañas)
   fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
     if(!d||d.estado!=="abierto"){ setStatus(""); alert("La mesa ya no admite apuestas."); duelosTick(); return; }
-    var js=d.jugadores||{}, mine=Math.floor(Number((js[currentUser]||{}).apuesta)||0), deltaMoney=mine-nuevo;
-    var keepT=(js[currentUser]&&(js[currentUser].tirada===0||js[currentUser].tirada))?js[currentUser].tirada:null;
-    if(deltaMoney===0){ setStatus("✓ Apostado"); duelosTick(); return; }
-    duelAjustarDinero(currentUser,coin,deltaMoney,{strict:true}).then(function(ok){
-      if(!ok){ setStatus(""); alert("No tienes suficiente "+(COIN_NAMES[coin]||coin)+" para esa apuesta."); return; }
-      var pj={apuesta:nuevo,tirada:keepT};
-      fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/jugadores/"+encodeURIComponent(currentUser)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(pj)}).then(function(r2){
-        if(!r2.ok){ duelAjustarDinero(currentUser,coin,-deltaMoney,{}); setStatus("⚠ Error"); alert("No se pudo registrar la apuesta; se te devolvió el dinero."); return; }
-        setStatus("✓ Apostado"); logEvento("💰 apostó "+nuevo+" "+(COIN_NAMES[coin]||coin),d.titulo||"duelo"); duelosTick();
-      }).catch(function(){ duelAjustarDinero(currentUser,coin,-deltaMoney,{}); setStatus("⚠ Sin conexión"); });
-    });
+    var ap=d.apuestas||{}, mine=Math.floor(Number((ap[currentUser]||{}).monto)||0), deltaMoney=mine-nuevo;
+    function escribir(){
+      var pj={lado:lado,monto:nuevo};
+      fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/apuestas/"+encodeURIComponent(currentUser)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(pj)}).then(function(r2){
+        if(!r2.ok){ if(deltaMoney!==0)duelAjustarDinero(currentUser,coin,-deltaMoney,{}); setStatus("⚠ Error"); alert("No se pudo registrar la apuesta; se te devolvió el dinero."); return; }
+        setStatus("✓ Apostado"); logEvento("💰 apostó "+nuevo+" "+(COIN_NAMES[coin]||coin)+" al "+lado,d.titulo||"apuestas"); duelosTick();
+      }).catch(function(){ if(deltaMoney!==0)duelAjustarDinero(currentUser,coin,-deltaMoney,{}); setStatus("⚠ Sin conexión"); });
+    }
+    if(deltaMoney===0){ escribir(); return; }
+    duelAjustarDinero(currentUser,coin,deltaMoney,{strict:true}).then(function(ok){ if(!ok){ setStatus(""); alert("No tienes suficiente "+(COIN_NAMES[coin]||coin)+"."); return; } escribir(); });
   }).catch(function(){ setStatus("⚠ Sin conexión"); });
 }
-
 function retirarDuelo(did){
   var d0=DUELOS[did]; if(!d0)return;
-  if(currentUser===d0.host){ alert("Eres el anfitrión: usa «Cancelar mesa» para cerrarla."); return; }
   var coin=d0.coin||"or";
   fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
-    if(!d||d.estado!=="abierto"){ duelosTick(); return; } // ya empezaron las tiradas o se cerró: no se puede retirar
-    var pj=(d.jugadores||{})[currentUser]; if(!pj){ duelosTick(); return; }
-    var a=Math.floor(Number(pj.apuesta)||0);
-    fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/jugadores/"+encodeURIComponent(currentUser)+".json",{method:"DELETE"}).then(function(r2){
+    if(!d||d.estado!=="abierto"){ duelosTick(); return; }
+    var a=(d.apuestas||{})[currentUser]; if(!a){ duelosTick(); return; }
+    var monto=Math.floor(Number(a.monto)||0);
+    fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/apuestas/"+encodeURIComponent(currentUser)+".json",{method:"DELETE"}).then(function(r2){
       if(!r2.ok)return;
-      if(a>0)duelAjustarDinero(currentUser,coin,a,{});
-      logEvento("↩ retiró su apuesta",d.titulo||"duelo"); duelosTick();
+      if(monto>0)duelAjustarDinero(currentUser,coin,monto,{});
+      logEvento("↩ retiró su apuesta",d.titulo||"apuestas"); duelosTick();
     }).catch(function(){});
   }).catch(function(){});
 }
-function empezarTiradas(did){
+// El GM mete el dinero de la casa (NPC): virtual, NO sale de ningún inventario. Engorda el bote que pueden ganar los jugadores.
+function setNpcDuelo(did,lado,val){
+  var d=DUELOS[did]; if(!d)return;
+  if(!(d.host===currentUser||esGM(campInfo)))return;
+  if(d.estado!=="abierto"||(campInfo&&campInfo.bloqueada))return;
+  var v=Math.max(0,Math.floor(Number(val)||0));
+  if(!d.npc)d.npc={}; d.npc[lado]=v;
+  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/npc/"+lado+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(){ duelosTick(); }).catch(function(){});
+}
+function empezarPulso(did){
   var d=DUELOS[did]; if(!d||d.host!==currentUser||d.estado!=="abierto")return;
   if(campInfo&&campInfo.bloqueada)return;
-  if(Object.keys(d.jugadores||{}).length<2){ alert("Hacen falta al menos 2 jugadores apostando."); return; }
-  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/estado.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify("tirando")}).then(function(r){ if(r.ok){ d.estado="tirando"; logEvento("🎲 empezó las tiradas",d.titulo||"duelo"); duelosTick(); } }).catch(function(){});
+  if(!Object.keys(d.apuestas||{}).length){ if(!confirm("No hay ninguna apuesta todavía. ¿Empezar igualmente?"))return; }
+  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({estado:"jugando",pos:0})}).then(function(r){ if(r.ok){ d.estado="jugando"; d.pos=0; logEvento("💪 empezó el pulso",d.titulo||"apuestas"); duelosTick(); } }).catch(function(){});
 }
-function tirarDado(did,user){
-  var d=DUELOS[did]; if(!d||d.estado!=="tirando")return;
+// Empujar el pulso: +1 a un lado. pos −3..+3 (verde positivo). Lee/escribe fresco para minimizar pérdidas entre pulsaciones.
+function empujarPulso(did,lado){
+  var d=DUELOS[did]; if(!d||d.estado!=="jugando")return;
   if(campInfo&&campInfo.bloqueada)return;
-  if(!(user===currentUser||d.host===currentUser||esGM(campInfo)))return;
-  var pj=(d.jugadores||{})[user]; if(!pj||pj.tirada===0||pj.tirada)return;
-  var rk=did+"/"+user; if(duelRolling[rk])return; duelRolling[rk]=true; // evita doble pulsación sobre la misma tirada
-  var dado=d.dado||20, val=1+Math.floor(Math.random()*dado);
-  var cell=document.querySelector('.dado[data-dado="'+user+'"]');
-  if(cell){ cell.classList.add("rolling"); var n=0,iv=setInterval(function(){ cell.textContent=1+Math.floor(Math.random()*dado); if(++n>8){ clearInterval(iv); cell.classList.remove("rolling"); cell.textContent=val; } },70); }
-  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/jugadores/"+encodeURIComponent(user)+"/tirada.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(val)}).then(function(r){ duelRolling[rk]=false; if(r.ok){ pj.tirada=val; logEvento("🎲 sacó "+val+" (d"+dado+")",d.titulo||"duelo"); duelosTick(); } }).catch(function(){ duelRolling[rk]=false; });
+  if(!(esMiembroCampana()||esGM(campInfo)))return;
+  var dir=(lado==="verde")?1:-1, url=FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pos.json";
+  fetch(url+"?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():0;}).then(function(p){
+    p=Math.floor(Number(p)||0); var np=Math.max(-3,Math.min(3,p+dir)); if(np===p)return;
+    d.pos=np; renderDueloModal();
+    fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(np)}).then(function(){ duelosTick(); }).catch(function(){});
+  }).catch(function(){});
 }
-function pagarGanador(did,d,coin,winner,pot){
-  duelAjustarDinero(winner,coin,pot,{}).then(function(okPay){
-    if(okPay)fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pagado.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}).catch(function(){});
-    logEvento("🏆 ganó el duelo ("+pot+" "+(COIN_NAMES[coin]||coin)+")",winner);
-    duelResolving[did]=false; duelosTick();
-    if(winner===currentUser){ try{ playSound(); confetti(); }catch(e){} }
-  });
-}
-function resolverDuelo(did){
-  if(duelResolving[did])return; duelResolving[did]=true; // candado SÍNCRONO: botón manual y auto-timer no pueden duplicar el pago
-  var local=DUELOS[did]; if(!local||local.host!==currentUser){ duelResolving[did]=false; return; } // solo el anfitrión resuelve (un único escritor)
+// Resolver al llegar el pulso a ±3. Solo el anfitrión (un único escritor). Parimutuel proporcional; NPC = dinero virtual.
+function resolverApuestas(did){
+  if(duelResolving[did])return; duelResolving[did]=true; // candado SÍNCRONO: no doble pago
+  var local=DUELOS[did]; if(!local||local.host!==currentUser){ duelResolving[did]=false; return; }
   fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
     if(!d){ duelResolving[did]=false; return; }
-    var coin=d.coin||"or";
-    // recuperación: el duelo ya está cerrado pero el pago falló (pagado===false) -> reintenta pagar (idempotente: solo si sigue sin pagar)
-    if(d.estado==="cerrado"){
-      if(d.pagado===false && d.ganador && d.ganador.length===1){ DUELOS[did]=d; pagarGanador(did,d,coin,d.ganador[0],duelPot(d)); }
-      else duelResolving[did]=false;
+    if(d.estado==="cerrado"){ if(d.pagado===false){ DUELOS[did]=d; if(d.devuelto)creditarDevolucion(did,d); else creditarApuestas(did,d); } else duelResolving[did]=false; return; } // recuperación de pago
+    if(d.estado!=="jugando"){ duelResolving[did]=false; return; }
+    var pos=Math.floor(Number(d.pos)||0); if(Math.abs(pos)<3){ duelResolving[did]=false; return; }
+    var win=(pos>=3)?"verde":"rojo", lose=(win==="verde")?"rojo":"verde", ap=d.apuestas||{};
+    var winners=duelPlayersLado(d,win);
+    if(!winners.length){ // nadie acertó (un solo bando o solo NPC) -> devolver apuestas a los jugadores
+      d.estado="cerrado"; d.ganador=win; d.pagado=false; d.devuelto=true; d.pagos={}; d.pagadoA={};
+      fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(function(r2){ if(!r2.ok){duelResolving[did]=false;return;} DUELOS[did]=d; creditarDevolucion(did,d); }).catch(function(){duelResolving[did]=false;});
       return;
     }
-    if(d.estado!=="tirando"){ duelResolving[did]=false; return; }
-    if(campInfo&&campInfo.bloqueada){ duelResolving[did]=false; return; } // campaña congelada: no se mueve dinero
-    var js=d.jugadores||{}, us=Object.keys(js);
-    if(us.length<2){ duelResolving[did]=false; return; }
-    if(!us.every(function(u){var t=js[u].tirada;return t===0||!!t;})){ duelResolving[did]=false; return; }
-    var mx=-1; us.forEach(function(u){ var t=Math.floor(Number(js[u].tirada)||0); if(t>mx)mx=t; });
-    var winners=us.filter(function(u){ return Math.floor(Number(js[u].tirada)||0)===mx; });
-    if(winners.length>1){
-      Promise.all(winners.map(function(u){ if(d.jugadores[u])d.jugadores[u].tirada=null; return fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/jugadores/"+encodeURIComponent(u)+"/tirada.json",{method:"DELETE"}); }))
-        .then(function(){ logEvento("🎲 empate, desempate entre",winners.join(", ")); duelResolving[did]=false; duelosTick(); })
-        .catch(function(){ duelResolving[did]=false; });
-      return;
-    }
-    var winner=winners[0], pot=duelPot(d);
-    d.estado="cerrado"; d.ganador=[winner]; d.pagado=false; // un solo PUT cierra el duelo: nadie más lo resuelve
-    fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(function(r){
-      if(!r.ok){ duelResolving[did]=false; return; }
-      DUELOS[did]=d; pagarGanador(did,d,coin,winner,pot);
-    }).catch(function(){ duelResolving[did]=false; });
+    var losingPool=duelPoolLado(d,lose), winStakeTotal=duelPoolLado(d,win), pagos={};
+    winners.forEach(function(u){ var stake=Math.floor(Number(ap[u].monto)||0); pagos[u]=(winStakeTotal>0)?Math.floor(losingPool*stake/winStakeTotal):0; });
+    d.estado="cerrado"; d.ganador=win; d.pagado=false; d.pagos=pagos; d.pagadoA={};
+    fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}).then(function(r2){ if(!r2.ok){duelResolving[did]=false;return;} DUELOS[did]=d; creditarApuestas(did,d); }).catch(function(){duelResolving[did]=false;});
   }).catch(function(){ duelResolving[did]=false; });
+}
+// Acredita a cada ganador su apuesta (recuperada) + su parte del bote perdedor. Idempotente vía pagadoA por usuario.
+function creditarApuestas(did,d){
+  var coin=d.coin||"or", win=d.ganador, ap=d.apuestas||{}, pagos=d.pagos||{}, paid=d.pagadoA||{};
+  var pend=Object.keys(ap).filter(function(u){return ap[u].lado===win&&!paid[u];});
+  Promise.all(pend.map(function(u){ var pay=Math.floor(Number(ap[u].monto)||0)+Math.floor(Number(pagos[u])||0); return (pay>0?duelAjustarDinero(u,coin,pay,{}):Promise.resolve(true)).then(function(ok){ if(ok){ d.pagadoA[u]=true; fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pagadoA/"+encodeURIComponent(u)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}).catch(function(){}); } return ok; }); }))
+    .then(function(oks){ if(oks.every(Boolean)){ d.pagado=true; fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pagado.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}).catch(function(){}); } logEvento("🏆 ganó "+(win==="verde"?"Verde":"Rojo"),d.titulo||"apuestas"); duelResolving[did]=false; duelosTick(); if(pend.indexOf(currentUser)>=0){ try{ playSound(); confetti(); }catch(e){} } })
+    .catch(function(){ duelResolving[did]=false; });
+}
+function creditarDevolucion(did,d){
+  var coin=d.coin||"or", ap=d.apuestas||{}, paid=d.pagadoA||{};
+  var pend=Object.keys(ap).filter(function(u){return !paid[u];});
+  Promise.all(pend.map(function(u){ var stake=Math.floor(Number(ap[u].monto)||0); return (stake>0?duelAjustarDinero(u,coin,stake,{}):Promise.resolve(true)).then(function(ok){ if(ok){ d.pagadoA[u]=true; fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pagadoA/"+encodeURIComponent(u)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}).catch(function(){}); } return ok; }); }))
+    .then(function(oks){ if(oks.every(Boolean)){ d.pagado=true; fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/pagado.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}).catch(function(){}); } duelResolving[did]=false; duelosTick(); })
+    .catch(function(){ duelResolving[did]=false; });
 }
 function cancelarDuelo(did){
   var local=DUELOS[did]; if(!local)return;
@@ -2237,12 +2241,12 @@ function cancelarDuelo(did){
   duelCanceling[did]=true; // candado síncrono: no doble-reembolso
   fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(d){
     if(!d){ delete DUELOS[did]; duelState.view=null; duelCanceling[did]=false; renderDueloModal(); renderDueloAviso(); return; }
-    if(d.estado!=="abierto"&&d.estado!=="tirando"){ duelCanceling[did]=false; duelosTick(); return; }
+    if(d.estado==="cerrado"||d.estado==="cancelando"){ duelCanceling[did]=false; duelosTick(); return; }
     fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/estado.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify("cancelando")}).then(function(){
-      var js=d.jugadores||{}, coin=d.coin||"or";
-      Promise.all(Object.keys(js).map(function(u){ var a=Math.floor(Number(js[u].apuesta)||0); return a>0?duelAjustarDinero(u,coin,a,{}):Promise.resolve(true); })).then(function(){
+      var ap=d.apuestas||{}, coin=d.coin||"or";
+      Promise.all(Object.keys(ap).map(function(u){ var a=Math.floor(Number(ap[u].monto)||0); return a>0?duelAjustarDinero(u,coin,a,{}):Promise.resolve(true); })).then(function(){
         fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+".json",{method:"DELETE"}).then(function(){
-          delete DUELOS[did]; duelState.view=null; duelCanceling[did]=false; logEvento("🗑 canceló la mesa (devolvió apuestas)",d.titulo||"duelo"); renderDueloModal(); renderDueloAviso();
+          delete DUELOS[did]; duelState.view=null; duelCanceling[did]=false; logEvento("🗑 canceló la mesa (devolvió apuestas)",d.titulo||"apuestas"); renderDueloModal(); renderDueloAviso();
         }).catch(function(){ duelCanceling[did]=false; });
       }).catch(function(){ duelCanceling[did]=false; });
     }).catch(function(){ duelCanceling[did]=false; });
