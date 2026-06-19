@@ -603,3 +603,37 @@
   .toast.aniv{border-color:var(--gold);border-left-color:var(--gold);}
   .aniv-box{font-size:12.5px;color:var(--muted);margin:8px 0 2px;display:flex;align-items:center;gap:8px;}
   .aniv-box b{color:#fff;}
+
+  /* ===== Mesa de Apuestas (verde vs rojo + pulso) ===== */
+  .duelo-pools{display:flex;gap:10px;margin:10px 0;}
+  .duelo-pool{flex:1;text-align:center;border-radius:9px;padding:9px;font-size:13px;border:1px solid var(--line);display:flex;flex-direction:column;gap:3px;}
+  .duelo-pool b{font-size:17px;}
+  .duelo-pool.v{background:#16291c;border-color:#2f7d4a;color:#bff0cd;}
+  .duelo-pool.r{background:#2a1416;border-color:#7d2f33;color:#ffc7cb;}
+  .duelo-pool.win{box-shadow:0 0 12px rgba(240,195,60,.55);border-color:var(--gold);}
+  .duelo-aplist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .duelo-apchip{font-size:12px;border-radius:12px;padding:2px 9px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:5px;}
+  .duelo-apchip.v{background:#16291c;border-color:#2f7d4a;color:#bff0cd;}
+  .duelo-apchip.r{background:#2a1416;border-color:#7d2f33;color:#ffc7cb;}
+  .duelo-ladosel{display:flex;gap:8px;margin-bottom:8px;}
+  .lado-btn{flex:1;border-radius:8px;padding:9px;font-size:13.5px;font-weight:700;cursor:pointer;border:2px solid var(--line);background:#0f1c27;color:var(--text);}
+  .lado-btn.v.sel{border-color:#2f9e44;background:#16291c;color:#bff0cd;box-shadow:0 0 8px rgba(47,158,68,.45);}
+  .lado-btn.r.sel{border-color:#e03131;background:#2a1416;color:#ffc7cb;box-shadow:0 0 8px rgba(224,49,49,.45);}
+  .duelo-npc{background:#11202c;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px;}
+  .duelo-npc-row{display:flex;gap:14px;}
+  .duelo-npc-row label{display:flex;align-items:center;gap:6px;font-size:14px;}
+  .npc-in{width:88px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none;}
+  .npc-in:focus{border-color:var(--accent);}
+  .tug{background:#0f1923;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;}
+  .tug-row{display:flex;align-items:center;gap:8px;}
+  .tug-lbl{font-size:24px;flex:0 0 auto;}
+  .tug-track{position:relative;flex:1;height:28px;background:linear-gradient(90deg,#1c4029,#11202c 50%,#42191c);border:1px solid var(--line);border-radius:14px;}
+  .tug-goal{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3);}
+  .tug-goal.gl{left:6%;} .tug-goal.gr{right:6%;}
+  .tug-knob{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:20px;transition:left .25s cubic-bezier(.3,.8,.4,1.25);z-index:2;}
+  .tug-pos{text-align:center;font-size:12.5px;color:var(--muted);margin-top:9px;}
+  .tug-btns{display:flex;gap:10px;margin-top:12px;}
+  .tug-b{flex:1;border:none;border-radius:9px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;}
+  .tug-b.v{background:#2f9e44;color:#08120a;} .tug-b.v:hover{background:#37b350;}
+  .tug-b.r{background:#e03131;color:#fff;} .tug-b.r:hover{background:#f04444;}
+  .tug-b:active{transform:scale(.96);}
