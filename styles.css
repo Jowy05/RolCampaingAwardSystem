@@ -492,3 +492,114 @@
     .cuenta-nombre{grid-column:1 / -1;}
     .miembro-row{grid-template-columns:1fr 46px 46px 46px;gap:5px;}
   }
+
+  /* ===== Edicto del mes (el Malo Maloso) ===== */
+  .edicto{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#2a0e14,#1c1326);border:1px solid #6b2230;border-left:4px solid #ff5a5a;border-radius:8px;padding:9px 14px;margin-bottom:14px;}
+  .edicto-ic{font-size:26px;flex:0 0 auto;filter:drop-shadow(0 0 4px rgba(255,90,90,.4));}
+  .edicto-tx{flex:1;min-width:0;}
+  .edicto-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#ff9aa6;font-weight:700;}
+  .edicto-r{font-size:14px;color:#fbe3d0;margin-top:2px;line-height:1.45;}
+  .edicto-edit{flex:0 0 auto;padding:5px 9px;}
+  @media(max-width:600px){ .edicto-r{font-size:13px;} }
+
+  /* ===== Mesa de Duelo (apuestas con dados, en vivo) ===== */
+  .duelo-aviso{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:70;background:#2a0e14;border:1px solid #7a2230;border-left:4px solid #ff5a5a;color:#ffd6da;border-radius:10px;padding:9px 14px;display:none;align-items:center;gap:12px;box-shadow:0 8px 26px rgba(0,0,0,.55);font-size:13.5px;max-width:94vw;animation:duelInP .35s ease;}
+  @keyframes duelInP{from{transform:translateX(-50%) translateY(-18px);opacity:0;}to{transform:translateX(-50%) translateY(0);opacity:1;}}
+  .duelo-aviso.show{display:flex;}
+  .duelo-aviso b{color:#fff;}
+  .duelo-aviso .btn{background:#ff5a5a;border:none;color:#2a0a0a;font-weight:700;flex:0 0 auto;}
+  .duelo-aviso .btn:hover{background:#ff7b7b;}
+  .mj-duelo{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#241019,#1d2c3a);border:1px solid #6b2230;border-left:4px solid #ff5a5a;border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .mj-duelo-ic{font-size:34px;flex:0 0 auto;}
+  .mj-duelo-tx{flex:1;min-width:0;}
+  .mj-live{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#2a0a0a;background:#ff5a5a;border-radius:10px;padding:1px 7px;vertical-align:middle;margin-left:6px;}
+  .duelo-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:6px;}
+  .duelo-form .prop-in{flex:0 0 auto;} .duelo-form #duelo-tit{flex:2 1 200px;min-width:0;}
+  @media(max-width:600px){ .duelo-form .prop-in,.duelo-form .btn{flex:1 1 100%;} }
+  .duelo-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  .duelo-card{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;}
+  .duelo-cmain{flex:1;min-width:0;}
+  .duelo-ct{font-weight:600;color:#fff;font-size:14px;}
+  .duelo-est{font-size:11px;font-weight:600;margin-left:6px;}
+  .duelo-cmeta{color:var(--muted);font-size:11.5px;margin-top:3px;}
+  .duelo-enter{flex:0 0 auto;}
+  .duelo-room .duelo-rtop{background:#16242f;border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:12px;}
+  .duelo-players{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .duelo-prow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 12px;}
+  .duelo-prow.win{border-color:var(--gold);background:#1c2c22;box-shadow:0 0 8px rgba(240,195,60,.35);}
+  .duelo-pn{flex:1;min-width:0;color:#fff;font-size:14px;display:flex;align-items:center;gap:6px;}
+  .duelo-hostb{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;background:#3a2c10;color:#f0c33c;border:1px solid #6b5114;border-radius:8px;padding:1px 5px;}
+  .duelo-pbet{flex:0 0 auto;font-size:12.5px;color:#9fd3a0;white-space:nowrap;}
+  .dado{flex:0 0 auto;width:46px;height:46px;border-radius:10px;background:#0f1923;border:2px solid var(--accent2);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;}
+  .dado.rolling{border-color:var(--gold);animation:dadoShake .1s linear infinite;}
+  @keyframes dadoShake{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2px,1px) rotate(-7deg)}50%{transform:translate(2px,-1px) rotate(6deg)}75%{transform:translate(-1px,-2px) rotate(-4deg)}100%{transform:translate(0,0) rotate(0)}}
+  .dado.win{border-color:var(--gold);box-shadow:0 0 13px rgba(240,195,60,.65);color:var(--gold);}
+  .duelo-bet{background:#11202c;border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:10px;}
+  .duelo-bet-h{font-size:12.5px;font-weight:600;color:#fff;margin-bottom:8px;}
+  .duelo-bet-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .duelo-amt{min-width:46px;text-align:center;font-size:20px;font-weight:800;color:var(--gold);background:#0f1c27;border:1px solid var(--line);border-radius:8px;padding:4px 10px;}
+  .duelo-minus,.duelo-plus{flex:0 0 auto;width:40px;font-size:18px;font-weight:800;padding:6px 0;}
+  .duelo-apostar{flex:1 1 auto;}
+  .duelo-retirar{margin-top:8px;background:#3a1c1c;border-color:#6b2a2a;color:#ffb3b3;}
+  .duelo-host{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+  .duelo-cancel,.duelo-quitar{background:#3a1c1c;border-color:#6b2a2a;color:#ffb3b3;}
+  .duelo-resolve{background:#2a4a2f;border-color:#3d6b45;color:#cdeccd;font-weight:700;}
+  .duelo-result{background:#1c2c22;border:1px solid #4d7a2a;border-radius:9px;padding:13px 15px;font-size:15px;color:#eafbe0;text-align:center;margin-bottom:10px;}
+  .duelo-result b{color:var(--gold);}
+
+  /* ===== Subida de nivel ===== */
+  .lvlup{position:fixed;inset:0;z-index:96;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;}
+  .lvlup.show{animation:lvlupFade 3s ease forwards;}
+  @keyframes lvlupFade{0%{opacity:0}8%{opacity:1}84%{opacity:1}100%{opacity:0}}
+  .lvlup-card{text-align:center;background:rgba(8,13,20,.82);border:1px solid var(--gold);border-radius:18px;padding:26px 38px;box-shadow:0 14px 50px rgba(0,0,0,.65);}
+  .lvlup-ringwrap{position:relative;width:130px;height:130px;margin:0 auto 10px;}
+  .lvlup-svg{width:130px;height:130px;transform:rotate(-90deg);}
+  .lr-bg{fill:none;stroke:#1a2733;stroke-width:9;}
+  .lr-fg{fill:none;stroke:var(--gold);stroke-width:9;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:326.7;animation:lrFill 1s cubic-bezier(.2,.8,.2,1) forwards .15s;filter:drop-shadow(0 0 6px rgba(240,195,60,.7));}
+  @keyframes lrFill{to{stroke-dashoffset:0;}}
+  .lvlup-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:800;color:#fff;text-shadow:0 0 14px rgba(240,195,60,.7);}
+  .lvlup-t{font-size:15px;font-weight:800;letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
+  .lvlup-sub{font-size:13px;color:var(--text);margin-top:4px;}
+
+  /* ===== Forjar título ===== */
+  .forja{position:fixed;inset:0;z-index:96;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;}
+  .forja.show{animation:lvlupFade 1.6s ease forwards;}
+  .forja-card{text-align:center;}
+  .forja-anvil{font-size:52px;animation:forjaHit .5s ease;}
+  @keyframes forjaHit{0%{transform:translateY(-26px) scale(.7);opacity:0}55%{transform:translateY(4px) scale(1.12)}100%{transform:translateY(0) scale(1)}}
+  .forja-spark{font-size:24px;animation:forjaSpark .7s ease;}
+  @keyframes forjaSpark{0%{opacity:0;transform:scale(0)}40%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(1.8)}}
+  .forja-t{font-size:26px;margin-top:6px;opacity:0;animation:forjaT .8s ease forwards .25s;text-shadow:0 0 16px currentColor;}
+  @keyframes forjaT{0%{opacity:0;transform:scale(2.2);filter:blur(7px)}100%{opacity:1;transform:scale(1);filter:blur(0)}}
+
+  /* ===== Ripple + sello al marcar ===== */
+  .ach{position:relative;}
+  .ach-fx{position:absolute;inset:0;overflow:hidden;border-radius:6px;pointer-events:none;z-index:1;}
+  .ripple{position:absolute;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%) scale(0);opacity:.5;}
+  .ripple.go{animation:rippleGo .7s ease-out forwards;}
+  @keyframes rippleGo{to{transform:translate(-50%,-50%) scale(30);opacity:0;}}
+  .sello{position:absolute;top:9px;right:13px;z-index:3;font-size:12.5px;font-weight:800;letter-spacing:1px;color:#bfe6a0;border:2px solid #4d7a2a;border-radius:6px;padding:2px 8px;transform:rotate(-12deg) scale(2);opacity:0;text-transform:uppercase;background:rgba(20,39,26,.65);pointer-events:none;}
+  .sello.go{animation:selloGo .55s cubic-bezier(.2,.9,.3,1.5) forwards;}
+  @keyframes selloGo{0%{transform:rotate(-12deg) scale(2);opacity:0}60%{transform:rotate(-12deg) scale(.92);opacity:1}80%{transform:rotate(-12deg) scale(1.08)}100%{transform:rotate(-12deg) scale(1);opacity:1}}
+  .ic.justpop{animation:icPop .5s ease;}
+  @keyframes icPop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+  /* ===== Brillo de rareza (rejilla del perfil) ===== */
+  .logro-tile{position:relative;}
+  .logro-grid .logro-tile.r-epico{box-shadow:0 0 8px rgba(166,83,255,.4);}
+  .logro-grid .logro-tile.r-legendario::after,.logro-grid .logro-tile.r-mitica::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.45) 50%,transparent 62%);transform:translateX(-130%);animation:sheen 6s ease-in-out infinite;pointer-events:none;}
+  .logro-grid .logro-tile.r-mitica::after{animation-duration:5s;}
+  @keyframes sheen{0%,80%{transform:translateX(-130%)}88%{transform:translateX(130%)}100%{transform:translateX(130%)}}
+  .logro-grid .logro-tile.r-legendario{animation:legBreath 3.6s ease-in-out infinite;}
+  @keyframes legBreath{0%,100%{box-shadow:0 0 9px rgba(255,140,60,.5)}50%{box-shadow:0 0 15px rgba(255,140,60,.85)}}
+  .logro-grid .logro-tile.r-mitica{animation:mitPulse 2.4s ease-in-out infinite;}
+  @keyframes mitPulse{0%,100%{box-shadow:0 0 9px rgba(255,45,45,.55)}50%{box-shadow:0 0 18px rgba(255,45,45,.95)}}
+
+  /* ===== Decoración estacional / aniversario ===== */
+  .decor-layer{position:fixed;inset:0;pointer-events:none;z-index:39;overflow:hidden;}
+  .snow{position:absolute;top:-22px;color:#dff1ff;opacity:.85;animation:snowfall linear infinite;}
+  @keyframes snowfall{to{transform:translateY(108vh) rotate(360deg);}}
+  .decor-corner{position:fixed;font-size:30px;pointer-events:none;z-index:40;opacity:.8;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+  .toast.aniv{border-color:var(--gold);border-left-color:var(--gold);}
+  .aniv-box{font-size:12.5px;color:var(--muted);margin:8px 0 2px;display:flex;align-items:center;gap:8px;}
+  .aniv-box b{color:#fff;}
