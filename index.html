@@ -277,7 +277,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=44; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=45; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2020,10 +2020,12 @@ function duelosTick(){
     DUELOS=d||{};
     renderDueloAviso();
     if(document.getElementById("duelo-modal").classList.contains("open")){
-      return fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(currentUser)+"/dinero.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(di){ if(di!=null)invData(currentUser).dinero=di; renderDueloModal(); }).catch(function(){ renderDueloModal(); });
+      return fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(currentUser)+"/dinero.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(di){ if(di!=null)invData(currentUser).dinero=di; if(!duelEditando())renderDueloModal(); }).catch(function(){ if(!duelEditando())renderDueloModal(); });
     }
   }).catch(function(){});
 }
+// No repintar el modal si el usuario está escribiendo en un campo (título de mesa, NPC…): el sondeo destruiría el input y le sacaría.
+function duelEditando(){ var ae=document.activeElement; return !!(ae&&ae.closest&&ae.closest("#duelo-body")&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)); }
 function duelLoop(){ duelosTick(); var fast=document.getElementById("duelo-modal").classList.contains("open"); duelTimer=setTimeout(duelLoop, fast?1200:2800); }
 function duelPoolLado(d,lado){ var p=Math.floor(Number(((d&&d.npc)||{})[lado])||0); var ap=(d&&d.apuestas)||{}; Object.keys(ap).forEach(function(u){ if(ap[u]&&ap[u].lado===lado)p+=Math.floor(Number(ap[u].monto)||0); }); return p; }
 function duelPlayersLado(d,lado){ var ap=(d&&d.apuestas)||{}; return Object.keys(ap).filter(function(u){return ap[u]&&ap[u].lado===lado;}); }
