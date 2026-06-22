@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=36">
+<link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 
@@ -291,7 +291,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=52; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=53; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2180,7 +2180,7 @@ function duelosTick(){
 // No repintar el modal si el usuario está escribiendo en un campo (título de mesa, NPC…): el sondeo destruiría el input y le sacaría.
 function duelEditando(){ var ae=document.activeElement; return !!(ae&&ae.closest&&ae.closest("#duelo-body")&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)); }
 function duelLoop(){ duelosTick(); var fast=document.getElementById("duelo-modal").classList.contains("open"); duelTimer=setTimeout(duelLoop, fast?1200:2800); }
-function duelPoolLado(d,lado){ var p=Math.floor(Number(((d&&d.npc)||{})[lado])||0); var ap=(d&&d.apuestas)||{}; Object.keys(ap).forEach(function(u){ if(ap[u]&&ap[u].lado===lado)p+=Math.floor(Number(ap[u].monto)||0); }); return p; }
+function duelPoolLado(d,lado){ var p=Math.floor(Number(((d&&d.npc)||{})[lado])||0); var ap=(d&&d.apuestas)||{}; Object.keys(ap).forEach(function(u){ if(ap[u]&&ap[u].lado===lado)p+=Math.floor(Number(ap[u].monto)||0); }); var npcs=(d&&d.npcs)||{}; Object.keys(npcs).forEach(function(nid){ if(npcs[nid]&&npcs[nid].lado===lado)p+=Math.floor(Number(npcs[nid].monto)||0); }); return p; }
 function duelPlayersLado(d,lado){ var ap=(d&&d.apuestas)||{}; return Object.keys(ap).filter(function(u){return ap[u]&&ap[u].lado===lado;}); }
 function duelAbiertos(){ return Object.keys(DUELOS).filter(function(id){return DUELOS[id]&&DUELOS[id].estado!=="cerrado";}); }
 function renderDueloAviso(){
@@ -2246,9 +2246,13 @@ function renderDueloRoom(body,did,d){
   var miApuesta=ap[currentUser], mineMonto=miApuesta?Math.floor(Number(miApuesta.monto)||0):0;
   var html='<div class="duelo-room"><div class="duelo-rtop"><b>⚔️ '+esc(d.titulo||"Apuestas")+'</b><div class="duelo-cmeta">moneda: '+cn+' · '+(d.estado==="abierto"?'🟢 Apostando':(d.estado==="jugando"?'💪 ¡Pulso en juego!':'🏁 Terminado'))+'</div></div>';
   html+='<div class="duelo-pools"><div class="duelo-pool v'+(d.ganador==="verde"?" win":"")+'">🟢 Verde<b>'+poolV+' '+cn+'</b></div><div class="duelo-pool r'+(d.ganador==="rojo"?" win":"")+'">🔴 Rojo<b>'+poolR+' '+cn+'</b></div></div>';
-  var us=Object.keys(ap);
-  if(us.length){ html+='<div class="duelo-aplist">'; us.forEach(function(u){ var a=ap[u]; html+='<span class="duelo-apchip '+(a.lado==="rojo"?"r":"v")+'">'+iconPJHTML(u)+' '+esc(u)+': '+Math.floor(Number(a.monto)||0)+'</span>'; }); html+='</div>'; }
-  if((Math.floor(Number(npc.verde)||0))||(Math.floor(Number(npc.rojo)||0)))html+='<div class="duelo-cmeta" style="margin-bottom:10px;">🏠 Casa (NPC) — 🟢 '+(Math.floor(Number(npc.verde)||0))+' · 🔴 '+(Math.floor(Number(npc.rojo)||0))+' '+cn+'</div>';
+  var us=Object.keys(ap), npcs=d.npcs||{}, nids=Object.keys(npcs), puedeNpc=(esHost||gm)&&d.estado==="abierto";
+  if(us.length||nids.length){
+    html+='<div class="duelo-aplist">';
+    us.forEach(function(u){ var a=ap[u]; html+='<span class="duelo-apchip '+(a.lado==="rojo"?"r":"v")+'">'+iconPJHTML(u)+' '+esc(u)+': '+Math.floor(Number(a.monto)||0)+'</span>'; });
+    nids.forEach(function(nid){ var n=npcs[nid]||{}; html+='<span class="duelo-apchip '+(n.lado==="rojo"?"r":"v")+'">🏠 '+esc(n.nombre||"NPC")+': '+Math.floor(Number(n.monto)||0)+(puedeNpc?(' <button class="npc-del" data-nid="'+esc(nid)+'" type="button" title="Quitar NPC">✕</button>'):'')+'</span>'; });
+    html+='</div>';
+  }
   if(d.estado==="abierto"){
     if(puede){
       var pend=duelState.pend[did]; if(!pend){ pend={lado:(miApuesta&&miApuesta.lado==="rojo")?"rojo":"verde", monto:(mineMonto||1)}; duelState.pend[did]=pend; }
@@ -2260,7 +2264,7 @@ function renderDueloRoom(body,did,d){
       html+='</div>';
     }
     if(esHost||gm){
-      html+='<div class="duelo-npc"><div class="duelo-bet-h">🏠 Dinero de la casa (NPC, virtual)</div><div class="duelo-npc-row"><label>🟢 <input class="npc-in" id="npc-verde" type="number" min="0" value="'+(Math.floor(Number(npc.verde)||0))+'"></label><label>🔴 <input class="npc-in" id="npc-rojo" type="number" min="0" value="'+(Math.floor(Number(npc.rojo)||0))+'"></label></div></div>';
+      html+='<div class="duelo-npc"><div class="duelo-bet-h">🏠 Apuesta de un NPC (casa, virtual)</div><div class="duelo-npc-form"><input class="prop-in" id="npc-nom" placeholder="Nombre del NPC" maxlength="24"><select class="prop-in" id="npc-lado"><option value="verde">🟢 Verde</option><option value="rojo">🔴 Rojo</option></select><input class="npc-in" id="npc-monto" type="number" min="1" placeholder="'+cn+'"><button class="btn dm" id="npc-add" type="button">➕ NPC</button></div></div>';
       html+='<div class="duelo-host">';
       if(esHost)html+='<button class="btn dm duelo-empezar" type="button">💪 ¡Empezar el pulso!</button>';
       html+='<button class="btn duelo-cancel" type="button">🗑 Cancelar (devuelve apuestas)</button></div>';
@@ -2299,8 +2303,8 @@ function renderDueloRoom(body,did,d){
   var plus=body.querySelector(".duelo-plus"); if(plus)plus.addEventListener("click",function(){ var p=duelState.pend[did]||{lado:"verde",monto:1}; var cap=miSaldo+mineMonto, nv=(p.monto||1)+1; if(cap>0&&nv>cap)nv=cap; p.monto=Math.max(1,nv); duelState.pend[did]=p; renderDueloModal(); });
   var apb=body.querySelector(".duelo-apostar"); if(apb)apb.addEventListener("click",function(){apostarLado(did);});
   var rt=body.querySelector(".duelo-retirar"); if(rt)rt.addEventListener("click",function(){retirarDuelo(did);});
-  var nvf=body.querySelector("#npc-verde"); if(nvf)nvf.addEventListener("change",function(){setNpcDuelo(did,"verde",nvf.value);});
-  var nrf=body.querySelector("#npc-rojo"); if(nrf)nrf.addEventListener("change",function(){setNpcDuelo(did,"rojo",nrf.value);});
+  var npcAdd=body.querySelector("#npc-add"); if(npcAdd)npcAdd.addEventListener("click",function(){addNpcDuelo(did);});
+  var npcDels=body.querySelectorAll(".npc-del"); for(var nd=0;nd<npcDels.length;nd++){(function(b){b.addEventListener("click",function(){delNpcDuelo(did,b.getAttribute("data-nid"));});})(npcDels[nd]);}
   var emp=body.querySelector(".duelo-empezar"); if(emp)emp.addEventListener("click",function(){empezarPulso(did);});
   var tb=body.querySelectorAll(".tug-b"); for(var j=0;j<tb.length;j++){(function(b){b.addEventListener("click",function(){empujarPulso(did,b.getAttribute("data-lado"));});})(tb[j]);}
   var pv=body.querySelector(".pl-arm.v"), pr=body.querySelector(".pl-arm.r"), pf=body.querySelector(".pl-fists");
@@ -2360,14 +2364,22 @@ function retirarDuelo(did){
     }).catch(function(){});
   }).catch(function(){});
 }
-// El GM mete el dinero de la casa (NPC): virtual, NO sale de ningún inventario. Engorda el bote que pueden ganar los jugadores.
-function setNpcDuelo(did,lado,val){
-  var d=DUELOS[did]; if(!d)return;
+// El GM/host añade apuestas de NPC (con nombre, a verde o rojo): dinero virtual de la casa, NO sale de ningún inventario; engorda el bote que pueden ganar los jugadores; si gana el NPC su parte se esfuma.
+function addNpcDuelo(did){
+  var d=DUELOS[did]; if(!d||d.estado!=="abierto")return;
   if(!(d.host===currentUser||esGM(campInfo)))return;
-  if(d.estado!=="abierto"||(campInfo&&campInfo.bloqueada))return;
-  var v=Math.max(0,Math.floor(Number(val)||0));
-  if(!d.npc)d.npc={}; d.npc[lado]=v;
-  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/npc/"+lado+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(){ duelosTick(); }).catch(function(){});
+  if(campInfo&&campInfo.bloqueada)return;
+  var nom=((document.getElementById("npc-nom")||{}).value||"").trim()||"NPC";
+  var lado=((document.getElementById("npc-lado")||{}).value==="rojo")?"rojo":"verde";
+  var monto=Math.floor(Number((document.getElementById("npc-monto")||{}).value)||0);
+  if(monto<1){ alert("Pon cuánto apuesta el NPC."); return; }
+  var nid="n"+(new Date().getTime())+Math.floor(Math.random()*1000), n={nombre:nom,lado:lado,monto:monto};
+  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/npcs/"+nid+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(n)}).then(function(r){ if(r.ok){ if(!d.npcs)d.npcs={}; d.npcs[nid]=n; logEvento("🏠 apuesta NPC "+nom+" ("+monto+" al "+lado+")",d.titulo||"apuestas"); duelosTick(); } }).catch(function(){});
+}
+function delNpcDuelo(did,nid){
+  var d=DUELOS[did]; if(!d||d.estado!=="abierto")return;
+  if(!(d.host===currentUser||esGM(campInfo)))return;
+  fetch(FB+"/campanas/"+currentCamp+"/info/duelos/"+did+"/npcs/"+encodeURIComponent(nid)+".json",{method:"DELETE"}).then(function(){ if(d.npcs)delete d.npcs[nid]; duelosTick(); }).catch(function(){});
 }
 function empezarPulso(did){
   var d=DUELOS[did]; if(!d||d.host!==currentUser||d.estado!=="abierto")return;
