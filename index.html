@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=41">
+<link rel="stylesheet" href="styles.css?v=42">
 </head>
 <body>
 
@@ -291,7 +291,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=57; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=58; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -1989,7 +1989,13 @@ function renderInventario(){
   var total=itemsW+coinsW;
   html+='<div class="inv-total">⚖️ Total: <b>'+total.toFixed(2)+' kg</b> <span class="inv-totsub">('+itemsW.toFixed(1)+' objetos + '+coinsW.toFixed(2)+' monedas)</span></div>';
   if(puede)html+='<div class="inv-cargamax">🏋️ Carga máx (kg): <input class="cargamax-in" type="number" min="0" step="1" value="'+(maxC||"")+'" placeholder="según tu Fuerza"></div>';
-  if(maxC>0){ var cat,cc; if(total<=maxC/3){cat="Ligera";cc="lig";} else if(total<=maxC*2/3){cat="Media";cc="med";} else if(total<=maxC){cat="Pesada";cc="pes";} else {cat="¡Sobrecarga!";cc="sob";} html+='<div class="inv-cargacat cat-'+cc+'">Carga: <b>'+cat+'</b> · '+total.toFixed(1)+' / '+maxC+' kg</div>'; }
+  if(maxC>0){
+    var cat,cc; if(total<=maxC/3){cat="Ligera";cc="lig";} else if(total<=maxC*2/3){cat="Media";cc="med";} else if(total<=maxC){cat="Pesada";cc="pes";} else {cat="¡Sobrecarga!";cc="sob";}
+    var pct=Math.min(100,(total/maxC)*100);
+    html+='<div class="inv-cargacat cat-'+cc+'">Carga: <b>'+cat+'</b> · '+total.toFixed(1)+' / '+maxC+' kg'+(total>maxC?(' <span class="inv-carga-over">(+'+(total-maxC).toFixed(1)+' kg de más)</span>'):'')+'</div>';
+    html+='<div class="inv-cargabar"'+(total>maxC?' data-over="1"':'')+' title="'+total.toFixed(1)+' / '+maxC+' kg"><div class="inv-cargafill cat-'+cc+'" style="width:'+pct.toFixed(1)+'%"></div><span class="inv-cargamark m33" title="⅓ — fin de carga ligera"></span><span class="inv-cargamark m66" title="⅔ — fin de carga media"></span></div>';
+    html+='<div class="inv-cargaleg"><span class="lg-lig">⬤&nbsp;Ligera</span><span class="lg-med">⬤&nbsp;Media</span><span class="lg-pes">⬤&nbsp;Pesada</span><span class="lg-sob">⬤&nbsp;Sobrecarga</span></div>';
+  }
   html+='</div>'; // /inv-objetos
   // ----- DINERO (derecha, columna) -----
   html+='<div class="inv-dinero"><div class="inv-h">💰 Dinero</div><div class="inv-coins">';
