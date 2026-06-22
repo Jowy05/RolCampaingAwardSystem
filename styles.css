@@ -713,6 +713,50 @@
   .npc-del:hover{opacity:1;}
   @media(max-width:600px){ .duelo-npc-form .prop-in,.duelo-npc-form .npc-in,.duelo-npc-form .btn{flex:1 1 100%;} }
   .npc-in:focus{border-color:var(--accent);}
+  /* ===== Quedadas (calendario de disponibilidad) ===== */
+  .cal-wrap{display:grid;grid-template-columns:1fr 290px;gap:14px;align-items:start;}
+  .cal-main{min-width:0;}
+  .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .cal-rango{font-weight:600;color:#fff;font-size:15px;margin-left:6px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+  .cal-dia{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 7px;display:flex;flex-direction:column;gap:6px;min-height:124px;}
+  .cal-dia.cal-hoy{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+  .cal-dia-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px;}
+  .cal-dia-h b{color:#fff;font-size:17px;}
+  .cal-badge{background:var(--accent);color:#06121c;font-size:9px;font-weight:700;border-radius:5px;padding:1px 4px;letter-spacing:.3px;}
+  .cal-cnt{font-size:14px;font-weight:700;color:var(--green);}
+  .cal-avs{display:flex;flex-wrap:wrap;gap:3px;min-height:22px;}
+  .cal-av{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;font-size:15px;line-height:1;border-radius:50%;overflow:hidden;}
+  .cal-av .ic-mini,.cal-av img{width:22px;height:22px;border-radius:50%;}
+  .cal-no{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12px;color:#ff8a8a;}
+  .cal-no .cal-av{filter:grayscale(.45);opacity:.7;}
+  .cal-sm{font-size:11px;color:var(--muted);}
+  .cal-acc{display:flex;gap:5px;margin-top:auto;}
+  .cal-btn{flex:1;min-height:40px;border:1px solid var(--line);background:#16242f;color:var(--text);border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;padding:6px 4px;}
+  .cal-btn.si.on{background:#2c4a12;border-color:var(--green);color:#dff5a0;}
+  .cal-btn.no.on{background:#4a1c1c;border-color:#7d2f33;color:#ffb3b3;}
+  .cal-btn:hover{border-color:var(--accent);}
+  .cal-side{display:flex;flex-direction:column;gap:10px;}
+  .cal-top{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .cal-top-h{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:10px;}
+  .cal-top-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 8px;border-radius:8px;background:var(--card);margin-bottom:6px;font-size:13px;}
+  .cal-top-row.top1{background:#2a2410;border:1px solid var(--gold);box-shadow:0 0 10px rgba(240,195,60,.22);}
+  .cal-med{font-size:17px;}
+  .cal-top-d{font-weight:600;color:#fff;}
+  .cal-top-n{color:var(--green);font-weight:700;font-size:12px;}
+  .cal-top-avs{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto;}
+  .cal-top-avs .cal-av{width:19px;height:19px;font-size:13px;}
+  .cal-top-avs .ic-mini,.cal-top-avs img{width:19px;height:19px;}
+  .cal-mejor{margin-top:8px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--text);}
+  .cal-falta{color:var(--muted);font-size:11.5px;margin-top:3px;}
+  .cal-vacio{color:var(--muted);font-size:12px;}
+  .cal-nota{font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 11px;}
+  @media(max-width:600px){
+    .cal-wrap{grid-template-columns:1fr;}
+    .cal-side{order:-1;}
+    .cal-grid{grid-template-columns:1fr;}
+    .cal-dia{min-height:0;}
+  }
   .tug{background:#0f1923;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;}
   .tug-row{display:flex;align-items:center;gap:8px;}
   .tug-lbl{font-size:24px;flex:0 0 auto;}
