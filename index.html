@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=40">
+<link rel="stylesheet" href="styles.css?v=41">
 </head>
 <body>
 
@@ -291,7 +291,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=56; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=57; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -1239,7 +1239,7 @@ function entrarCampana(id){
     currentCamp=id;campInfo=c.info;GMname=c.info.gm||"";MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
     LOGROS=toArr(c.logros);progreso=c.progreso||{};guiaMD=(typeof c.guia==="string")?c.guia:null;INV=c.inventario||{};
     DUELOS=(c.info&&c.info.duelos)||{}; duelState.view=null;
-    QUEDADAS=(c.info&&c.info.quedadas)||{}; quedadasLoaded=true; quedadaPend={};
+    QUEDADAS=(c.info&&c.info.quedadas)||{}; QAUTO=(c.info&&c.info.quedadasAuto)||{}; quedadasLoaded=true; quedadaPend={};
     state.tab="grupo";state.sub="todos";state.invSub=(c.info.miembros&&c.info.miembros[currentUser])?currentUser:"__general__"; // abre el inventario en TU sección (no en General), así General sí sale como destino de traspaso
     document.getElementById("camp-nombre").textContent=esc(c.info.nombre||id);
     document.getElementById("camp-rol").textContent="Tú: "+currentUser+" ("+rolDe(currentUser)+")";
@@ -1752,9 +1752,10 @@ function renderTabs(){
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
   var pend=Object.keys((campInfo&&campInfo.propuestas)||{}).length;
+  var calPend=puedeMarcarQuedada()?diasSemana(0).filter(function(d){return estadoEfectivo(dkey(d),currentUser)==="";}).length:0;
   [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["cal","📅 Quedadas",null],["mj","🎮 Minijuegos",null],["prop","💡 Propuestas",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
-    var badge=row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):((row[0]==="prop"&&pend)?(' <span class="c pend">'+pend+'</span>'):"");
+    var badge=row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):((row[0]==="prop"&&pend)?(' <span class="c pend">'+pend+'</span>'):((row[0]==="cal"&&calPend)?(' <span class="c pend" title="Días sin contestar esta semana">'+calPend+'</span>'):""));
     b.innerHTML=row[1]+badge;
     b.onclick=function(){state.tab=row[0];render();};mt.appendChild(b);
   });
@@ -2052,7 +2053,7 @@ function renderInventario(){
   }).catch(function(){});
 }
 // ====== QUEDADAS (calendario de disponibilidad semanal) ======
-var QUEDADAS={}, quedadasLoaded=false, quedadaPend={};
+var QUEDADAS={}, QAUTO={}, quedadasLoaded=false, quedadaPend={};
 var DIAS_SEM=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 // Serialización canónica (claves ordenadas) para comparar sin falsos positivos por el orden de claves de Firebase.
 function canonQ(o){ if(!o)return ""; var dks=Object.keys(o).sort(), out=[]; for(var i=0;i<dks.length;i++){ var dk=dks[i], inner=o[dk]||{}, us=Object.keys(inner).sort(), parts=[]; for(var j=0;j<us.length;j++)parts.push(us[j]+"="+inner[us[j]]); out.push(dk+":"+parts.join(",")); } return out.join(";"); }
@@ -2062,12 +2063,17 @@ function dkey(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.get
 function lunesDeSemana(off){ var d=new Date(); d.setHours(0,0,0,0); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow+7*(off||0)); d.setHours(0,0,0,0); return d; }
 function diasSemana(off){ var L=lunesDeSemana(off), out=[]; for(var i=0;i<7;i++){ var x=new Date(L); x.setDate(L.getDate()+i); x.setHours(0,0,0,0); out.push(x); } return out; }
 function fmtRango(L,D){ var aL=L.getFullYear(), aD=D.getFullYear(); var izq=L.getDate()+" "+MESES[L.getMonth()]+(aL!==aD?(" "+aL):""); var der=D.getDate()+" "+MESES[D.getMonth()]+" "+aD; return izq+" – "+der; }
+// Plantilla semanal "auto": QAUTO[user][weekday 0=Lun..6=Dom] = "si"/"talvez"/"no". Se aplica a los días SIN marca explícita.
+function wdOf(dk){ var p=dk.split("-"); var d=new Date(+p[0],(+p[1])-1,+p[2]); return (d.getDay()+6)%7; }
+function autoDe(m,dk){ var a=QAUTO[m]; return (a&&a[wdOf(dk)])||""; }
+function esExplicito(dk,m){ var f=QUEDADAS[dk]; return !!(f&&f[m]); }
 // Estado por jugador (siempre iterando MIEMBROS actuales → ignora marcas de ex-miembros).
-function estadoDe(dk,m){ var f=QUEDADAS[dk]; return (f&&f[m])||""; }
-function quienPuede(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="si";}); }
-function quienNo(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="no";}); }
-function quienTalvez(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="talvez";}); }
-function sinMarcar(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="";}); }
+function estadoDe(dk,m){ var f=QUEDADAS[dk]; return (f&&f[m])||""; }                       // SOLO lo explícito (lógica de botones)
+function estadoEfectivo(dk,m){ return esExplicito(dk,m)?estadoDe(dk,m):autoDe(m,dk); }      // explícito o plantilla (mostrar y contar)
+function quienPuede(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="si";}); }
+function quienNo(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="no";}); }
+function quienTalvez(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="talvez";}); }
+function sinMarcar(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="";}); }
 // Puntos del TOP: cada "sí" vale 1, cada "tal vez" vale 0,5.
 function puntosDia(dk){ return quienPuede(dk).length + quienTalvez(dk).length*0.5; }
 function topDias(off){ return diasSemana(off).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,n:quienPuede(dk).length,tv:quienTalvez(dk).length,pts:puntosDia(dk)}; }).filter(function(x){return x.pts>0;}).sort(function(a,b){ return (b.pts-a.pts)||(a.d-b.d); }).slice(0,3); }
@@ -2100,15 +2106,60 @@ function mergeQuedadas(q){
 function clicPuedo(dk){ setQuedada(dk, estadoDe(dk,currentUser)==="si"?"":"si"); }
 function clicNo(dk){ setQuedada(dk, estadoDe(dk,currentUser)==="no"?"":"no"); }
 function clicTalvez(dk){ setQuedada(dk, estadoDe(dk,currentUser)==="talvez"?"":"talvez"); }
-function cargarQuedadas(){ fetch(FB+"/campanas/"+currentCamp+"/info/quedadas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():{};}).then(function(q){ QUEDADAS=q||{}; quedadasLoaded=true; if(state.tab==="cal")renderCalendario(); }).catch(function(){}); }
+// Plantilla habitual: escribe SOLO mi fila por subruta. wd = 0(Lun)..6(Dom).
+function setAuto(wd,val){
+  if(!puedeMarcarQuedada())return;
+  setStatus("Guardando…");
+  if(!QAUTO[currentUser])QAUTO[currentUser]={};
+  if(val)QAUTO[currentUser][wd]=val; else { delete QAUTO[currentUser][wd]; if(!Object.keys(QAUTO[currentUser]).length)delete QAUTO[currentUser]; }
+  var y=window.scrollY; renderCalendario(); window.scrollTo(0,y);
+  var url=FB+"/campanas/"+currentCamp+"/info/quedadasAuto/"+encodeURIComponent(currentUser)+"/"+wd+".json";
+  var req=val?fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(val)}):fetch(url,{method:"DELETE"});
+  req.then(function(r){ setStatus(r.ok?"✓ Guardado":"⚠ Error"); }).catch(function(){ setStatus("⚠ Sin conexión"); });
+}
+function clicAuto(wd,val){ setAuto(wd, (((QAUTO[currentUser]||{})[wd])||"")===val ? "" : val); }
+// Offset de semana (relativo a la semana actual) que contiene una fecha dada.
+function semanaDe(dk){ var p=dk.split("-"); var d=new Date(+p[0],(+p[1])-1,+p[2]); d.setHours(0,0,0,0); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); d.setHours(0,0,0,0); return Math.round((d-lunesDeSemana(0))/(7*86400000)); }
+// Mini-calendario del mes (de la semana vista): cada día con su "calor" de disponibilidad; clicar salta a esa semana.
+function miniMes(off){
+  var dias=diasSemana(off), ref=dias[3], y=ref.getFullYear(), mo=ref.getMonth();
+  var first=new Date(y,mo,1); first.setHours(0,0,0,0);
+  var fdow=(first.getDay()+6)%7, start=new Date(first); start.setDate(first.getDate()-fdow); start.setHours(0,0,0,0);
+  var diasMes=new Date(y,mo+1,0).getDate(), semanas=Math.ceil((fdow+diasMes)/7);
+  var hoy=dkey(new Date()), vista={}; dias.forEach(function(d){vista[dkey(d)]=true;});
+  var h='<div class="cal-mini"><div class="cal-mini-h">'+MESES[mo].charAt(0).toUpperCase()+MESES[mo].slice(1)+' '+y+'</div><div class="cal-mini-grid">';
+  for(var i=0;i<7;i++)h+='<div class="cal-mini-wd">'+DIAS_SEM[i].charAt(0)+'</div>';
+  for(var w=0;w<semanas;w++){ for(var i=0;i<7;i++){
+    var cell=new Date(start); cell.setDate(start.getDate()+w*7+i); cell.setHours(0,0,0,0);
+    var dk=dkey(cell), inM=(cell.getMonth()===mo), pts=puntosDia(dk), heat=pts>0?Math.min(4,Math.ceil(pts)):0;
+    h+='<button class="cal-mini-c'+(inM?"":" out")+((dk===hoy)?" hoy":"")+(vista[dk]?" wk":"")+(heat?(" h"+heat):"")+'" data-dk="'+dk+'" type="button" title="'+esc(DIAS_SEM[(cell.getDay()+6)%7]+" "+cell.getDate())+(pts?(" · "+(pts%1?pts.toFixed(1).replace(".",","):pts)+" pts"):"")+'">'+cell.getDate()+'</button>';
+  } }
+  h+='</div></div>'; return h;
+}
+function cargarQuedadas(){ var t=new Date().getTime(); Promise.all([
+    fetch(FB+"/campanas/"+currentCamp+"/info/quedadas.json?x="+t).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};}),
+    fetch(FB+"/campanas/"+currentCamp+"/info/quedadasAuto.json?x="+t).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
+  ]).then(function(a){ QUEDADAS=a[0]||{}; QAUTO=a[1]||{}; quedadasLoaded=true; if(state.tab==="cal")renderCalendario(); }); }
 function renderCalendario(){
   var list=document.getElementById("list");
   var off=state.calOff||0, dias=diasSemana(off), hoy=dkey(new Date()), total=MIEMBROS.length, marcar=puedeMarcarQuedada();
   var html='<div class="cal-wrap"><div class="cal-main">';
   html+='<div class="cal-nav"><button class="btn" id="cal-prev" type="button">◀</button><button class="btn" id="cal-hoy" type="button">📍 Hoy</button><button class="btn" id="cal-next" type="button">▶</button><span class="cal-rango">'+esc(fmtRango(dias[0],dias[6]))+'</span></div>';
+  if(marcar){
+    var mia=QAUTO[currentUser]||{}, aOpen=!!state.calAutoOpen;
+    html+='<div class="cal-auto"><button class="cal-auto-h" id="cal-auto-tg" type="button">🔁 Mi disponibilidad habitual <span class="cal-auto-car">'+(aOpen?"▾":"▸")+'</span></button>';
+    if(aOpen){
+      html+='<div class="cal-auto-body"><div class="cal-auto-note">Estos días se marcan solos cada semana. Si un día concreto marcas otra cosa, tu marca manda esa semana.</div><div class="cal-auto-rows">';
+      for(var wi=0;wi<7;wi++){ var cv=(mia[wi])||"";
+        html+='<div class="cal-auto-row"><span class="cal-auto-d">'+DIAS_SEM[wi]+'</span><div class="cal-auto-bts"><button class="cal-abtn si'+(cv==="si"?" on":"")+'" data-wd="'+wi+'" data-a="si" type="button" title="Puedo">✅</button><button class="cal-abtn tv'+(cv==="talvez"?" on":"")+'" data-wd="'+wi+'" data-a="talvez" type="button" title="Tal vez">🤔</button><button class="cal-abtn no'+(cv==="no"?" on":"")+'" data-wd="'+wi+'" data-a="no" type="button" title="No puedo">❌</button></div></div>';
+      }
+      html+='</div></div>';
+    }
+    html+='</div>';
+  }
   html+='<div class="cal-grid">';
   dias.forEach(function(d){
-    var dk=dkey(d), si=quienPuede(dk), tv=quienTalvez(dk), no=quienNo(dk), sm=sinMarcar(dk), esHoy=(dk===hoy), mio=estadoDe(dk,currentUser);
+    var dk=dkey(d), si=quienPuede(dk), tv=quienTalvez(dk), no=quienNo(dk), sm=sinMarcar(dk), esHoy=(dk===hoy), mio=estadoEfectivo(dk,currentUser), mioAuto=(mio!==""&&!esExplicito(dk,currentUser));
     html+='<div class="cal-dia'+(esHoy?" cal-hoy":"")+'">';
     html+='<div class="cal-dia-h">'+DIAS_SEM[(d.getDay()+6)%7]+' <b>'+d.getDate()+'</b>'+(esHoy?' <span class="cal-badge">HOY</span>':'')+'</div>';
     html+='<div class="cal-cnt">✅ '+si.length+(total?('/'+total):'')+(tv.length?(' <span class="cal-cnt-tv">🤔 '+tv.length+'</span>'):'')+'</div>';
@@ -2116,7 +2167,7 @@ function renderCalendario(){
     if(tv.length)html+='<div class="cal-tv" title="Tal vez: '+esc(tv.join(", "))+'">🤔 '+tv.map(function(m){return '<span class="cal-av">'+iconPJHTML(m)+'</span>';}).join('')+'</div>';
     if(no.length)html+='<div class="cal-no" title="No pueden: '+esc(no.join(", "))+'">❌ '+no.map(function(m){return '<span class="cal-av">'+iconPJHTML(m)+'</span>';}).join('')+'</div>';
     if(sm.length)html+='<div class="cal-sm" title="Sin contestar: '+esc(sm.join(", "))+'">❔ '+sm.length+' sin contestar</div>';
-    if(marcar)html+='<div class="cal-acc"><button class="cal-btn si'+(mio==="si"?" on":"")+'" data-dk="'+dk+'" data-a="si" type="button">✅ Puedo</button><button class="cal-btn tv'+(mio==="talvez"?" on":"")+'" data-dk="'+dk+'" data-a="talvez" type="button">🤔 Tal vez</button><button class="cal-btn no'+(mio==="no"?" on":"")+'" data-dk="'+dk+'" data-a="no" type="button">❌ No</button></div>';
+    if(marcar)html+='<div class="cal-acc"><button class="cal-btn si'+(mio==="si"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="si" type="button">✅ Puedo</button><button class="cal-btn tv'+(mio==="talvez"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="talvez" type="button">🤔 Tal vez</button><button class="cal-btn no'+(mio==="no"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="no" type="button">❌ No</button></div>';
     html+='</div>';
   });
   html+='</div></div>';
@@ -2131,6 +2182,7 @@ function renderCalendario(){
   }
   html+='</div>';
   if(!marcar)html+='<div class="cal-nota">'+(esGM(campInfo)?'👁 Como GM ves la disponibilidad de toda la party (no marcas tú).':'👁 Solo lectura.')+'</div>';
+  html+=miniMes(off);
   html+='</aside></div>';
   list.innerHTML=html;
   document.getElementById("cal-prev").onclick=function(){ state.calOff=(state.calOff||0)-1; renderCalendario(); };
@@ -2138,6 +2190,9 @@ function renderCalendario(){
   document.getElementById("cal-hoy").onclick=function(){ state.calOff=0; renderCalendario(); };
   var bs=list.querySelectorAll(".cal-btn");
   for(var i=0;i<bs.length;i++){ (function(bn){ bn.onclick=function(){ var dk=bn.getAttribute("data-dk"), a=bn.getAttribute("data-a"); if(a==="si")clicPuedo(dk); else if(a==="talvez")clicTalvez(dk); else clicNo(dk); }; })(bs[i]); }
+  var atg=document.getElementById("cal-auto-tg"); if(atg)atg.onclick=function(){ state.calAutoOpen=!state.calAutoOpen; renderCalendario(); };
+  var abs=list.querySelectorAll(".cal-abtn"); for(var ai=0;ai<abs.length;ai++){ (function(bn){ bn.onclick=function(){ clicAuto(+bn.getAttribute("data-wd"), bn.getAttribute("data-a")); }; })(abs[ai]); }
+  var mcs=list.querySelectorAll(".cal-mini-c"); for(var mi=0;mi<mcs.length;mi++){ (function(bn){ bn.onclick=function(){ state.calOff=semanaDe(bn.getAttribute("data-dk")); renderCalendario(); }; })(mcs[mi]); }
   if(!quedadasLoaded)cargarQuedadas();
 }
 function renderGlobal(){
@@ -2177,14 +2232,14 @@ function refrescarCampana(){
     if(!c||!c.info){ setStatus("⚠ Error"); return; }
     campInfo=c.info; GMname=c.info.gm||""; MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
     LOGROS=toArr(c.logros); progreso=c.progreso||{}; INV=c.inventario||{}; guiaMD=(typeof c.guia==="string")?c.guia:null;
-    QUEDADAS=(c.info&&c.info.quedadas)||{}; quedadasLoaded=true;
+    QUEDADAS=(c.info&&c.info.quedadas)||{}; QAUTO=(c.info&&c.info.quedadasAuto)||{}; quedadasLoaded=true;
     setStatus("✓ Actualizado"); render(); duelosTick();
   }).catch(function(){ setStatus("⚠ Sin conexión"); });
 }
 // Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
 var liveTimer=null, liveBusy=false, liveN=0, duelTimer=null;
 function startLive(){ stopLive(); liveN=0; liveTimer=setInterval(liveTick,5000); duelLoop(); }
-function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearTimeout(duelTimer);duelTimer=null;} DUELOS={}; QUEDADAS={}; quedadasLoaded=false; quedadaPend={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearTimeout(duelTimer);duelTimer=null;} DUELOS={}; QUEDADAS={}; QAUTO={}; quedadasLoaded=false; quedadaPend={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
 function repintarLive(changed){ if(!changed)return; var y=window.scrollY; renderEdicto(); renderTabs(); renderList(); renderGlobal(); if(document.getElementById("cadenas-modal").classList.contains("open"))renderCadenas(); window.scrollTo(0,y); }
 function liveTick(){
   if(!currentCamp||document.hidden||liveBusy||editMode)return;
@@ -2207,6 +2262,7 @@ function liveTick(){
       if(verNueva!==verVieja)bajarLogros=true; // solo se descarga /logros (pesado) si su versión cambió
       // Frescura: si NO estamos en la pestaña cal (qIdx<0), aprovecha el /info ya bajado para mantener QUEDADAS al día (así entrar en cal muestra datos frescos, no de hace 5s).
       if(qIdx<0){ var qf={}, src=(inf.quedadas||{}); for(var k in src)qf[k]=Object.assign({},src[k]); mergeQuedadas(qf); }
+      var na=inf.quedadasAuto||{}; if(JSON.stringify(na)!==JSON.stringify(QAUTO)){ QAUTO=na; if(state.tab==="cal")changed=true; }
     }
     if(bajarLogros){
       fetch(FB+"/campanas/"+currentCamp+"/logros.json?x="+t).then(function(r){return r.ok?r.json():undefined;}).then(function(lg){
