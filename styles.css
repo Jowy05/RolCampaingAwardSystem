@@ -714,12 +714,12 @@
   @media(max-width:600px){ .duelo-npc-form .prop-in,.duelo-npc-form .npc-in,.duelo-npc-form .btn{flex:1 1 100%;} }
   .npc-in:focus{border-color:var(--accent);}
   /* ===== Quedadas (calendario de disponibilidad) ===== */
-  .cal-wrap{display:grid;grid-template-columns:1fr 290px;gap:14px;align-items:start;}
+  .cal-wrap{display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:start;}
   .cal-main{min-width:0;}
   .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
   .cal-rango{font-weight:600;color:#fff;font-size:15px;margin-left:6px;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
-  .cal-dia{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 7px;display:flex;flex-direction:column;gap:6px;min-height:124px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;}
+  .cal-dia{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 5px;display:flex;flex-direction:column;gap:6px;min-height:124px;}
   .cal-dia.cal-hoy{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
   .cal-dia-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px;}
   .cal-dia-h b{color:#fff;font-size:17px;}
@@ -731,8 +731,8 @@
   .cal-no{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:12px;color:#ff8a8a;}
   .cal-no .cal-av{filter:grayscale(.45);opacity:.7;}
   .cal-sm{font-size:11px;color:var(--muted);}
-  .cal-acc{display:flex;gap:5px;margin-top:auto;}
-  .cal-btn{flex:1;min-height:40px;border:1px solid var(--line);background:#16242f;color:var(--text);border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;padding:6px 4px;}
+  .cal-acc{display:flex;flex-direction:column;gap:4px;margin-top:auto;}
+  .cal-btn{flex:1;min-height:30px;border:1px solid var(--line);background:#16242f;color:var(--text);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;padding:5px 4px;}
   .cal-btn.si.on{background:#2c4a12;border-color:var(--green);color:#dff5a0;}
   .cal-btn.no.on{background:#4a1c1c;border-color:#7d2f33;color:#ffb3b3;}
   .cal-btn:hover{border-color:var(--accent);}
@@ -756,6 +756,8 @@
     .cal-side{order:-1;}
     .cal-grid{grid-template-columns:1fr;}
     .cal-dia{min-height:0;}
+    .cal-acc{flex-direction:row;}
+    .cal-btn{min-height:40px;}
   }
   .tug{background:#0f1923;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;}
   .tug-row{display:flex;align-items:center;gap:8px;}
