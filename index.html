@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=37">
+<link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
 
@@ -291,7 +291,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=53; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=54; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -516,7 +516,7 @@ function titIco(tit){ return (tit&&tit.img)?('<img class="tit-img" src="'+tit.im
 const PREFS="rdr2_prefs_v3", SESSION="rdr2_session";
 let prefs={filtro:"todos"};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
-let state={tab:"grupo",sub:"todos",invSub:"__general__",search:"",filtro:prefs.filtro||"todos"};
+let state={tab:"grupo",sub:"todos",invSub:"__general__",search:"",filtro:prefs.filtro||"todos",calOff:0};
 
 const CAT_ICON={grupo:"🤝",combate:"⚔️",exploracion:"🗺️",social:"💬",botin:"💰",meme:"🤡",general:"🎯"};
 const PLAYER_ICON={Joel:"🦖",Cristina:"🐉",Carol:"✨",Leomar:"💀",Oriol:"⛑️"};
@@ -1239,6 +1239,7 @@ function entrarCampana(id){
     currentCamp=id;campInfo=c.info;GMname=c.info.gm||"";MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
     LOGROS=toArr(c.logros);progreso=c.progreso||{};guiaMD=(typeof c.guia==="string")?c.guia:null;INV=c.inventario||{};
     DUELOS=(c.info&&c.info.duelos)||{}; duelState.view=null;
+    QUEDADAS=(c.info&&c.info.quedadas)||{}; quedadasLoaded=true; quedadaPend={};
     state.tab="grupo";state.sub="todos";state.invSub=(c.info.miembros&&c.info.miembros[currentUser])?currentUser:"__general__"; // abre el inventario en TU sección (no en General), así General sí sale como destino de traspaso
     document.getElementById("camp-nombre").textContent=esc(c.info.nombre||id);
     document.getElementById("camp-rol").textContent="Tú: "+currentUser+" ("+rolDe(currentUser)+")";
@@ -1751,7 +1752,7 @@ function renderTabs(){
   var si=stats(LOGROS.filter(function(l){return l.categoria!=="grupo";}));
   var mt=document.getElementById("maintabs");mt.innerHTML="";
   var pend=Object.keys((campInfo&&campInfo.propuestas)||{}).length;
-  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["mj","🎮 Minijuegos",null],["prop","💡 Propuestas",null]].forEach(function(row){
+  [["grupo","🛡️ Grupo",sg],["ind","👤 Individuales",si],["inv","📦 Inventario",null],["cal","📅 Quedadas",null],["mj","🎮 Minijuegos",null],["prop","💡 Propuestas",null]].forEach(function(row){
     var b=document.createElement("button");b.className="tab"+((state.tab===row[0])?" active":"");
     var badge=row[2]?('<span class="c">'+row[2].u+"/"+row[2].t+"</span>"):((row[0]==="prop"&&pend)?(' <span class="c pend">'+pend+'</span>'):"");
     b.innerHTML=row[1]+badge;
@@ -1852,6 +1853,7 @@ function buildCard(l){
 }
 function renderList(){
   if(state.tab==="inv"){renderInventario();return;}
+  if(state.tab==="cal"){renderCalendario();return;}
   if(state.tab==="mj"){renderMinijuegos();return;}
   if(state.tab==="prop"){renderPropuestas();return;}
   var arr=viewLogros();
@@ -2049,6 +2051,90 @@ function renderInventario(){
     if(JSON.stringify(di)!==JSON.stringify((INV[sec]||{}).dinero||{})){ invData(sec).dinero=di; if(state.tab==="inv"&&state.invSub===sec)renderInventario(); }
   }).catch(function(){});
 }
+// ====== QUEDADAS (calendario de disponibilidad semanal) ======
+var QUEDADAS={}, quedadasLoaded=false, quedadaPend={};
+var DIAS_SEM=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+// Serialización canónica (claves ordenadas) para comparar sin falsos positivos por el orden de claves de Firebase.
+function canonQ(o){ if(!o)return ""; var dks=Object.keys(o).sort(), out=[]; for(var i=0;i<dks.length;i++){ var dk=dks[i], inner=o[dk]||{}, us=Object.keys(inner).sort(), parts=[]; for(var j=0;j<us.length;j++)parts.push(us[j]+"="+inner[us[j]]); out.push(dk+":"+parts.join(",")); } return out.join(";"); }
+// Fechas: clave LOCAL (nunca toISOString → no salta a UTC); semana lunes→domingo; DST-safe.
+function pad2(n){ return (n<10?"0":"")+n; }
+function dkey(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function lunesDeSemana(off){ var d=new Date(); d.setHours(0,0,0,0); var dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow+7*(off||0)); d.setHours(0,0,0,0); return d; }
+function diasSemana(off){ var L=lunesDeSemana(off), out=[]; for(var i=0;i<7;i++){ var x=new Date(L); x.setDate(L.getDate()+i); x.setHours(0,0,0,0); out.push(x); } return out; }
+function fmtRango(L,D){ var aL=L.getFullYear(), aD=D.getFullYear(); var izq=L.getDate()+" "+MESES[L.getMonth()]+(aL!==aD?(" "+aL):""); var der=D.getDate()+" "+MESES[D.getMonth()]+" "+aD; return izq+" – "+der; }
+// Estado por jugador (siempre iterando MIEMBROS actuales → ignora marcas de ex-miembros).
+function estadoDe(dk,m){ var f=QUEDADAS[dk]; return (f&&f[m])||""; }
+function quienPuede(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="si";}); }
+function quienNo(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="no";}); }
+function sinMarcar(dk){ return MIEMBROS.filter(function(m){return estadoDe(dk,m)==="";}); }
+function topDias(off){ return diasSemana(off).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,n:quienPuede(dk).length}; }).filter(function(x){return x.n>0;}).sort(function(a,b){ return (b.n-a.n)||(a.d-b.d); }).slice(0,3); }
+function puedeMarcarQuedada(){ return !(campInfo&&campInfo.bloqueada) && esMiembroCampana() && MIEMBROS.indexOf(currentUser)>=0; }
+// Marca SOLO mi hoja por subruta (PUT/DELETE) → nunca pisa la de otro. Optimista con guard anti-reversión (quedadaPend).
+function setQuedada(dk,val){
+  if(!puedeMarcarQuedada())return;
+  setStatus("Guardando…");
+  if(!QUEDADAS[dk])QUEDADAS[dk]={};
+  if(val)QUEDADAS[dk][currentUser]=val; else { delete QUEDADAS[dk][currentUser]; if(!Object.keys(QUEDADAS[dk]).length)delete QUEDADAS[dk]; }
+  quedadaPend[dk]=val||""; // valor ESPERADO ("si"/"no"/""): el guard se mantiene hasta que un snapshot lo confirme (no al responder el PUT) → evita reversión por carrera
+  var y=window.scrollY; renderCalendario(); window.scrollTo(0,y);
+  var url=FB+"/campanas/"+currentCamp+"/info/quedadas/"+dk+"/"+encodeURIComponent(currentUser)+".json";
+  var req=val?fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(val)}):fetch(url,{method:"DELETE"});
+  req.then(function(r){ if(r.ok)setStatus("✓ Guardado"); else { setStatus("⚠ Error"); delete quedadaPend[dk]; } }).catch(function(){ setStatus("⚠ Sin conexión"); delete quedadaPend[dk]; }); // si falla, suelto el guard para reconciliar con el servidor
+}
+// Aplica un snapshot del servidor sobre QUEDADAS conservando MIS escrituras aún no confirmadas (quedadaPend = valor esperado por día). Suelta el guard de un día cuando el servidor ya refleja ese valor. Devuelve true si QUEDADAS cambió.
+function mergeQuedadas(q){
+  q=q||{};
+  for(var dk in quedadaPend){
+    var exp=quedadaPend[dk], raw=(q[dk]||{})[currentUser]||"";
+    if(!q[dk])q[dk]={};
+    if(exp)q[dk][currentUser]=exp; else delete q[dk][currentUser];
+    if(!Object.keys(q[dk]).length)delete q[dk];
+    if(raw===exp)delete quedadaPend[dk]; // el servidor ya confirmó lo que escribí → suelto el guard
+  }
+  if(canonQ(q)!==canonQ(QUEDADAS)){ QUEDADAS=q; quedadasLoaded=true; return true; }
+  return false;
+}
+function clicPuedo(dk){ setQuedada(dk, estadoDe(dk,currentUser)==="si"?"":"si"); }
+function clicNo(dk){ setQuedada(dk, estadoDe(dk,currentUser)==="no"?"":"no"); }
+function cargarQuedadas(){ fetch(FB+"/campanas/"+currentCamp+"/info/quedadas.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():{};}).then(function(q){ QUEDADAS=q||{}; quedadasLoaded=true; if(state.tab==="cal")renderCalendario(); }).catch(function(){}); }
+function renderCalendario(){
+  var list=document.getElementById("list");
+  var off=state.calOff||0, dias=diasSemana(off), hoy=dkey(new Date()), total=MIEMBROS.length, marcar=puedeMarcarQuedada();
+  var html='<div class="cal-wrap"><div class="cal-main">';
+  html+='<div class="cal-nav"><button class="btn" id="cal-prev" type="button">◀</button><button class="btn" id="cal-hoy" type="button">📍 Hoy</button><button class="btn" id="cal-next" type="button">▶</button><span class="cal-rango">'+esc(fmtRango(dias[0],dias[6]))+'</span></div>';
+  html+='<div class="cal-grid">';
+  dias.forEach(function(d){
+    var dk=dkey(d), si=quienPuede(dk), no=quienNo(dk), sm=sinMarcar(dk), esHoy=(dk===hoy), mio=estadoDe(dk,currentUser);
+    html+='<div class="cal-dia'+(esHoy?" cal-hoy":"")+'">';
+    html+='<div class="cal-dia-h">'+DIAS_SEM[(d.getDay()+6)%7]+' <b>'+d.getDate()+'</b>'+(esHoy?' <span class="cal-badge">HOY</span>':'')+'</div>';
+    html+='<div class="cal-cnt">✅ '+si.length+(total?('/'+total):'')+'</div>';
+    html+='<div class="cal-avs">'+(si.length?si.map(function(m){return '<span class="cal-av" title="'+esc(m)+'">'+iconPJHTML(m)+'</span>';}).join(''):'<span class="cal-vacio">—</span>')+'</div>';
+    if(no.length)html+='<div class="cal-no" title="No pueden: '+esc(no.join(", "))+'">❌ '+no.map(function(m){return '<span class="cal-av">'+iconPJHTML(m)+'</span>';}).join('')+'</div>';
+    if(sm.length)html+='<div class="cal-sm" title="Sin contestar: '+esc(sm.join(", "))+'">❔ '+sm.length+' sin contestar</div>';
+    if(marcar)html+='<div class="cal-acc"><button class="cal-btn si'+(mio==="si"?" on":"")+'" data-dk="'+dk+'" data-a="si" type="button">✅ Puedo</button><button class="cal-btn no'+(mio==="no"?" on":"")+'" data-dk="'+dk+'" data-a="no" type="button">❌ No</button></div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  var top=topDias(off), med=["🥇","🥈","🥉"];
+  html+='<aside class="cal-side"><div class="cal-top"><div class="cal-top-h">🏆 TOP DÍAS</div>';
+  if(top.length){
+    top.forEach(function(tt,i){ html+='<div class="cal-top-row'+(i===0?" top1":"")+'"><span class="cal-med">'+med[i]+'</span><span class="cal-top-d">'+DIAS_SEM[(tt.d.getDay()+6)%7]+' '+tt.d.getDate()+'</span><span class="cal-top-n">✅ '+tt.n+(total?('/'+total):'')+'</span><span class="cal-top-avs">'+quienPuede(tt.dk).map(function(m){return '<span class="cal-av">'+iconPJHTML(m)+'</span>';}).join('')+'</span></div>'; });
+    var b=top[0], falta=sinMarcar(b.dk);
+    html+='<div class="cal-mejor">⭐ Mejor: <b>'+DIAS_SEM[(b.d.getDay()+6)%7]+' '+b.d.getDate()+'</b> ('+b.n+(total?('/'+total):'')+')'+(falta.length?'<div class="cal-falta">falta por contestar: '+esc(falta.join(", "))+'</div>':'')+'</div>';
+  } else {
+    html+='<div class="cal-vacio" style="padding:12px;">Aún nadie ha marcado disponibilidad esta semana.</div>';
+  }
+  html+='</div>';
+  if(!marcar)html+='<div class="cal-nota">'+(esGM(campInfo)?'👁 Como GM ves la disponibilidad de toda la party (no marcas tú).':'👁 Solo lectura.')+'</div>';
+  html+='</aside></div>';
+  list.innerHTML=html;
+  document.getElementById("cal-prev").onclick=function(){ state.calOff=(state.calOff||0)-1; renderCalendario(); };
+  document.getElementById("cal-next").onclick=function(){ state.calOff=(state.calOff||0)+1; renderCalendario(); };
+  document.getElementById("cal-hoy").onclick=function(){ state.calOff=0; renderCalendario(); };
+  var bs=list.querySelectorAll(".cal-btn");
+  for(var i=0;i<bs.length;i++){ (function(bn){ bn.onclick=function(){ var dk=bn.getAttribute("data-dk"); if(bn.getAttribute("data-a")==="si")clicPuedo(dk); else clicNo(dk); }; })(bs[i]); }
+  if(!quedadasLoaded)cargarQuedadas();
+}
 function renderGlobal(){
   var s=stats(LOGROS);
   document.getElementById("g-count").textContent=s.u+"/"+s.t;
@@ -2086,13 +2172,14 @@ function refrescarCampana(){
     if(!c||!c.info){ setStatus("⚠ Error"); return; }
     campInfo=c.info; GMname=c.info.gm||""; MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
     LOGROS=toArr(c.logros); progreso=c.progreso||{}; INV=c.inventario||{}; guiaMD=(typeof c.guia==="string")?c.guia:null;
+    QUEDADAS=(c.info&&c.info.quedadas)||{}; quedadasLoaded=true;
     setStatus("✓ Actualizado"); render(); duelosTick();
   }).catch(function(){ setStatus("⚠ Sin conexión"); });
 }
 // Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
 var liveTimer=null, liveBusy=false, liveN=0, duelTimer=null;
 function startLive(){ stopLive(); liveN=0; liveTimer=setInterval(liveTick,5000); duelLoop(); }
-function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearTimeout(duelTimer);duelTimer=null;} DUELOS={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
+function stopLive(){ if(liveTimer){clearInterval(liveTimer);liveTimer=null;} if(duelTimer){clearTimeout(duelTimer);duelTimer=null;} DUELOS={}; QUEDADAS={}; quedadasLoaded=false; quedadaPend={}; var av=document.getElementById("duelo-aviso"); if(av)av.classList.remove("show"); }
 function repintarLive(changed){ if(!changed)return; var y=window.scrollY; renderEdicto(); renderTabs(); renderList(); renderGlobal(); if(document.getElementById("cadenas-modal").classList.contains("open"))renderCadenas(); window.scrollTo(0,y); }
 function liveTick(){
   if(!currentCamp||document.hidden||liveBusy||editMode)return;
@@ -2101,16 +2188,20 @@ function liveTick(){
   var t=new Date().getTime(), full=(liveN%3===1); // cada 3 ticks (~15s) también mira info (diminuto)
   var jobs=[ fetch(FB+"/campanas/"+currentCamp+"/progreso.json?x="+t).then(function(r){return r.ok?r.json():undefined;}).catch(function(){return undefined;}) ];
   if(full)jobs.push(fetch(FB+"/campanas/"+currentCamp+"/info.json?x="+t).then(function(r){return r.ok?r.json():undefined;}).catch(function(){return undefined;}));
+  var qIdx=-1; if(state.tab==="cal"){ qIdx=jobs.length; jobs.push(fetch(FB+"/campanas/"+currentCamp+"/info/quedadas.json?x="+t).then(function(r){return r.ok?r.json():undefined;}).catch(function(){return undefined;})); }
   Promise.all(jobs).then(function(a){
     var p=a[0], inf=full?a[1]:undefined, changed=false, bajarLogros=false;
+    if(qIdx>=0){ var q=a[qIdx]; if(q!==undefined){ if(mergeQuedadas(q))changed=true; } }
     if(p!==undefined && JSON.stringify(p||{})!==JSON.stringify(progreso)){ progreso=p||{}; changed=true; }
     if(full && inf!==undefined && inf){
       var verNueva=inf.logrosVer||0, verVieja=(campInfo&&campInfo.logrosVer)||0;
       // comparar sin 'duelos' (datos en vivo, los gestiona duelosTick) para no repintar la lista a cada rato
-      var infCmp=Object.assign({},inf); delete infCmp.duelos;
-      var oldCmp=Object.assign({},campInfo||{}); delete oldCmp.duelos;
+      var infCmp=Object.assign({},inf); delete infCmp.duelos; delete infCmp.quedadas;
+      var oldCmp=Object.assign({},campInfo||{}); delete oldCmp.duelos; delete oldCmp.quedadas;
       if(JSON.stringify(infCmp)!==JSON.stringify(oldCmp)){ campInfo=inf; GMname=inf.gm||""; MIEMBROS=ordenMiembros(inf.miembros).filter(function(m){return m!==GMname;}); changed=true; }
       if(verNueva!==verVieja)bajarLogros=true; // solo se descarga /logros (pesado) si su versión cambió
+      // Frescura: si NO estamos en la pestaña cal (qIdx<0), aprovecha el /info ya bajado para mantener QUEDADAS al día (así entrar en cal muestra datos frescos, no de hace 5s).
+      if(qIdx<0){ var qf={}, src=(inf.quedadas||{}); for(var k in src)qf[k]=Object.assign({},src[k]); mergeQuedadas(qf); }
     }
     if(bajarLogros){
       fetch(FB+"/campanas/"+currentCamp+"/logros.json?x="+t).then(function(r){return r.ok?r.json():undefined;}).then(function(lg){
