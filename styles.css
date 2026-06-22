@@ -706,7 +706,12 @@
   .duelo-npc{background:#11202c;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px;}
   .duelo-npc-row{display:flex;gap:14px;}
   .duelo-npc-row label{display:flex;align-items:center;gap:6px;font-size:14px;}
+  .duelo-npc-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .duelo-npc-form .prop-in{flex:1 1 auto;min-width:0;} .duelo-npc-form #npc-nom{flex:2 1 120px;} .duelo-npc-form #npc-lado{flex:0 0 auto;}
   .npc-in{width:88px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none;}
+  .npc-del{background:none;border:none;color:inherit;opacity:.7;cursor:pointer;font-size:12px;padding:0 0 0 4px;}
+  .npc-del:hover{opacity:1;}
+  @media(max-width:600px){ .duelo-npc-form .prop-in,.duelo-npc-form .npc-in,.duelo-npc-form .btn{flex:1 1 100%;} }
   .npc-in:focus{border-color:var(--accent);}
   .tug{background:#0f1923;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;}
   .tug-row{display:flex;align-items:center;gap:8px;}
