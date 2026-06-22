@@ -431,6 +431,18 @@
   .inv-del{flex:0 0 auto;background:#3a1c1c;border:1px solid #6b2a2a;color:#ffb3b3;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px;}
   .inv-total{margin-top:14px;text-align:right;font-size:15px;color:var(--text);}
   .inv-total b{color:var(--accent);}
+  .inv-totsub{font-size:11.5px;color:var(--muted);font-weight:400;}
+  .inv-img{flex:0 0 auto;width:34px;height:34px;border-radius:7px;background:#0f1923;border:1px solid var(--line);font-size:18px;line-height:1;cursor:pointer;padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+  .inv-img:hover{border-color:var(--accent);}
+  .inv-img img{width:100%;height:100%;object-fit:cover;}
+  .inv-thumb{flex:0 0 auto;width:30px;height:30px;border-radius:6px;background:#0f1923;border:1px solid var(--line);font-size:17px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;}
+  .inv-thumb img{width:100%;height:100%;object-fit:cover;}
+  .inv-cargamax{margin-top:8px;text-align:right;font-size:12.5px;color:var(--muted);display:flex;gap:7px;align-items:center;justify-content:flex-end;}
+  .cargamax-in{width:90px;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-size:13px;outline:none;text-align:right;}
+  .cargamax-in:focus{border-color:var(--accent);}
+  .inv-cargacat{margin-top:6px;text-align:right;font-size:13px;padding:4px 0;}
+  .inv-cargacat b{font-size:14px;}
+  .inv-cargacat.cat-lig b{color:#a4d007;} .inv-cargacat.cat-med b{color:#f0c33c;} .inv-cargacat.cat-pes b{color:#ff8a3c;} .inv-cargacat.cat-sob b{color:#ff5a5a;}
   @media(max-width:600px){ .inv{flex-direction:column;} .inv-dinero{flex:1 1 auto;width:100%;box-sizing:border-box;} .inv-nom-in{flex:1 1 100%;} .inv-add .ar{width:70px;} }
 
   /* ===== Logro oculto / bloqueado / herramientas de tarjeta ===== */
