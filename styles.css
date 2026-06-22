@@ -382,6 +382,8 @@
   .tab .c.pend{background:#b3401a;color:#fff;}
   @media(max-width:600px){ .prop-card{flex-direction:column;align-items:stretch;} .prop-acts{justify-content:flex-end;} }
   .who-titulo{font-size:11px;margin-left:6px;}
+  .tit-img{width:18px;height:18px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:4px;display:inline-block;}
+  .titulo-eq .tit-img,.dir-titulo .tit-img{width:16px;height:16px;}
   .titulos-box{margin:10px 0 4px;}
   .titulo-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .titulo-chip{background:#1d2c3a;border:1px solid var(--line);border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer;}
@@ -443,6 +445,16 @@
   .inv-cargacat{margin-top:6px;text-align:right;font-size:13px;padding:4px 0;}
   .inv-cargacat b{font-size:14px;}
   .inv-cargacat.cat-lig b{color:#a4d007;} .inv-cargacat.cat-med b{color:#f0c33c;} .inv-cargacat.cat-pes b{color:#ff8a3c;} .inv-cargacat.cat-sob b{color:#ff5a5a;}
+  .inv-trasp{flex:0 0 auto;background:#16314e;border:1px solid #2a6a8f;color:#9fd3ff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:14px;}
+  .inv-trasp:hover{background:#1d4060;}
+  .inv-trasp-box{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
+  .inv-trasp-box .trasp-dest{background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 7px;font-size:12.5px;cursor:pointer;margin-left:6px;}
+  .traspd-in{flex:1 1 0;min-width:0;width:100%;background:#0f1c27;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 4px;font-size:12.5px;outline:none;text-align:center;}
+  .traspd-in:focus{border-color:var(--accent);}
+  .inv-trasp-box .inv-gastar-row{display:flex;gap:5px;margin:6px 0;}
+  .convbtn.traspd{flex:1 1 100%;background:#16314e;border-color:#2a6a8f;color:#9fd3ff;font-weight:600;}
+  .convbtn.traspd:hover{background:#1d4060;}
+  .inv-trasp-note{font-size:11px;color:var(--muted);margin-top:5px;}
   @media(max-width:600px){ .inv{flex-direction:column;} .inv-dinero{flex:1 1 auto;width:100%;box-sizing:border-box;} .inv-nom-in{flex:1 1 100%;} .inv-add .ar{width:70px;} }
 
   /* ===== Logro oculto / bloqueado / herramientas de tarjeta ===== */
