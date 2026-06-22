@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=33">
+<link rel="stylesheet" href="styles.css?v=34">
 </head>
 <body>
 
@@ -78,6 +78,7 @@
     </select>
     <button class="btn" id="nombtn">🏅 Nominaciones</button>
     <button class="btn" id="jugbtn">👥 Jugadores</button>
+    <button class="btn" id="refreshbtn" title="Refrescar datos de la campaña">🔄</button>
     <label class="ck" id="editwrap" style="display:none;"><input type="checkbox" id="t-edit"> ✏️ Modo edición</label>
     <button class="btn dm" id="resumenbtn" style="display:none;">📊 Resumen</button>
     <button class="btn dm" id="lockbtn" style="display:none;">🔒 Bloquear</button>
@@ -280,7 +281,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=48; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=49; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -498,7 +499,7 @@ function borrarCuenta(u){
 let currentUser="", currentCamp=null, campInfo=null, MIEMBROS=[], GMname="";
 let LOGROS=[], progreso={}, guiaMD=null, editMode=false;
 var INV={};
-var guiaEditing=false, dragSrc=null, saveTimers={}, chainSource=null, miVitrina=[], pendingPjIcon=null, fotoCampId=null;
+var guiaEditing=false, dragSrc=null, saveTimers={}, chainSource=null, miVitrina=[], pendingPjIcon=null, fotoCampId=null, pendingItemImg=null;
 const PREFS="rdr2_prefs_v3", SESSION="rdr2_session";
 let prefs={filtro:"todos"};
 try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem(PREFS))||{});}catch(e){}
@@ -559,7 +560,7 @@ function xpDeRareza(d){var k=difKey(d);return k==="mitica"?500:(k==="legendario"
 function nivelDeXP(xp){var lvl=1,need=50,acc=0;while(xp>=acc+need){acc+=need;lvl++;need+=10;}return {lvl:lvl,en:xp-acc,need:need,total:xp};}
 // Marco del avatar según nivel: 1-5 sin marco, 6-15 común, 16-25 raro, 26-35 épico, 36+ legendario (colores de rareza).
 function marcoNivel(lvl){ if(lvl<=5)return ""; return ["comun","raro","epico","legendario"][Math.min(Math.floor((lvl-6)/10),3)]; }
-var NOM_CATS=["Mejor acción de la sesión","Peor acción de la sesión","Acción más divertida","MVP de los combates"];
+var NOM_CATS=["Mejor acción de la sesión","Mejor pifia","Acción más divertida","MVP de los combates"];
 // Resumen de cuenta de un usuario a partir de TODAS las campañas: XP, nivel, prestigio, premios y logros.
 // XP (todos x1, sin multiplicadores): GRUPO cuenta para TODO el grupo (miembros + GM); logros de GM (categoria "gm") solo para el GM creador; individuales para su personaje; "para todos" para quien lo marcó.
 // Prestigio: +1 estrella y +500 XP por cada campaña EN LA QUE PARTICIPAS que esté bloqueada (terminada).
@@ -1836,33 +1837,53 @@ function descMoneda(sec,high,low){ txDinero(sec,function(di){ var n=Math.floor(N
 // Total en bronce y formateo (1pt=1000br, 1or=100br, 1pl=10br, 1br=1br).
 function dineroABronce(di){ function v(x){return Math.floor(Number(x)||0);} return v(di.pt)*1000+v(di.or)*100+v(di.pl)*10+v(di.br); }
 function fmtMoneda(br){ br=Math.max(0,Math.floor(br)); var pt=Math.floor(br/1000);br%=1000; var or=Math.floor(br/100);br%=100; var pl=Math.floor(br/10);br%=10; var p=[]; if(pt)p.push(pt+" Pt"); if(or)p.push(or+" Or"); if(pl)p.push(pl+" Pl"); if(br)p.push(br+" Br"); return p.length?p.join(", "):"0"; }
-// Restar/gastar: convierte todo a bronce, comprueba que llega, resta y recoloca (auto-descompacta lo de arriba).
-function restarDinero(sec,sub){ if(!puedeEditarInv(sec))return; var subBr=dineroABronce(sub); if(subBr<=0){ setStatus("Indica cuánto restar"); return; } txDinero(sec,function(di){ var totalBr=dineroABronce(di); if(subBr>totalBr)return{ok:false,alert:"No tienes suficiente dinero.\nTienes "+fmtMoneda(totalBr)+" y quieres gastar "+fmtMoneda(subBr)+".\nTe faltan "+fmtMoneda(subBr-totalBr)+"."}; var rem=totalBr-subBr; di.pt=Math.floor(rem/1000); rem%=1000; di.or=Math.floor(rem/100); rem%=100; di.pl=Math.floor(rem/10); rem%=10; di.br=rem; return{ok:true}; }); }
+// Gasta las monedas pedidas con el MÍNIMO cambio: quita las que tengas y solo parte UNA moneda mayor si falta (no recompacta el resto).
+function gastarMonedas(di,sub){
+  var coins=[["pt",1000],["or",100],["pl",10],["br",1]];
+  function g(c){return Math.floor(Number(di[c])||0);}
+  var owed=0;
+  coins.forEach(function(cv){ var c=cv[0],v=cv[1],req=Math.max(0,Math.floor(Number(sub[c])||0)),take=Math.min(g(c),req); di[c]=g(c)-take; owed+=(req-take)*v; }); // 1) quita las pedidas que tengas
+  function payLowHigh(){ for(var i=coins.length-1;i>=0;i--){ var c=coins[i][0],v=coins[i][1]; if(owed<=0)break; var use=Math.min(g(c),Math.floor(owed/v)); di[c]=g(c)-use; owed-=use*v; } }
+  payLowHigh(); // 2) cubre el resto con monedas pequeñas
+  var guard=0;
+  while(owed>0&&guard++<40){ var broke=false; for(var i=coins.length-1;i>=0;i--){ var c=coins[i][0],v=coins[i][1]; if(v>owed&&g(c)>0){ di[c]=g(c)-1; var change=v; for(var j=i+1;j<coins.length;j++){ var lc=coins[j][0],lv=coins[j][1],add=Math.floor(change/lv); di[lc]=g(lc)+add; change-=add*lv; } broke=true; break; } } if(!broke)break; payLowHigh(); } // 3) parte la menor moneda mayor necesaria
+}
+function restarDinero(sec,sub){ if(!puedeEditarInv(sec))return; var subBr=dineroABronce(sub); if(subBr<=0){ setStatus("Indica cuánto restar"); return; } txDinero(sec,function(di){ var totalBr=dineroABronce(di); if(subBr>totalBr)return{ok:false,alert:"No tienes suficiente dinero.\nTienes "+fmtMoneda(totalBr)+" y quieres gastar "+fmtMoneda(subBr)+".\nTe faltan "+fmtMoneda(subBr-totalBr)+"."}; gastarMonedas(di,sub); return{ok:true}; }); }
 // Objetos: se escribe SOLO la sub-ruta del objeto (/items/{id}) para no pisar el dinero.
 function saveItemFB(sec,id){ var it=(invData(sec).items||{})[id]; setStatus("Guardando…"); var url=FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/items/"+encodeURIComponent(id)+".json"; var opt=it?{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(it)}:{method:"DELETE"}; fetch(url,opt).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");}); }
 function addItemInv(sec){ if(!puedeEditarInv(sec))return; var n=(document.getElementById("inv-nom").value||"").trim(); if(!n){alert("Pon el nombre del objeto.");return;} var cant=Math.max(1,Math.floor(Number(document.getElementById("inv-cant").value)||1)), peso=Math.max(0,Number(document.getElementById("inv-peso").value)||0); var d=invData(sec); var id="i"+(new Date().getTime())+Math.floor(Math.random()*1000); d.items[id]={nombre:n,cantidad:cant,peso:peso}; saveItemFB(sec,id); render(); }
 function editItemInv(sec,id,campo,val){ if(!puedeEditarInv(sec))return; var d=invData(sec); if(!d.items[id])return; if(campo==="nombre")d.items[id].nombre=(val||"").trim(); else if(campo==="cantidad")d.items[id].cantidad=Math.max(1,Math.floor(Number(val)||1)); else d.items[id].peso=Math.max(0,Number(val)||0); saveItemFB(sec,id); render(); }
 function delItemInv(sec,id){ if(!puedeEditarInv(sec))return; var d=invData(sec); delete d.items[id]; saveItemFB(sec,id); render(); }
+// Carga máxima (lb) de la sección: para calcular carga ligera/media/pesada/sobrecarga (PF1e: ≤1/3 ligera, ≤2/3 media, ≤max pesada, >max sobrecarga).
+function setCargaMax(sec,val){ if(!puedeEditarInv(sec))return; var v=Math.max(0,Math.floor(Number(val)||0)); invData(sec).cargaMax=v; fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/cargaMax.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");render();}).catch(function(){setStatus("⚠ Sin conexión");}); }
+// Imagen de un objeto (reducida a 64x64): sustituye el icono 📦 del objeto.
+function cambiarImagenItem(file,sec,id){ if(!file||!puedeEditarInv(sec))return; var rd=new FileReader(); rd.onload=function(){ var img=new Image(); img.onload=function(){ var sz=64,cv=document.createElement("canvas");cv.width=sz;cv.height=sz;var ctx=cv.getContext("2d"); var s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2; ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz); var data=cv.toDataURL("image/jpeg",0.7); if(data.length>95000){ alert("Imagen muy grande, prueba con otra más sencilla."); return; } var it=invData(sec).items[id]; if(!it)return; it.img=data; saveItemFB(sec,id); render(); }; img.src=rd.result; }; rd.readAsDataURL(file); }
 function renderInventario(){
   var sec=state.invSub||"__general__", puede=puedeEditarInv(sec);
   var d=INV[sec]||{}, dinero=d.dinero||{}, items=d.items||{};
   var COINS=[["pt","Platino"],["or","Oro"],["pl","Plata"],["br","Bronce"]];
-  var keys=Object.keys(items), total=0;
+  var keys=Object.keys(items), itemsW=0;
+  var coinsCount=Math.floor(Number(dinero.pt)||0)+Math.floor(Number(dinero.or)||0)+Math.floor(Number(dinero.pl)||0)+Math.floor(Number(dinero.br)||0);
+  var coinsW=coinsCount*0.00907, maxC=Math.floor(Number(d.cargaMax)||0); // 0.02 lb (oficial PF) = 0.00907 kg por moneda
   var html='<div class="inv">';
   // ----- OBJETOS (izquierda, ancho) -----
   html+='<div class="inv-objetos"><div class="inv-h">📋 Objetos</div>';
-  if(puede)html+='<div class="addbox inv-add"><input class="an" id="inv-nom" placeholder="Objeto"><input class="ar" id="inv-cant" type="number" min="1" value="1" title="Cantidad"><input class="ar" id="inv-peso" type="number" min="0" step="0.1" placeholder="Peso (kg)" title="Peso por unidad"><button class="btn dm" id="inv-add-btn" type="button">➕ Añadir</button></div>';
+  if(puede)html+='<div class="addbox inv-add"><input class="an" id="inv-nom" placeholder="Objeto"><input class="ar" id="inv-cant" type="number" min="1" value="1" title="Cantidad"><input class="ar" id="inv-peso" type="number" min="0" step="0.1" placeholder="Peso (kg)" title="Peso por unidad (kg)"><button class="btn dm" id="inv-add-btn" type="button">➕ Añadir</button></div>';
   html+='<div class="inv-list">';
   if(!keys.length)html+='<div class="empty" style="padding:18px;">Sin objetos todavía.</div>';
-  keys.forEach(function(id){ var it=items[id]||{}, cant=Number(it.cantidad)||1, peso=Number(it.peso)||0; total+=cant*peso;
+  keys.forEach(function(id){ var it=items[id]||{}, cant=Number(it.cantidad)||1, peso=Number(it.peso)||0; itemsW+=cant*peso;
+    var thumb=it.img?('<img src="'+it.img+'" alt="">'):'📦';
     if(puede){
-      html+='<div class="inv-row" data-id="'+esc(id)+'"><input class="inv-nom-in" value="'+esc(it.nombre||"")+'" placeholder="Objeto"><input class="inv-cant-in" type="number" min="1" value="'+cant+'" title="Cantidad"><input class="inv-peso-in" type="number" min="0" step="0.1" value="'+peso+'" title="Peso por unidad"><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span><button class="inv-del" data-id="'+esc(id)+'" type="button">🗑</button></div>';
+      html+='<div class="inv-row" data-id="'+esc(id)+'"><button class="inv-img" data-id="'+esc(id)+'" type="button" title="Imagen del objeto">'+thumb+'</button><input class="inv-nom-in" value="'+esc(it.nombre||"")+'" placeholder="Objeto"><input class="inv-cant-in" type="number" min="1" value="'+cant+'" title="Cantidad"><input class="inv-peso-in" type="number" min="0" step="0.1" value="'+peso+'" title="Peso por unidad (kg)"><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span><button class="inv-del" data-id="'+esc(id)+'" type="button">🗑</button></div>';
     } else {
-      html+='<div class="inv-row ro"><span class="inv-nom">'+esc(it.nombre||"")+'</span><span class="inv-cant">×'+cant+'</span><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span></div>';
+      html+='<div class="inv-row ro"><span class="inv-thumb">'+thumb+'</span><span class="inv-nom">'+esc(it.nombre||"")+'</span><span class="inv-cant">×'+cant+'</span><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span></div>';
     }
   });
   html+='</div>';
-  html+='<div class="inv-total">⚖️ Peso total: <b>'+total.toFixed(1)+' kg</b></div>';
+  var total=itemsW+coinsW;
+  html+='<div class="inv-total">⚖️ Total: <b>'+total.toFixed(2)+' kg</b> <span class="inv-totsub">('+itemsW.toFixed(1)+' objetos + '+coinsW.toFixed(2)+' monedas)</span></div>';
+  if(puede)html+='<div class="inv-cargamax">🏋️ Carga máx (kg): <input class="cargamax-in" type="number" min="0" step="1" value="'+(maxC||"")+'" placeholder="según tu Fuerza"></div>';
+  if(maxC>0){ var cat,cc; if(total<=maxC/3){cat="Ligera";cc="lig";} else if(total<=maxC*2/3){cat="Media";cc="med";} else if(total<=maxC){cat="Pesada";cc="pes";} else {cat="¡Sobrecarga!";cc="sob";} html+='<div class="inv-cargacat cat-'+cc+'">Carga: <b>'+cat+'</b> · '+total.toFixed(1)+' / '+maxC+' kg</div>'; }
   html+='</div>'; // /inv-objetos
   // ----- DINERO (derecha, columna) -----
   html+='<div class="inv-dinero"><div class="inv-h">💰 Dinero</div><div class="inv-coins">';
@@ -1897,6 +1918,9 @@ function renderInventario(){
     var ci=row.querySelector(".inv-cant-in"); if(ci)ci.addEventListener("change",function(){editItemInv(sec,id,"cantidad",ci.value);});
     var pi=row.querySelector(".inv-peso-in"); if(pi)pi.addEventListener("change",function(){editItemInv(sec,id,"peso",pi.value);});
   })(rows[r]);}
+  var imgs=document.querySelectorAll("#list .inv-img");
+  for(var ii=0;ii<imgs.length;ii++){(function(b){b.addEventListener("click",function(){ pendingItemImg={sec:sec,id:b.getAttribute("data-id")}; document.getElementById("icono-input").click(); });})(imgs[ii]);}
+  var cmax=document.querySelector("#list .cargamax-in"); if(cmax)cmax.addEventListener("change",function(){ setCargaMax(sec,cmax.value); });
   var convs=document.querySelectorAll("#list .convbtn");
   for(var k=0;k<convs.length;k++){(function(b){b.addEventListener("click",function(){
     if(b.classList.contains("compact")){ compactarMonedas(sec); return; }
@@ -1938,6 +1962,17 @@ function toggleBloqueo(){
   fetch(FB+"/campanas/"+currentCamp+"/info/bloqueada.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(nuevo)})
     .then(function(r){if(!r.ok)throw 0; campInfo.bloqueada=nuevo; logEvento(nuevo?"🔒 bloqueó la campaña":"🔓 reabrió la campaña",""); setStatus("✓ Guardado"); render(); alert(nuevo?"🔒 Campaña bloqueada.":"🔓 Campaña reabierta.");})
     .catch(function(){setStatus("⚠ Error");alert("No se pudo cambiar el estado de la campaña.");});
+}
+// Refrescar manualmente: relee la campaña entera (logros, progreso, info, inventario) sin reiniciar la pestaña.
+function refrescarCampana(){
+  if(!currentCamp){ location.reload(); return; }
+  setStatus("Refrescando…");
+  fetch(FB+"/campanas/"+currentCamp+".json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(c){
+    if(!c||!c.info){ setStatus("⚠ Error"); return; }
+    campInfo=c.info; GMname=c.info.gm||""; MIEMBROS=ordenMiembros(c.info.miembros).filter(function(m){return m!==GMname;});
+    LOGROS=toArr(c.logros); progreso=c.progreso||{}; INV=c.inventario||{}; guiaMD=(typeof c.guia==="string")?c.guia:null;
+    setStatus("✓ Actualizado"); render(); duelosTick();
+  }).catch(function(){ setStatus("⚠ Sin conexión"); });
 }
 // Refresco en vivo: relee solo el progreso de la campaña cada 5 s y repinta si cambió (sin recargar ni molestar).
 var liveTimer=null, liveBusy=false, liveN=0, duelTimer=null;
@@ -2538,6 +2573,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("log-close").addEventListener("click",closeLog);
   document.getElementById("log-modal").addEventListener("click",function(e){if(e.target.id==="log-modal")closeLog();});
   document.getElementById("jugbtn").addEventListener("click",openJugadores);
+  document.getElementById("refreshbtn").addEventListener("click",refrescarCampana);
   document.getElementById("jug-close").addEventListener("click",closeJugadores);
   document.getElementById("jug-modal").addEventListener("click",function(e){if(e.target.id==="jug-modal")closeJugadores();});
   document.getElementById("camp-whoami").addEventListener("click",function(){openPerfil();});
@@ -2548,7 +2584,7 @@ function logout(){try{localStorage.removeItem(SESSION);}catch(e){}location.reloa
   document.getElementById("perfil-pass-btn").addEventListener("click",cambiarPass);
   document.getElementById("perfil-vista-btn").addEventListener("click",toggleVistaJugador);
   document.getElementById("foto-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(fotoCampId){cambiarFotoCampana(f,fotoCampId);fotoCampId=null;}else cambiarFoto(f);}e.target.value="";});
-  document.getElementById("icono-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(pendingPjIcon){cambiarIconoPJ(f,pendingPjIcon);pendingPjIcon=null;}else cambiarIconoLogro(f);}e.target.value="";});
+  document.getElementById("icono-input").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(f){if(pendingItemImg){cambiarImagenItem(f,pendingItemImg.sec,pendingItemImg.id);pendingItemImg=null;}else if(pendingPjIcon){cambiarIconoPJ(f,pendingPjIcon);pendingPjIcon=null;}else cambiarIconoLogro(f);}e.target.value="";});
   document.getElementById("backup-input").addEventListener("change",function(e){if(e.target.files&&e.target.files[0])importarTodo(e.target.files[0]);e.target.value="";});
   document.getElementById("cuentas-btn").addEventListener("click",openCuentas);
   document.getElementById("cuentas-close").addEventListener("click",closeCuentas);
