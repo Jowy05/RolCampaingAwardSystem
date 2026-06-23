@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>RolCampaingAwardSystem</title>
-<link rel="stylesheet" href="styles.css?v=44">
+<link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body>
 
@@ -300,7 +300,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=60; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=61; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2291,22 +2291,29 @@ function renderDiscordPanel(){
   html+='<label class="disc-row"><input type="checkbox" id="disc-rec"'+(c.avisoRecord!==false?" checked":"")+'> <b>Recordatorio diario</b> mientras falte gente (1×/día)</label>';
   if(v)html+='<div class="disc-status">Esta semana: <b>'+v.si.length+'/'+v.total+'</b> han votado'+(v.no.length?('. Faltan: '+esc(v.no.join(", "))):' — ¡todos! ✅')+'</div>';
   html+='<div class="disc-actions"><button class="btn dm" id="disc-save" type="button">💾 Guardar</button><button class="btn" id="disc-test" type="button">📨 Enviar prueba</button></div>';
+  html+='<div class="disc-msg" id="disc-msg" aria-live="polite"></div>';
   html+='<div class="disc-help">📋 <b>Webhook</b>: en Discord → Ajustes del canal → Integraciones → Webhooks → Nuevo webhook → Copiar URL.<br>🔖 <b>ID del rol</b>: Ajustes de usuario → Avanzado → Modo desarrollador; luego clic derecho en el rol → Copiar ID.<br>⚠️ La URL del webhook es como una llave de ese canal: usa un canal poco sensible.</div>';
   body.innerHTML=html;
   document.getElementById("disc-save").onclick=saveDiscord;
   document.getElementById("disc-test").onclick=discordTest;
 }
+function discMsg(t,kind){ var m=document.getElementById("disc-msg"); if(!m)return; m.textContent=t||""; m.className="disc-msg"+(kind?(" "+kind):""); }
 function saveDiscord(){
   if(!esGM(campInfo))return;
+  var btn=document.getElementById("disc-save");
   var cfg={ on:document.getElementById("disc-on").checked, webhook:(document.getElementById("disc-wh").value||"").trim(), rolId:(document.getElementById("disc-rol").value||"").replace(/[^0-9]/g,""), avisoCompleto:document.getElementById("disc-comp").checked, avisoRecord:document.getElementById("disc-rec").checked };
-  setStatus("Guardando…");
-  fetch(FB+"/campanas/"+currentCamp+"/info/discord.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)}).then(function(r){ if(r.ok){ campInfo.discord=cfg; logEvento("📢 configuró avisos de Discord",""); setStatus("✓ Guardado"); renderDiscordPanel(); discordCheck(); } else setStatus("⚠ Error"); }).catch(function(){ setStatus("⚠ Sin conexión"); });
+  if(btn)btn.disabled=true; discMsg("Guardando…","saving"); setStatus("Guardando…");
+  fetch(FB+"/campanas/"+currentCamp+"/info/discord.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)}).then(function(r){
+    if(btn)btn.disabled=false;
+    if(r.ok){ campInfo.discord=cfg; var ri=document.getElementById("disc-rol"); if(ri)ri.value=cfg.rolId; logEvento("📢 configuró avisos de Discord",""); discMsg(cfg.on?"✅ Guardado. Los avisos están ACTIVOS para esta campaña.":"✅ Guardado. Los avisos están desactivados.","ok"); setStatus("✓ Guardado"); discordCheck(); }
+    else { discMsg("⚠ No se pudo guardar.","err"); setStatus("⚠ Error"); }
+  }).catch(function(){ if(btn)btn.disabled=false; discMsg("⚠ Sin conexión.","err"); setStatus("⚠ Sin conexión"); });
 }
 function discordTest(){
   var wh=(document.getElementById("disc-wh").value||"").trim(), rol=(document.getElementById("disc-rol").value||"").replace(/[^0-9]/g,"");
-  if(!wh){ alert("Pon primero la URL del webhook."); return; }
-  setStatus("Enviando prueba…");
-  discordPost({webhook:wh,rolId:rol}, (rol?("<@&"+rol+"> "):"")+"📢 Prueba desde la app de logros de **"+(campInfo&&campInfo.nombre||currentCamp)+"**. ¡Conexión correcta! ✅").then(function(ok){ setStatus(ok?"✓ Enviado":"⚠ Falló el envío"); if(!ok)alert("No se pudo enviar al webhook. Revisa que la URL sea correcta y completa."); });
+  if(!wh){ discMsg("⚠ Pon primero la URL del webhook arriba.","err"); return; }
+  var btn=document.getElementById("disc-test"); if(btn)btn.disabled=true; discMsg("Enviando prueba…","saving"); setStatus("Enviando prueba…");
+  discordPost({webhook:wh,rolId:rol}, (rol?("<@&"+rol+"> "):"")+"📢 Prueba desde la app de logros de **"+(campInfo&&campInfo.nombre||currentCamp)+"**. ¡Conexión correcta! ✅").then(function(ok){ if(btn)btn.disabled=false; discMsg(ok?"✅ ¡Prueba enviada! Compruébalo en el canal de Discord.":"⚠ No se pudo enviar. Revisa que la URL del webhook esté completa y sea correcta.", ok?"ok":"err"); setStatus(ok?"✓ Enviado":"⚠ Falló"); });
 }
 function renderGlobal(){
   var s=stats(LOGROS);
