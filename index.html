@@ -2225,7 +2225,7 @@ function renderCalendario(){
   var abs=list.querySelectorAll(".cal-abtn"); for(var ai=0;ai<abs.length;ai++){ (function(bn){ bn.onclick=function(){ clicAuto(+bn.getAttribute("data-wd"), bn.getAttribute("data-a")); }; })(abs[ai]); }
   var mcs=list.querySelectorAll(".cal-mini-c"); for(var mi=0;mi<mcs.length;mi++){ (function(bn){ bn.onclick=function(){ state.calOff=semanaDe(bn.getAttribute("data-dk")); renderCalendario(); }; })(mcs[mi]); }
   var dbtn=document.getElementById("cal-discord"); if(dbtn)dbtn.onclick=openDiscord;
-  if(!quedadasLoaded)cargarQuedadas(); else discordCheck();
+  if(!quedadasLoaded)cargarQuedadas();
 }
 // ====== DISCORD (avisos por webhook, por campaña) ======
 var discordSentLocal={}; // claves ya gestionadas en ESTE cliente (evita re-consultar Firebase cada tick)
@@ -2248,6 +2248,7 @@ function claimDiscord(sub){
   }).catch(function(){ return {known:false,claimed:false}; });
 }
 // Evalúa la semana y envía (si toca) el mensaje de "todos votaron" (1×/sem) o el recordatorio (1×/día). Lo corren TODOS los clientes; el flag evita duplicados.
+// Se llama SOLO en eventos de uso (entrarCampana, votar, cargar quedadas) — NUNCA desde el sondeo de fondo, para no disparar a las 3am al cruzar medianoche con la pestaña abierta. El recordatorio sigue siendo 1×/día (clave por fecha) pero solo cuando alguien usa la app.
 function discordCheck(){
   if(!currentCamp||!quedadasLoaded)return;
   var c=(campInfo&&campInfo.discord)||{};
@@ -2256,15 +2257,27 @@ function discordCheck(){
   if(completo){ if(c.avisoCompleto===false)return; } else { if(c.avisoRecord===false)return; }
   var key=completo?("c/"+dkey(lunesDeSemana(0))):("r/"+dkey(new Date()));
   if(discordSentLocal[key])return;
-  discordSentLocal[key]=true; // candado SÍNCRONO: dos discordCheck() seguidos (entrarCampana+render) no reenvían antes de que resuelva la reclamación
-  claimDiscord(key).then(function(res){
-    if(!res.known)discordSentLocal[key]=false; // error de red → permitir reintento
-    if(!res.claimed)return;
-    var msg;
-    if(completo){ var top=topDias(0); msg=rolTag(c)+"✅ ¡Ya habéis votado **todos** la disponibilidad de esta semana!"+(top.length?(" El día con más gente es **"+DIAS_SEM[(top[0].d.getDay()+6)%7]+" "+top[0].d.getDate()+"** ("+top[0].n+"/"+v.total+"). ¡A cuadrar sesión!"):""); }
-    else { msg=rolTag(c)+"🗳️ Disponibilidad de la semana: **"+v.si.length+"/"+v.total+"** han votado. Faltan por votar: **"+v.no.join(", ")+"**. Marcad vuestros días para poder cuadrar la sesión, ¡gracias! 🙏"; }
-    discordPost(c,msg);
-  });
+  discordSentLocal[key]=true; // candado SÍNCRONO intra-cliente
+  var msg;
+  if(completo){ var top=topDias(0); msg=rolTag(c)+"✅ ¡Ya habéis votado **todos** la disponibilidad de esta semana!"+(top.length?(" El día con más gente es **"+DIAS_SEM[(top[0].d.getDay()+6)%7]+" "+top[0].d.getDate()+"** ("+top[0].n+"/"+v.total+"). ¡A cuadrar sesión!"):""); }
+  else { msg=rolTag(c)+"🗳️ Disponibilidad de la semana: **"+v.si.length+"/"+v.total+"** han votado. Faltan por votar: **"+v.no.join(", ")+"**. Marcad vuestros días para poder cuadrar la sesión, ¡gracias! 🙏"; }
+  setTimeout(function(){ // jitter para que dos clientes no reclamen exactamente a la vez
+    claimDiscord(key).then(function(res){
+      if(!res.known){ discordSentLocal[key]=false; return; } // error de red contra Firebase → reintento
+      if(!res.claimed)return;                                 // otro cliente ya lo reclamó/envió
+      discordPost(c,msg).then(function(sent){
+        if(sent){ pruneDiscord(); }
+        else { fetch(FB+"/campanas/"+currentCamp+"/info/discordSent/"+key+".json",{method:"DELETE"}).catch(function(){}); discordSentLocal[key]=false; } // el webhook falló → libero el flag para reintentar (no se pierde el aviso)
+      });
+    });
+  }, Math.floor(Math.random()*900));
+}
+// Poda los flags antiguos para que /info/discordSent no crezca sin fin.
+function pruneDiscord(){
+  fetch(FB+"/campanas/"+currentCamp+"/info/discordSent.json?x="+(new Date().getTime())).then(function(r){return r.ok?r.json():null;}).then(function(o){
+    if(!o)return; var hoy=new Date(); hoy.setHours(0,0,0,0);
+    ["r","c"].forEach(function(g){ var lim=(g==="r")?21:60, gr=o[g]||{}; Object.keys(gr).forEach(function(k){ var p=k.split("-"); if(p.length===3){ var d=new Date(+p[0],(+p[1])-1,+p[2]); if((hoy-d)/86400000>lim){ fetch(FB+"/campanas/"+currentCamp+"/info/discordSent/"+g+"/"+encodeURIComponent(k)+".json",{method:"DELETE"}).catch(function(){}); } } }); });
+  }).catch(function(){});
 }
 function openDiscord(){ if(!esGM(campInfo))return; document.getElementById("discord-modal").classList.add("open"); renderDiscordPanel(); }
 function renderDiscordPanel(){
@@ -2371,7 +2384,6 @@ function liveTick(){
         repintarLive(changed);
       }).catch(function(){ liveBusy=false; repintarLive(changed); });
     } else { liveBusy=false; repintarLive(changed); }
-    discordCheck();
   }).catch(function(){liveBusy=false;});
 }
 
