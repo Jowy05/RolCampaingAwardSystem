@@ -820,6 +820,17 @@
   .cal-mini-c.wk{box-shadow:0 0 0 1px var(--gold) inset;}
   .cal-mini-c.h1{background:#234016;} .cal-mini-c.h2{background:#2d5417;} .cal-mini-c.h3{background:#3c6e18;} .cal-mini-c.h4{background:#4d8a1a;color:#0c1308;font-weight:700;}
   .cal-discord-btn{margin-left:auto;background:#3a2a5e;border-color:#5b46a0;color:#cfc2ff;}
+  /* Día de sesión */
+  .cal-dia.cal-dia-ses{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px rgba(240,195,60,.18);}
+  .cal-ses-badge{background:var(--gold);color:#231a02;font-size:9px;font-weight:700;border-radius:5px;padding:1px 5px;letter-spacing:.3px;}
+  .cal-ses-btn{margin-top:6px;width:100%;background:#2a2410;border:1px dashed #6b5a1e;color:#e7cf7a;border-radius:8px;cursor:pointer;font-size:11.5px;font-weight:600;padding:5px 4px;}
+  .cal-ses-btn:hover{border-color:var(--gold);}
+  .cal-ses-btn.on{background:#3a2f0c;border-style:solid;border-color:var(--gold);color:#ffe08a;}
+  .cal-sesbox{background:#2a2410;border:1px solid var(--gold);border-radius:12px;padding:12px;text-align:center;}
+  .cal-sesbox-h{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:6px;}
+  .cal-sesbox-d{font-size:18px;font-weight:800;color:#fff;}
+  .cal-sesbox-m{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .cal-sesbox .cal-ses-clear{margin-top:9px;font-size:11.5px;}
   /* ===== Panel de avisos de Discord ===== */
   .disc-row{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:9px 0;cursor:pointer;}
   .disc-row input{flex:0 0 auto;}
