@@ -201,7 +201,7 @@
 <div class="modal" id="edicto-modal">
   <div class="modal-card">
     <div class="modal-head">
-      <h2>📜 Edictos del Malo Maloso</h2>
+      <h2 id="edicto-title">📜 Edictos</h2>
       <button class="btn dm" id="edicto-save" type="button">💾 Guardar</button>
       <button class="btn" id="edicto-close" type="button">✕ Cerrar</button>
     </div>
@@ -300,7 +300,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=62; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=63; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2437,18 +2437,19 @@ var EDICTOS_DEF=[
 var RAR_COL={comun:"#6ca8e0",raro:"#7fb2f0",epico:"#c08bff",legendario:"#f0c33c",mitica:"#ff5a5a"};
 function mmdd(d){ return ("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
 function edictoArr(){ return (campInfo&&Array.isArray(campInfo.edictos)&&campInfo.edictos.length)?campInfo.edictos:EDICTOS_DEF; }
+function edictoNombre(){ return (campInfo&&campInfo.edictoNombre&&String(campInfo.edictoNombre).trim())?String(campInfo.edictoNombre).trim():"el Malo Maloso"; }
 function renderEdicto(){
   var el=document.getElementById("edicto"); if(!el)return;
   if(!currentCamp||!campInfo){ el.style.display="none"; return; }
   var arr=edictoArr(), m=new Date().getMonth(), texto=arr[m%arr.length], gm=esGM(campInfo);
   el.style.display="flex";
-  el.innerHTML='<span class="edicto-ic">📜</span><div class="edicto-tx"><div class="edicto-h">Edicto de '+MESES[m]+' · el Malo Maloso decreta</div><div class="edicto-r">'+esc(texto||"—")+'</div></div>'+(gm?'<button class="btn edicto-edit" id="edicto-edit" type="button" title="Editar edictos">✏️</button>':'');
+  el.innerHTML='<span class="edicto-ic">📜</span><div class="edicto-tx"><div class="edicto-h">Edicto de '+MESES[m]+' · '+esc(edictoNombre())+' decreta</div><div class="edicto-r">'+esc(texto||"—")+'</div></div>'+(gm?'<button class="btn edicto-edit" id="edicto-edit" type="button" title="Editar edictos">✏️</button>':'');
   if(gm){ var b=document.getElementById("edicto-edit"); if(b)b.addEventListener("click",openEdictoEditor); }
 }
 function openEdictoEditor(){
   if(!esGM(campInfo))return;
   var arr=edictoArr(), m=new Date().getMonth();
-  var html='<p class="prop-intro">Un edicto por línea. Cada mes se muestra uno (mes actual: <b>'+MESES[m]+'</b> → nº '+((m%Math.max(1,arr.length))+1)+'). Pon 12 para uno distinto cada mes, o menos y se repiten.</p><textarea id="edicto-ta" class="guia-edit" style="height:42vh;">'+esc(arr.join("\n"))+'</textarea>';
+  var html='<p class="prop-intro">✍️ Nombre de quien decreta (villano, narrador…):</p><input id="edicto-nombre" class="prop-in" style="width:100%;box-sizing:border-box;margin-bottom:12px;" maxlength="60" placeholder="el Malo Maloso" value="'+esc(edictoNombre())+'"><p class="prop-intro">Un edicto por línea. Cada mes se muestra uno (mes actual: <b>'+MESES[m]+'</b> → nº '+((m%Math.max(1,arr.length))+1)+'). Pon 12 para uno distinto cada mes, o menos y se repiten.</p><textarea id="edicto-ta" class="guia-edit" style="height:42vh;">'+esc(arr.join("\n"))+'</textarea>';
   document.getElementById("edicto-body").innerHTML=html;
   document.getElementById("edicto-modal").classList.add("open");
 }
@@ -2457,9 +2458,9 @@ function saveEdictos(){
   var ta=document.getElementById("edicto-ta"); if(!ta)return;
   var arr=(ta.value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
   if(!arr.length){ alert("Pon al menos un edicto."); return; }
-  setStatus("Guardando…"); campInfo.edictos=arr;
+  var ni=document.getElementById("edicto-nombre"); var nombre=((ni&&ni.value)||"").trim()||"el Malo Maloso"; setStatus("Guardando…"); campInfo.edictos=arr; campInfo.edictoNombre=nombre;
   fetch(FB+"/campanas/"+currentCamp+"/info/edictos.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(arr)})
-    .then(function(r){ setStatus(r.ok?"✓ Guardado":"⚠ Error"); logEvento("📜 editó los edictos",""); document.getElementById("edicto-modal").classList.remove("open"); renderEdicto(); })
+    .then(function(r){ if(!r.ok)throw 0; return fetch(FB+"/campanas/"+currentCamp+"/info/edictoNombre.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(nombre)}); }).then(function(){ setStatus("✓ Guardado"); logEvento("📜 editó los edictos",""); document.getElementById("edicto-modal").classList.remove("open"); renderEdicto(); })
     .catch(function(){ setStatus("⚠ Error"); });
 }
 
