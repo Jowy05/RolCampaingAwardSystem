@@ -1,0 +1,36 @@
+name: Aviso diario de Discord
+
+# Corre en los servidores de GitHub (no necesita que nadie tenga la web abierta).
+# Programado a las 13:00 Madrid: 11:00 UTC en verano (CEST) y 12:00 UTC en invierno (CET).
+# El script comprueba la hora real de Madrid y solo envía en la ventana 13-14h, así que
+# la ejecución "equivocada" según la estación se salta sola.
+on:
+  schedule:
+    - cron: '0 11 * * *'   # 13:00 CEST (verano)
+    - cron: '0 12 * * *'   # 13:00 CET  (invierno)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Simular sin enviar a Discord (solo log)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-diario
+  cancel-in-progress: false
+
+jobs:
+  aviso:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enviar aviso diario
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node scripts/discord-diario.js

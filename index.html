@@ -300,7 +300,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=63; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=64; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2215,7 +2215,7 @@ function renderCalendario(){
   }
   html+='</div>';
   if(diaSes){ var ddS=parseDk(diaSes), siS=sesionInfo()||{}; html+='<div class="cal-sesbox"><div class="cal-sesbox-h">📅 Día de sesión</div><div class="cal-sesbox-d">'+DIAS_SEM[(ddS.getDay()+6)%7]+' '+ddS.getDate()+' '+MESES[ddS.getMonth()]+'</div><div class="cal-sesbox-m">'+(siS.auto?"Automático (el día con más gente)":"Elegido por el máster")+'</div>'+(esGMc?'<button class="btn cal-ses-clear" type="button">✖ Quitar / dejar automático</button>':'')+'</div>'; }
-  else if(esGMc){ html+='<div class="cal-sesbox"><div class="cal-sesbox-h">📅 Día de sesión</div><div class="cal-sesbox-m">Sin decidir. Pulsa 📌 en un día para fijarlo, o se elegirá solo el de más gente cuando voten todos.</div></div>'; }
+  else if(esGMc){ html+='<div class="cal-sesbox"><div class="cal-sesbox-h">📅 Día de sesión</div><div class="cal-sesbox-m">Sin decidir. Máster: pulsa 📌 en un día para fijarlo (guíate por el 🏆 TOP DÍAS).</div></div>'; }
   if(!marcar)html+='<div class="cal-nota">'+(esGM(campInfo)?'👁 Como GM ves la disponibilidad de toda la party (no marcas tú).':'👁 Solo lectura.')+'</div>';
   html+=miniMes(off);
   html+='</aside></div>';
@@ -2258,11 +2258,8 @@ function claimDiscord(sub){
 function parseDk(dk){ var p=dk.split("-"); return new Date(+p[0],(+p[1])-1,+p[2]); }
 function diaSesion(){ var s=(campInfo&&campInfo.sesion)||{}, w=s[dkey(lunesDeSemana(0))]; return (w&&w.dia)||null; }
 function sesionInfo(){ var s=(campInfo&&campInfo.sesion)||{}; return s[dkey(lunesDeSemana(0))]||null; }
-// El día "con más sí" de HOY en adelante (para no elegir un día ya pasado).
-function mejorDiaFuturo(){ var hoy=dkey(new Date()); var arr=diasSemana(0).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,si:quienPuede(dk).length,pts:puntosDia(dk)}; }).filter(function(x){ return x.dk>=hoy && x.si>0; }).sort(function(a,b){ return (b.si-a.si)||(b.pts-a.pts)||(a.d-b.d); }); return arr[0]||null; }
+// El día de sesión lo fija SIEMPRE el máster a mano (setSesionDia). La app solo calcula y muestra el TOP de días para ayudarle a decidir; nunca lo fija sola.
 function fijarSesion(dk,auto){ var wk=dkey(lunesDeSemana(0)); if(!campInfo.sesion)campInfo.sesion={}; if(dk){ campInfo.sesion[wk]={dia:dk,auto:!!auto}; fetch(FB+"/campanas/"+currentCamp+"/info/sesion/"+wk+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({dia:dk,auto:!!auto})}).catch(function(){}); } else { delete campInfo.sesion[wk]; fetch(FB+"/campanas/"+currentCamp+"/info/sesion/"+wk+".json",{method:"DELETE"}).catch(function(){}); } }
-// Si todos han votado y no hay día fijado, elige automáticamente el de más gente (independiente de Discord).
-function autoPickSesion(){ if(!MIEMBROS.length||diaSesion())return; if(votacionSemana().no.length>0)return; var best=mejorDiaFuturo(); if(!best)return; fijarSesion(best.dk,true); if(state.tab==="cal")renderCalendario(); }
 function setSesionDia(dk){ if(!esGM(campInfo))return; if(campInfo&&campInfo.bloqueada)return; fijarSesion(dk,false); setStatus("✓ Día de sesión fijado"); renderCalendario(); discordCheck(); }
 // Envío idempotente reutilizable: candado síncrono + jitter + reclamación en Firebase + revertir si falla el webhook.
 function enviarDiscord(key,msgFn){
@@ -2288,7 +2285,6 @@ function discordDiaSesion(){
 // Se llama SOLO en eventos de uso (entrarCampana, votar, cargar quedadas) para los avisos de votación; el de "HOY SESIÓN" además se mira desde el sondeo (gate por hora).
 function discordCheck(){
   if(!currentCamp||!quedadasLoaded)return;
-  autoPickSesion(); // elige día de sesión si todos votaron (aunque Discord esté off)
   var c=(campInfo&&campInfo.discord)||{};
   if(!c.on||!c.webhook||!MIEMBROS.length)return;
   var v=votacionSemana(), dia=diaSesion(), ses=sesionInfo()||{};
@@ -2315,7 +2311,7 @@ function renderDiscordPanel(){
   html+='<label class="disc-row"><input type="checkbox" id="disc-on"'+(c.on?" checked":"")+'> <b>Activar avisos de Discord</b></label>';
   html+='<div class="disc-field"><label>URL del webhook</label><input class="prop-in" id="disc-wh" placeholder="https://discord.com/api/webhooks/..." value="'+esc(c.webhook||"")+'"></div>';
   html+='<div class="disc-field"><label>ID del rol a pinguear <span class="disc-opt">(opcional)</span></label><input class="prop-in" id="disc-rol" placeholder="123456789012345678" value="'+esc(c.rolId||"")+'"></div>';
-  html+='<label class="disc-row"><input type="checkbox" id="disc-comp"'+(c.avisoCompleto!==false?" checked":"")+'> Avisar el <b>día de sesión</b> cuando se decida (votan todos o lo fija el GM)</label>';
+  html+='<label class="disc-row"><input type="checkbox" id="disc-comp"'+(c.avisoCompleto!==false?" checked":"")+'> Avisar el <b>día de sesión</b> cuando el máster lo fije</label>';
   html+='<label class="disc-row"><input type="checkbox" id="disc-rec"'+(c.avisoRecord!==false?" checked":"")+'> <b>Recordatorio diario</b> mientras falte gente por votar (1×/día)</label>';
   html+='<label class="disc-row"><input type="checkbox" id="disc-hoy"'+(c.avisoHoy!==false?" checked":"")+'> Aviso <b>«HOY SESIÓN»</b> el día de la sesión (a partir de la 1pm)</label>';
   if(v)html+='<div class="disc-status">Esta semana: <b>'+v.si.length+'/'+v.total+'</b> han votado'+(v.no.length?('. Faltan: '+esc(v.no.join(", "))):' — ¡todos! ✅')+'</div>';
