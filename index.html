@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=65; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=66; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2304,11 +2304,12 @@ function renderDiscordPanel(){
   html+='<label class="disc-row"><input type="checkbox" id="disc-rec"'+(c.avisoRecord!==false?" checked":"")+'> <b>Recordatorio diario</b> mientras falte gente por votar (1×/día)</label>';
   html+='<label class="disc-row"><input type="checkbox" id="disc-hoy"'+(c.avisoHoy!==false?" checked":"")+'> Aviso <b>«HOY SESIÓN»</b> el día de la sesión (a partir de la 1pm)</label>';
   if(v)html+='<div class="disc-status">Esta semana: <b>'+v.si.length+'/'+v.total+'</b> han votado'+(v.no.length?('. Faltan: '+esc(v.no.join(", "))):' — ¡todos! ✅')+'</div>';
-  html+='<div class="disc-actions"><button class="btn dm" id="disc-save" type="button">💾 Guardar</button><button class="btn" id="disc-test" type="button">📨 Enviar prueba</button></div>';
+  html+='<div class="disc-actions"><button class="btn dm" id="disc-save" type="button">💾 Guardar</button><button class="btn" id="disc-record" type="button">🗳️ Enviar recordatorio</button><button class="btn" id="disc-test" type="button">📨 Enviar prueba</button></div>';
   html+='<div class="disc-msg" id="disc-msg" aria-live="polite"></div>';
   html+='<div class="disc-help">📋 <b>Webhook</b>: en Discord → Ajustes del canal → Integraciones → Webhooks → Nuevo webhook → Copiar URL.<br>🔖 <b>ID del rol</b>: Ajustes de usuario → Avanzado → Modo desarrollador; luego clic derecho en el rol → Copiar ID.<br>⚠️ La URL del webhook es como una llave de ese canal: usa un canal poco sensible.</div>';
   body.innerHTML=html;
   document.getElementById("disc-save").onclick=saveDiscord;
+  document.getElementById("disc-record").onclick=discordEnviarRecord;
   document.getElementById("disc-test").onclick=discordTest;
 }
 function discMsg(t,kind){ var m=document.getElementById("disc-msg"); if(!m)return; m.textContent=t||""; m.className="disc-msg"+(kind?(" "+kind):""); }
@@ -2328,6 +2329,19 @@ function discordTest(){
   if(!wh){ discMsg("⚠ Pon primero la URL del webhook arriba.","err"); return; }
   var btn=document.getElementById("disc-test"); if(btn)btn.disabled=true; discMsg("Enviando prueba…","saving"); setStatus("Enviando prueba…");
   discordPost({webhook:wh,rolId:rol}, (rol?("<@&"+rol+"> "):"")+"📢 Prueba desde la app de logros de **"+(campInfo&&campInfo.nombre||currentCamp)+"**. ¡Conexión correcta! ✅").then(function(ok){ if(btn)btn.disabled=false; discMsg(ok?"✅ ¡Prueba enviada! Compruébalo en el canal de Discord.":"⚠ No se pudo enviar. Revisa que la URL del webhook esté completa y sea correcta.", ok?"ok":"err"); setStatus(ok?"✓ Enviado":"⚠ Falló"); });
+}
+// Botón del máster: manda AL INSTANTE el recordatorio "faltan por votar" con la gente que falta ahora mismo (usa webhook/rol del formulario, como la prueba). Repetible; NO toca el flag r/ del cron.
+function discordEnviarRecord(){
+  var wh=(document.getElementById("disc-wh").value||"").trim(), rol=(document.getElementById("disc-rol").value||"").replace(/[^0-9]/g,"");
+  if(!wh){ discMsg("⚠ Pon primero la URL del webhook arriba.","err"); return; }
+  if(!quedadasLoaded){ discMsg("⚠ Aún se está cargando la disponibilidad; prueba en un momento.","err"); return; }
+  var v=votacionSemana();
+  if(!v.total){ discMsg("⚠ No hay jugadores en la campaña.","err"); return; }
+  if(v.no.length===0){ discMsg("✅ Ya han votado todos; no hay a quién recordar.","ok"); return; }
+  var link=location.origin+location.pathname;
+  var msg=(rol?("<@&"+rol+"> "):"")+"🗳️ Disponibilidad de la semana: **"+v.si.length+"/"+v.total+"** han votado. Faltan por votar: **"+v.no.join(", ")+"**. Marcad vuestros días para cuadrar la sesión 👉 "+link+" ¡gracias! 🙏";
+  var btn=document.getElementById("disc-record"); if(btn)btn.disabled=true; discMsg("Enviando recordatorio…","saving"); setStatus("Enviando…");
+  discordPost({webhook:wh,rolId:rol}, msg).then(function(ok){ if(btn)btn.disabled=false; discMsg(ok?("✅ Recordatorio enviado. Faltaban: "+v.no.join(", ")):"⚠ No se pudo enviar. Revisa la URL del webhook.", ok?"ok":"err"); setStatus(ok?"✓ Enviado":"⚠ Falló"); });
 }
 function renderGlobal(){
   var s=stats(LOGROS);
