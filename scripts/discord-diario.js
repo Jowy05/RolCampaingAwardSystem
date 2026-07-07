@@ -15,7 +15,7 @@
 const FB      = "https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.app";
 const APP_URL = "https://jowy05.github.io/RolCampaingAwardSystem/";
 const DIAS_SEM = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-const HORAS_OK = [13];              // solo hora 13 Madrid: con los dos crons (11/12 UTC) sale exactamente 1×/día todo el año (la ejecución de la estación equivocada se autofiltra)
+const HORA_MIN = 13, HORA_MAX = 20; // ventana Madrid [13..20]: envía en la 1ª ejecución a partir de las 13h. Amplia a propósito porque el cron de GitHub se retrasa (a veces 1-2h) o se omite; el flag diario garantiza 1 solo envío aunque varias ejecuciones caigan dentro.
 const DRY    = String(process.env.DRY_RUN || "").toLowerCase() === "true";
 const MANUAL = process.env.GITHUB_EVENT_NAME === "workflow_dispatch";
 
@@ -89,6 +89,7 @@ function decidir(info, hoyKey, mondayKey, weekDays) {
     const lista = tops.length ? tops.map((t, i) => `${meds[i]} **${labelDk(t.dk)}** (${t.n}${t.tv ? "+" + t.tv + "🤔" : ""})`).join("   ") : "_(nadie puede ningún día aún)_";
     return { key: "fija/" + hoyKey, msg: rolTag(c.rolId) + `📅 ¡Ya habéis votado **todos**! Falta fijar la sesión.${gm ? ` **${gm}**,` : ""} toca elegir día 🎲. Días con más gente:   ${lista}` };
   }
+  if (c.avisoHoy === false) return { skip: "avisoHoy=off (sesión fijada)" };
   if (dia === hoyKey) {
     return { key: "hoy/" + dia, msg: rolTag(c.rolId) + `🎲 **¡HOY HAY SESIÓN!** (${labelDk(dia)}). ¡Nos vemos! 🐉` };
   }
@@ -121,7 +122,7 @@ async function procesarCampana(id, hoyKey, mondayKey, weekDays) {
 async function main() {
   const now = madridNow();
   console.log(`Madrid ahora: ${now.y}-${pad2(now.m)}-${pad2(now.d)} ${pad2(now.h)}h | DRY=${DRY} MANUAL=${MANUAL}`);
-  if (!MANUAL && !DRY && HORAS_OK.indexOf(now.h) < 0) { console.log(`Fuera de la ventana ${HORAS_OK.join("/")}h Madrid — no toca. Fin.`); return; }
+  if (!MANUAL && !DRY && (now.h < HORA_MIN || now.h > HORA_MAX)) { console.log(`Fuera de la ventana ${HORA_MIN}-${HORA_MAX}h Madrid — no toca. Fin.`); return; }
 
   const today = civil(now.y, now.m, now.d);
   const hoyKey = dkeyOf(today);

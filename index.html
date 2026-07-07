@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=64; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=65; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2275,27 +2275,15 @@ function enviarDiscord(key,msgFn){
     });
   }, Math.floor(Math.random()*900));
 }
-// Aviso "HOY SESIÓN": el día de la sesión, a partir de la 1pm (gate por hora → seguro aunque lo llame el sondeo de fondo, no dispara de madrugada).
-function discordDiaSesion(){
-  var c=(campInfo&&campInfo.discord)||{};
-  if(!c.on||!c.webhook||c.avisoHoy===false)return;
-  var dia=diaSesion(); if(!dia)return;
-  if(dkey(new Date())!==dia||new Date().getHours()<13)return;
-  enviarDiscord("hoy/"+dia, function(){ var dd=parseDk(dia); return rolTag(c)+"🎲 **¡HOY HAY SESIÓN!** ("+DIAS_SEM[(dd.getDay()+6)%7]+" "+dd.getDate()+"). ¡Nos vemos! 🐉"; });
-}
-// Se llama SOLO en eventos de uso (entrarCampana, votar, cargar quedadas) para los avisos de votación; el de "HOY SESIÓN" además se mira desde el sondeo (gate por hora).
+// Los avisos de votación diarios (recordatorio "faltan por votar" y "HOY SESIÓN") los manda ahora el CRON server-side (GitHub Actions, 13:00 Madrid) para que salgan seguros a esa hora sin depender de que alguien tenga la app abierta, y sin duplicar. El cliente solo avisa AL INSTANTE cuando el máster fija el día de sesión.
 function discordCheck(){
   if(!currentCamp||!quedadasLoaded)return;
   var c=(campInfo&&campInfo.discord)||{};
   if(!c.on||!c.webhook||!MIEMBROS.length)return;
-  var v=votacionSemana(), dia=diaSesion(), ses=sesionInfo()||{};
-  if(dia){
-    if(c.avisoCompleto!==false)enviarDiscord("dia/"+dia, function(){ var dd=parseDk(dia), et=DIAS_SEM[(dd.getDay()+6)%7]+" "+dd.getDate(), si=quienPuede(dia).length;
-      return rolTag(c)+(ses.auto?("✅ ¡Ya habéis votado todos! 📅 **Sesión el "+et+"** — el día con más gente ("+si+"/"+MIEMBROS.length+"). ¡Nos vemos! 🎲"):("📅 El máster ha fijado **sesión el "+et+"**. ¡Apuntadlo! 🎲")); });
-  } else if(v.no.length>0 && c.avisoRecord!==false){
-    enviarDiscord("r/"+dkey(new Date()), function(){ return rolTag(c)+"🗳️ Disponibilidad de la semana: **"+v.si.length+"/"+v.total+"** han votado. Faltan por votar: **"+v.no.join(", ")+"**. Marcad vuestros días para cuadrar la sesión, ¡gracias! 🙏"; });
+  var dia=diaSesion();
+  if(dia && c.avisoCompleto!==false){
+    enviarDiscord("dia/"+dia, function(){ var dd=parseDk(dia), et=DIAS_SEM[(dd.getDay()+6)%7]+" "+dd.getDate(); return rolTag(c)+"📅 El máster ha fijado **sesión el "+et+"**. ¡Apuntadlo! 🎲"; });
   }
-  discordDiaSesion();
 }
 // Poda los flags antiguos para que /info/discordSent no crezca sin fin.
 function pruneDiscord(){
@@ -2417,7 +2405,6 @@ function liveTick(){
         repintarLive(changed);
       }).catch(function(){ liveBusy=false; repintarLive(changed); });
     } else { liveBusy=false; repintarLive(changed); }
-    discordDiaSesion(); // "HOY SESIÓN" — seguro en fondo: solo dispara el día de la sesión y a partir de la 1pm
   }).catch(function(){liveBusy=false;});
 }
 
