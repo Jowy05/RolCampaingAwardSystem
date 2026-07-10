@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=66; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=67; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2304,6 +2304,9 @@ function renderDiscordPanel(){
   html+='<label class="disc-row"><input type="checkbox" id="disc-rec"'+(c.avisoRecord!==false?" checked":"")+'> <b>Recordatorio diario</b> mientras falte gente por votar (1×/día)</label>';
   html+='<label class="disc-row"><input type="checkbox" id="disc-hoy"'+(c.avisoHoy!==false?" checked":"")+'> Aviso <b>«HOY SESIÓN»</b> el día de la sesión (a partir de la 1pm)</label>';
   if(v)html+='<div class="disc-status">Esta semana: <b>'+v.si.length+'/'+v.total+'</b> han votado'+(v.no.length?('. Faltan: '+esc(v.no.join(", "))):' — ¡todos! ✅')+'</div>';
+  html+='<div class="disc-field"><label>📝 Mensaje libre al canal</label><textarea class="prop-in" id="disc-libre-txt" rows="3" maxlength="1800" placeholder="Escribe aquí lo que quieras mandar al canal de Discord…"></textarea></div>';
+  html+='<label class="disc-row"><input type="checkbox" id="disc-libre-ping" checked> Pinguear al rol con este mensaje</label>';
+  html+='<div class="disc-actions"><button class="btn dm" id="disc-libre-send" type="button">📤 Enviar mensaje</button></div>';
   html+='<div class="disc-actions"><button class="btn dm" id="disc-save" type="button">💾 Guardar</button><button class="btn" id="disc-record" type="button">🗳️ Enviar recordatorio</button><button class="btn" id="disc-test" type="button">📨 Enviar prueba</button></div>';
   html+='<div class="disc-msg" id="disc-msg" aria-live="polite"></div>';
   html+='<div class="disc-help">📋 <b>Webhook</b>: en Discord → Ajustes del canal → Integraciones → Webhooks → Nuevo webhook → Copiar URL.<br>🔖 <b>ID del rol</b>: Ajustes de usuario → Avanzado → Modo desarrollador; luego clic derecho en el rol → Copiar ID.<br>⚠️ La URL del webhook es como una llave de ese canal: usa un canal poco sensible.</div>';
@@ -2311,6 +2314,23 @@ function renderDiscordPanel(){
   document.getElementById("disc-save").onclick=saveDiscord;
   document.getElementById("disc-record").onclick=discordEnviarRecord;
   document.getElementById("disc-test").onclick=discordTest;
+  document.getElementById("disc-libre-send").onclick=discordEnviarLibre;
+}
+// Botón del máster: manda un mensaje LIBRE al webhook (texto del textarea). El checkbox decide si se pinguea al rol o no. Usa webhook/rol del formulario, como la prueba.
+function discordEnviarLibre(){
+  var wh=(document.getElementById("disc-wh").value||"").trim(), rol=(document.getElementById("disc-rol").value||"").replace(/[^0-9]/g,"");
+  if(!wh){ discMsg("⚠ Pon primero la URL del webhook arriba.","err"); return; }
+  var txt=(document.getElementById("disc-libre-txt").value||"").trim();
+  if(!txt){ discMsg("⚠ Escribe el mensaje que quieres enviar.","err"); return; }
+  var ping=document.getElementById("disc-libre-ping").checked;
+  var msg=((ping&&rol)?("<@&"+rol+"> "):"")+txt;
+  var btn=document.getElementById("disc-libre-send"); if(btn)btn.disabled=true; discMsg("Enviando mensaje…","saving"); setStatus("Enviando…");
+  discordPost({webhook:wh,rolId:(ping?rol:"")}, msg).then(function(ok){
+    if(btn)btn.disabled=false;
+    if(ok){ var ta=document.getElementById("disc-libre-txt"); if(ta)ta.value=""; logEvento("📤 envió mensaje a Discord",""); }
+    discMsg(ok?("✅ Mensaje enviado"+((ping&&rol)?" (con ping al rol).":" (sin ping).")):"⚠ No se pudo enviar. Revisa la URL del webhook.", ok?"ok":"err");
+    setStatus(ok?"✓ Enviado":"⚠ Falló");
+  });
 }
 function discMsg(t,kind){ var m=document.getElementById("disc-msg"); if(!m)return; m.textContent=t||""; m.className="disc-msg"+(kind?(" "+kind):""); }
 function saveDiscord(){
