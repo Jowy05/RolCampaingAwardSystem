@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=67; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=68; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -1929,6 +1929,16 @@ function delContenedor(sec,cid){ if(!puedeEditarInv(sec))return; if(!confirm("¿
 function setItemCont(sec,id,cid){ if(!puedeEditarInv(sec))return; var it=invData(sec).items[id]; if(!it)return; if(cid&&invData(sec).contenedores[cid])it.cont=cid; else delete it.cont; saveItemFB(sec,id); render(); }
 // Carga máxima (lb) de la sección: para calcular carga ligera/media/pesada/sobrecarga (PF1e: ≤1/3 ligera, ≤2/3 media, ≤max pesada, >max sobrecarga).
 function setCargaMax(sec,val){ if(!puedeEditarInv(sec))return; var v=Math.max(0,Math.floor(Number(val)||0)); invData(sec).cargaMax=v; fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/cargaMax.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");render();}).catch(function(){setStatus("⚠ Sin conexión");}); }
+// Barras de XP del inventario (manuales, sin autocompletar): xp.logros{cur,max} y xp.normal{cur,max}
+function setXpInv(sec,key,campo,val){
+  if(!puedeEditarInv(sec))return;
+  if(key!=="logros"&&key!=="normal")return;
+  var v=Math.max(0,Math.floor(Number(val)||0));
+  var d=invData(sec); if(!d.xp)d.xp={}; if(!d.xp[key])d.xp[key]={};
+  d.xp[key][campo==="max"?"max":"cur"]=v;
+  setStatus("Guardando…");
+  fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/xp.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d.xp)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");if(state.tab==="inv")renderInventario();}).catch(function(){setStatus("⚠ Sin conexión");});
+}
 // Imagen de un objeto (reducida a 64x64): sustituye el icono 📦 del objeto.
 function cambiarImagenItem(file,sec,id){ if(!file||!puedeEditarInv(sec))return; var rd=new FileReader(); rd.onload=function(){ var img=new Image(); img.onload=function(){ var sz=64,cv=document.createElement("canvas");cv.width=sz;cv.height=sz;var ctx=cv.getContext("2d"); var s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2; ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz); var data=cv.toDataURL("image/jpeg",0.7); if(data.length>95000){ alert("Imagen muy grande, prueba con otra más sencilla."); return; } var it=invData(sec).items[id]; if(!it)return; it.img=data; saveItemFB(sec,id); render(); }; img.src=rd.result; }; rd.readAsDataURL(file); }
 // ---- Traspasos entre inventarios ----
@@ -2010,7 +2020,24 @@ function renderInventario(){
   }
   html+='</div>'; // /inv-objetos
   // ----- DINERO (derecha, columna) -----
-  html+='<div class="inv-dinero"><div class="inv-h">💰 Dinero</div><div class="inv-coins">';
+  html+='<div class="inv-dinero">';
+  // ----- XP (dos barras manuales: por logros y normal; solo secciones de persona) -----
+  if(sec!=="__general__"){
+    var xp=d.xp||{};
+    html+='<div class="inv-h">📊 Experiencia</div><div class="inv-xp" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
+    [["logros","🏆 XP por logros","#d4a017"],["normal","⚔️ XP normal","#3fa7d6"]].forEach(function(bar){
+      var k=bar[0], v=xp[k]||{}, cur=Math.max(0,Math.floor(Number(v.cur)||0)), max=Math.max(0,Math.floor(Number(v.max)||0));
+      var pct=max>0?Math.min(100,cur/max*100):0;
+      html+='<div class="inv-xpbar">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;font-size:12.5px;"><b>'+bar[1]+'</b>'
+        +'<span style="display:inline-flex;align-items:center;gap:3px;"><input class="xp-in" data-key="'+k+'" data-campo="cur" type="number" min="0" value="'+cur+'" title="XP actual" style="width:70px;"'+(puede?"":" disabled")+'> / <input class="xp-in" data-key="'+k+'" data-campo="max" type="number" min="0" value="'+(max||"")+'" placeholder="máx" title="XP para el siguiente nivel" style="width:70px;"'+(puede?"":" disabled")+'></span></div>'
+        +'<div style="height:12px;border-radius:6px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);overflow:hidden;" title="'+cur+(max?(' / '+max):'')+' XP"><div style="height:100%;width:'+pct.toFixed(1)+'%;border-radius:6px;background:linear-gradient(90deg,'+bar[2]+'88,'+bar[2]+');box-shadow:0 0 8px '+bar[2]+'66;transition:width .25s;"></div></div>'
+        +(max>0?('<div style="font-size:10.5px;opacity:.65;margin-top:2px;text-align:right;">'+cur+' / '+max+' ('+Math.round(pct)+'%)</div>'):'')
+        +'</div>';
+    });
+    html+='</div>';
+  }
+  html+='<div class="inv-h">💰 Dinero</div><div class="inv-coins">';
   COINS.forEach(function(c){ html+='<div class="coin coin-'+c[0]+'"><span class="coin-l">'+c[1]+'</span><input class="coin-in" type="number" min="0" data-coin="'+c[0]+'" value="'+(Number(dinero[c[0]])||0)+'"'+(puede?"":" disabled")+'></div>'; });
   html+='</div>'; // /inv-coins
   if(puede){
@@ -2039,6 +2066,8 @@ function renderInventario(){
   if(!puede)return;
   var coins=document.querySelectorAll("#list .coin-in");
   for(var i=0;i<coins.length;i++){(function(inp){inp.addEventListener("change",function(){setDinero(sec,inp.getAttribute("data-coin"),inp.value);});})(coins[i]);}
+  var xpins=document.querySelectorAll("#list .xp-in");
+  for(var xi=0;xi<xpins.length;xi++){(function(inp){inp.addEventListener("change",function(){setXpInv(sec,inp.getAttribute("data-key"),inp.getAttribute("data-campo"),inp.value);});})(xpins[xi]);}
   var ab=document.getElementById("inv-add-btn"); if(ab)ab.addEventListener("click",function(){addItemInv(sec);});
   var dels=document.querySelectorAll("#list .inv-del");
   for(var d2=0;d2<dels.length;d2++){(function(b){b.addEventListener("click",function(){delItemInv(sec,b.getAttribute("data-id"));});})(dels[d2]);}
