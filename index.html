@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=69; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=70; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -1929,6 +1929,14 @@ function delContenedor(sec,cid){ if(!puedeEditarInv(sec))return; if(!confirm("¿
 function setItemCont(sec,id,cid){ if(!puedeEditarInv(sec))return; var it=invData(sec).items[id]; if(!it)return; if(cid&&invData(sec).contenedores[cid])it.cont=cid; else delete it.cont; saveItemFB(sec,id); render(); }
 // Carga máxima (lb) de la sección: para calcular carga ligera/media/pesada/sobrecarga (PF1e: ≤1/3 ligera, ≤2/3 media, ≤max pesada, >max sobrecarga).
 function setCargaMax(sec,val){ if(!puedeEditarInv(sec))return; var v=Math.max(0,Math.floor(Number(val)||0)); invData(sec).cargaMax=v; fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/cargaMax.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");render();}).catch(function(){setStatus("⚠ Sin conexión");}); }
+// Puntos de inspiración del inventario (campo manual)
+function setInspiracion(sec,val){
+  if(!puedeEditarInv(sec))return;
+  var v=Math.max(0,Math.floor(Number(val)||0));
+  invData(sec).inspiracion=v;
+  setStatus("Guardando…");
+  fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/inspiracion.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");if(state.tab==="inv")renderInventario();}).catch(function(){setStatus("⚠ Sin conexión");});
+}
 // Barras de XP del inventario (manuales, sin autocompletar): xp.logros{cur,max} y xp.normal{cur,max}
 function setXpInv(sec,key,campo,val){
   if(!puedeEditarInv(sec))return;
@@ -2023,7 +2031,9 @@ function renderInventario(){
   html+='<div class="inv-dinero">';
   // ----- XP (dos barras manuales: por logros y normal; solo secciones de persona) -----
   if(sec!=="__general__"){
-    var xp=d.xp||{};
+    var xp=d.xp||{}, insp=Math.max(0,Math.floor(Number(d.inspiracion)||0));
+    html+='<div class="inv-h">✨ Inspiración</div>';
+    html+='<div class="inv-insp" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;"><b>Puntos de inspiración</b><input class="insp-in" type="number" min="0" value="'+insp+'" title="Puntos de inspiración" style="width:70px;"'+(puede?"":" disabled")+'>'+(insp>0?('<span style="letter-spacing:2px;">'+Array(Math.min(insp,10)+1).join("✨")+(insp>10?" +"+(insp-10):"")+'</span>'):'<span style="opacity:.5;">—</span>')+'</div>';
     html+='<div class="inv-h">📊 Experiencia</div><div class="inv-xp" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
     [["logros","🏆 XP por logros","#d4a017"],["normal","⚔️ XP normal","#3fa7d6"]].forEach(function(bar){
       var k=bar[0], v=xp[k]||{}, cur=Math.max(0,Math.floor(Number(v.cur)||0)), max=Math.max(0,Math.floor(Number(v.max)||0));
@@ -2068,6 +2078,7 @@ function renderInventario(){
   for(var i=0;i<coins.length;i++){(function(inp){inp.addEventListener("change",function(){setDinero(sec,inp.getAttribute("data-coin"),inp.value);});})(coins[i]);}
   var xpins=document.querySelectorAll("#list .xp-in");
   for(var xi=0;xi<xpins.length;xi++){(function(inp){inp.addEventListener("change",function(){setXpInv(sec,inp.getAttribute("data-key"),inp.getAttribute("data-campo"),inp.value);});})(xpins[xi]);}
+  var inspIn=document.querySelector("#list .insp-in"); if(inspIn)inspIn.addEventListener("change",function(){setInspiracion(sec,inspIn.value);});
   var ab=document.getElementById("inv-add-btn"); if(ab)ab.addEventListener("click",function(){addItemInv(sec);});
   var dels=document.querySelectorAll("#list .inv-del");
   for(var d2=0;d2<dels.length;d2++){(function(b){b.addEventListener("click",function(){delItemInv(sec,b.getAttribute("data-id"));});})(dels[d2]);}
