@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=68; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=69; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2137,7 +2137,7 @@ function quienTalvez(dk){ return MIEMBROS.filter(function(m){return estadoEfecti
 function sinMarcar(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="";}); }
 // Puntos del TOP: cada "sí" vale 1, cada "tal vez" vale 0,5.
 function puntosDia(dk){ return quienPuede(dk).length + quienTalvez(dk).length*0.5; }
-function topDias(off){ return diasSemana(off).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,n:quienPuede(dk).length,tv:quienTalvez(dk).length,pts:puntosDia(dk)}; }).filter(function(x){return x.pts>0;}).sort(function(a,b){ return (b.pts-a.pts)||(a.d-b.d); }).slice(0,3); }
+function topDias(off){ var hoy=dkey(new Date()); return diasSemana(off).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,n:quienPuede(dk).length,tv:quienTalvez(dk).length,pts:puntosDia(dk)}; }).filter(function(x){return x.pts>0&&x.dk>=hoy;}).sort(function(a,b){ return (b.pts-a.pts)||(a.d-b.d); }).slice(0,3); } // días ya pasados fuera del ranking: no tiene sentido proponer el viernes siendo sábado
 function puedeMarcarQuedada(){ return !(campInfo&&campInfo.bloqueada) && esMiembroCampana() && MIEMBROS.indexOf(currentUser)>=0; }
 // Marca SOLO mi hoja por subruta (PUT/DELETE) → nunca pisa la de otro. Optimista con guard anti-reversión (quedadaPend).
 function setQuedada(dk,val){

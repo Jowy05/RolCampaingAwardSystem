@@ -84,7 +84,8 @@ function decidir(info, hoyKey, mondayKey, weekDays) {
     return { key: "r/" + hoyKey, msg: rolTag(c.rolId) + `🗳️ Disponibilidad de la semana: **${si.length}/${MI.length}** han votado. Faltan por votar: **${no.join(", ")}**. Marcad vuestros días para cuadrar la sesión 👉 ${APP_URL} ¡gracias! 🙏` };
   }
   if (!dia) {
-    const tops = topDias(Q, A, MI, weekDays);
+    // Solo días de hoy en adelante: no tiene sentido proponer el viernes siendo sábado.
+    const tops = topDias(Q, A, MI, weekDays.filter(d => dkeyOf(d) >= hoyKey));
     const meds = ["🥇", "🥈", "🥉"];
     const lista = tops.length ? tops.map((t, i) => `${meds[i]} **${labelDk(t.dk)}** (${t.n}${t.tv ? "+" + t.tv + "🤔" : ""})`).join("   ") : "_(nadie puede ningún día aún)_";
     return { key: "fija/" + hoyKey, msg: rolTag(c.rolId) + `📅 ¡Ya habéis votado **todos**! Falta fijar la sesión.${gm ? ` **${gm}**,` : ""} toca elegir día 🎲. Días con más gente:   ${lista}` };
