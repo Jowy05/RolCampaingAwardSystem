@@ -90,6 +90,7 @@ function decidir(info, hoyKey, mondayKey, weekDays) {
     const lista = tops.length ? tops.map((t, i) => `${meds[i]} **${labelDk(t.dk)}** (${t.n}${t.tv ? "+" + t.tv + "🤔" : ""})`).join("   ") : "_(nadie puede ningún día aún)_";
     return { key: "fija/" + hoyKey, msg: rolTag(c.rolId) + `📅 ¡Ya habéis votado **todos**! Falta fijar la sesión.${gm ? ` **${gm}**,` : ""} toca elegir día 🎲. Días con más gente:   ${lista}` };
   }
+  if (dia < hoyKey) return { skip: "sesión ya pasada (" + dia + ") — sin anuncio hasta que se fije una nueva" }; // dkeys YYYY-MM-DD: comparación lexicográfica válida
   if (c.avisoHoy === false) return { skip: "avisoHoy=off (sesión fijada)" };
   if (dia === hoyKey) {
     return { key: "hoy/" + dia, msg: rolTag(c.rolId) + `🎲 **¡HOY HAY SESIÓN!** (${labelDk(dia)}). ¡Nos vemos! 🐉` };
