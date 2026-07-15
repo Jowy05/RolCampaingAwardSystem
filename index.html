@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=70; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=71; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2147,12 +2147,14 @@ function quienNo(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(d
 function quienTalvez(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="talvez";}); }
 function sinMarcar(dk){ return MIEMBROS.filter(function(m){return estadoEfectivo(dk,m)==="";}); }
 // Puntos del TOP: cada "sí" vale 1, cada "tal vez" vale 0,5.
-function puntosDia(dk){ return quienPuede(dk).length + quienTalvez(dk).length*0.5; }
+function diaVetado(dk){ return !!((((campInfo||{}).vetos)||{})[dk]); } // día descartado por el máster: nadie vota, no puntúa, no se fija sesión
+function puntosDia(dk){ if(diaVetado(dk))return 0; return quienPuede(dk).length + quienTalvez(dk).length*0.5; }
 function topDias(off){ var hoy=dkey(new Date()); return diasSemana(off).map(function(d){ var dk=dkey(d); return {d:d,dk:dk,n:quienPuede(dk).length,tv:quienTalvez(dk).length,pts:puntosDia(dk)}; }).filter(function(x){return x.pts>0&&x.dk>=hoy;}).sort(function(a,b){ return (b.pts-a.pts)||(a.d-b.d); }).slice(0,3); } // días ya pasados fuera del ranking: no tiene sentido proponer el viernes siendo sábado
 function puedeMarcarQuedada(){ return !(campInfo&&campInfo.bloqueada) && esMiembroCampana() && MIEMBROS.indexOf(currentUser)>=0; }
 // Marca SOLO mi hoja por subruta (PUT/DELETE) → nunca pisa la de otro. Optimista con guard anti-reversión (quedadaPend).
 function setQuedada(dk,val){
   if(!puedeMarcarQuedada())return;
+  if(diaVetado(dk))return; // día descartado por el máster: no se vota
   setStatus("Guardando…");
   if(!QUEDADAS[dk])QUEDADAS[dk]={};
   if(val)QUEDADAS[dk][currentUser]=val; else { delete QUEDADAS[dk][currentUser]; if(!Object.keys(QUEDADAS[dk]).length)delete QUEDADAS[dk]; }
@@ -2232,7 +2234,16 @@ function renderCalendario(){
   var diaSes=diaSesion(), esGMc=esGM(campInfo);
   html+='<div class="cal-grid">';
   dias.forEach(function(d){
-    var dk=dkey(d), si=quienPuede(dk), tv=quienTalvez(dk), no=quienNo(dk), sm=sinMarcar(dk), esHoy=(dk===hoy), esSes=(dk===diaSes), mio=estadoEfectivo(dk,currentUser), mioAuto=(mio!==""&&!esExplicito(dk,currentUser));
+    var dk=dkey(d), esHoy=(dk===hoy), esSes=(dk===diaSes), vet=diaVetado(dk);
+    if(vet){ // día descartado por el máster: apagado, sin votos ni sesión
+      html+='<div class="cal-dia'+(esHoy?" cal-hoy":"")+'" style="opacity:.6;border-color:rgba(220,70,60,.55);background:rgba(220,70,60,.07);">';
+      html+='<div class="cal-dia-h">'+DIAS_SEM[(d.getDay()+6)%7]+' <b>'+d.getDate()+'</b>'+(esHoy?' <span class="cal-badge">HOY</span>':'')+'</div>';
+      html+='<div style="margin:14px 0;color:#e0736a;font-size:12.5px;font-weight:600;text-align:center;">🚫<br>Día descartado<br>por el máster</div>';
+      if(esGMc)html+='<button class="cal-ses-btn cal-veto-btn" data-dk="'+dk+'" type="button" style="border-color:rgba(220,70,60,.6);color:#e0736a;">↩ Reabrir día</button>';
+      html+='</div>';
+      return;
+    }
+    var si=quienPuede(dk), tv=quienTalvez(dk), no=quienNo(dk), sm=sinMarcar(dk), mio=estadoEfectivo(dk,currentUser), mioAuto=(mio!==""&&!esExplicito(dk,currentUser));
     html+='<div class="cal-dia'+(esHoy?" cal-hoy":"")+(esSes?" cal-dia-ses":"")+'">';
     html+='<div class="cal-dia-h">'+DIAS_SEM[(d.getDay()+6)%7]+' <b>'+d.getDate()+'</b>'+(esHoy?' <span class="cal-badge">HOY</span>':'')+(esSes?' <span class="cal-ses-badge">📅 SESIÓN</span>':'')+'</div>';
     html+='<div class="cal-cnt">✅ '+si.length+(total?('/'+total):'')+(tv.length?(' <span class="cal-cnt-tv">🤔 '+tv.length+'</span>'):'')+'</div>';
@@ -2242,6 +2253,7 @@ function renderCalendario(){
     if(sm.length)html+='<div class="cal-sm" title="Sin contestar: '+esc(sm.join(", "))+'">❔ '+sm.length+' sin contestar</div>';
     if(marcar)html+='<div class="cal-acc"><button class="cal-btn si'+(mio==="si"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="si" type="button">✅ Puedo</button><button class="cal-btn tv'+(mio==="talvez"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="talvez" type="button">🤔 Tal vez</button><button class="cal-btn no'+(mio==="no"?(" on"+(mioAuto?" auto":"")):"")+'" data-dk="'+dk+'" data-a="no" type="button">❌ No</button></div>';
     if(esGMc)html+='<button class="cal-ses-btn'+(esSes?" on":"")+'" data-dk="'+dk+'" type="button">'+(esSes?"📅 Quitar sesión":"📌 Fijar sesión")+'</button>';
+    if(esGMc)html+='<button class="cal-ses-btn cal-veto-btn" data-dk="'+dk+'" type="button" style="border-color:rgba(220,70,60,.6);color:#e0736a;">🚫 Quitar día</button>';
     html+='</div>';
   });
   html+='</div></div>';
@@ -2270,7 +2282,8 @@ function renderCalendario(){
   var abs=list.querySelectorAll(".cal-abtn"); for(var ai=0;ai<abs.length;ai++){ (function(bn){ bn.onclick=function(){ clicAuto(+bn.getAttribute("data-wd"), bn.getAttribute("data-a")); }; })(abs[ai]); }
   var mcs=list.querySelectorAll(".cal-mini-c"); for(var mi=0;mi<mcs.length;mi++){ (function(bn){ bn.onclick=function(){ state.calOff=semanaDe(bn.getAttribute("data-dk")); renderCalendario(); }; })(mcs[mi]); }
   var dbtn=document.getElementById("cal-discord"); if(dbtn)dbtn.onclick=openDiscord;
-  var sbs=list.querySelectorAll(".cal-ses-btn"); for(var s2=0;s2<sbs.length;s2++){ (function(bn){ bn.onclick=function(){ setSesionDia(bn.classList.contains("on")?null:bn.getAttribute("data-dk")); }; })(sbs[s2]); }
+  var sbs=list.querySelectorAll(".cal-ses-btn:not(.cal-veto-btn)"); for(var s2=0;s2<sbs.length;s2++){ (function(bn){ bn.onclick=function(){ setSesionDia(bn.classList.contains("on")?null:bn.getAttribute("data-dk")); }; })(sbs[s2]); }
+  var vbs=list.querySelectorAll(".cal-veto-btn"); for(var v2=0;v2<vbs.length;v2++){ (function(bn){ bn.onclick=function(){ setVeto(bn.getAttribute("data-dk")); }; })(vbs[v2]); }
   var scl=document.querySelector("#list .cal-ses-clear"); if(scl)scl.onclick=function(){ setSesionDia(null); };
   if(!quedadasLoaded)cargarQuedadas();
 }
@@ -2301,7 +2314,20 @@ function diaSesion(){ var s=(campInfo&&campInfo.sesion)||{}, w=s[dkey(lunesDeSem
 function sesionInfo(){ var s=(campInfo&&campInfo.sesion)||{}; return s[dkey(lunesDeSemana(0))]||null; }
 // El día de sesión lo fija SIEMPRE el máster a mano (setSesionDia). La app solo calcula y muestra el TOP de días para ayudarle a decidir; nunca lo fija sola.
 function fijarSesion(dk,auto){ var wk=dkey(lunesDeSemana(0)); if(!campInfo.sesion)campInfo.sesion={}; if(dk){ campInfo.sesion[wk]={dia:dk,auto:!!auto}; fetch(FB+"/campanas/"+currentCamp+"/info/sesion/"+wk+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({dia:dk,auto:!!auto})}).catch(function(){}); } else { delete campInfo.sesion[wk]; fetch(FB+"/campanas/"+currentCamp+"/info/sesion/"+wk+".json",{method:"DELETE"}).catch(function(){}); } }
-function setSesionDia(dk){ if(!esGM(campInfo))return; if(campInfo&&campInfo.bloqueada)return; fijarSesion(dk,false); setStatus("✓ Día de sesión fijado"); renderCalendario(); discordCheck(); }
+function setSesionDia(dk){ if(!esGM(campInfo))return; if(campInfo&&campInfo.bloqueada)return; if(dk&&diaVetado(dk))return; fijarSesion(dk,false); setStatus("✓ Día de sesión fijado"); renderCalendario(); discordCheck(); }
+// Veto del máster: deja el día no seleccionable (nadie vota, no cuenta en el TOP, no se puede fijar sesión). Toggle.
+function setVeto(dk){
+  if(!esGM(campInfo))return; if(campInfo&&campInfo.bloqueada)return;
+  var v=!diaVetado(dk);
+  if(v&&diaSesion()===dk){ if(!confirm("Ese día está fijado como SESIÓN. ¿Descartarlo igualmente? Se quitará la sesión fijada."))return; fijarSesion(null,false); }
+  if(!campInfo.vetos)campInfo.vetos={};
+  if(v)campInfo.vetos[dk]=true; else delete campInfo.vetos[dk];
+  setStatus("Guardando…");
+  var url=FB+"/campanas/"+currentCamp+"/info/vetos/"+dk+".json";
+  (v?fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(true)}):fetch(url,{method:"DELETE"})).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Sin conexión");});
+  logEvento(v?"🚫 descartó el día":"↩ reabrió el día",dk);
+  var y=window.scrollY; renderCalendario(); window.scrollTo(0,y); discordCheck();
+}
 // Envío idempotente reutilizable: candado síncrono + jitter + reclamación en Firebase + revertir si falla el webhook.
 function enviarDiscord(key,msgFn){
   if(discordSentLocal[key])return;

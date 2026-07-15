@@ -73,19 +73,21 @@ function decidir(info, hoyKey, mondayKey, weekDays) {
   const MI = Object.keys(info.miembros || {}).filter(m => m !== gm);
   if (!MI.length) return { skip: "sin miembros" };
   const Q = info.quedadas || {}, A = info.quedadasAuto || {};
+  const V = info.vetos || {}; // días descartados por el máster: fuera del top y sin anuncios
   const weekKeys = weekDays.map(dkeyOf);
 
   const si = MI.filter(m => haVotado(Q, A, weekKeys, m));
   const no = MI.filter(m => !haVotado(Q, A, weekKeys, m));
-  const dia = ((info.sesion || {})[mondayKey] || {}).dia || null;
+  let dia = ((info.sesion || {})[mondayKey] || {}).dia || null;
+  if (dia && V[dia]) dia = null; // sesión fijada en día luego vetado → como si no hubiera sesión (vuelve el "toca elegir día")
 
   if (no.length > 0) {
     if (c.avisoRecord === false) return { skip: "avisoRecord=off" };
     return { key: "r/" + hoyKey, msg: rolTag(c.rolId) + `🗳️ Disponibilidad de la semana: **${si.length}/${MI.length}** han votado. Faltan por votar: **${no.join(", ")}**. Marcad vuestros días para cuadrar la sesión 👉 ${APP_URL} ¡gracias! 🙏` };
   }
   if (!dia) {
-    // Solo días de hoy en adelante: no tiene sentido proponer el viernes siendo sábado.
-    const tops = topDias(Q, A, MI, weekDays.filter(d => dkeyOf(d) >= hoyKey));
+    // Solo días de hoy en adelante y no vetados: no tiene sentido proponer el viernes siendo sábado ni un día descartado.
+    const tops = topDias(Q, A, MI, weekDays.filter(d => dkeyOf(d) >= hoyKey && !V[dkeyOf(d)]));
     const meds = ["🥇", "🥈", "🥉"];
     const lista = tops.length ? tops.map((t, i) => `${meds[i]} **${labelDk(t.dk)}** (${t.n}${t.tv ? "+" + t.tv + "🤔" : ""})`).join("   ") : "_(nadie puede ningún día aún)_";
     return { key: "fija/" + hoyKey, msg: rolTag(c.rolId) + `📅 ¡Ya habéis votado **todos**! Falta fijar la sesión.${gm ? ` **${gm}**,` : ""} toca elegir día 🎲. Días con más gente:   ${lista}` };
