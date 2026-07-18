@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=71; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=72; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -2035,16 +2035,17 @@ function renderInventario(){
     html+='<div class="inv-h">✨ Inspiración</div>';
     html+='<div class="inv-insp" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;"><b>Puntos de inspiración</b><input class="insp-in" type="number" min="0" value="'+insp+'" title="Puntos de inspiración" style="width:70px;"'+(puede?"":" disabled")+'>'+(insp>0?('<span style="letter-spacing:2px;">'+Array(Math.min(insp,10)+1).join("✨")+(insp>10?" +"+(insp-10):"")+'</span>'):'<span style="opacity:.5;">—</span>')+'</div>';
     html+='<div class="inv-h">📊 Experiencia</div><div class="inv-xp" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
-    [["logros","🏆 XP por logros","#d4a017"],["normal","⚔️ XP normal","#3fa7d6"]].forEach(function(bar){
-      var k=bar[0], v=xp[k]||{}, cur=Math.max(0,Math.floor(Number(v.cur)||0)), max=Math.max(0,Math.floor(Number(v.max)||0));
-      var pct=max>0?Math.min(100,cur/max*100):0;
-      html+='<div class="inv-xpbar">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;font-size:12.5px;"><b>'+bar[1]+'</b>'
-        +'<span style="display:inline-flex;align-items:center;gap:3px;"><input class="xp-in" data-key="'+k+'" data-campo="cur" type="number" min="0" value="'+cur+'" title="XP actual" style="width:70px;"'+(puede?"":" disabled")+'> / <input class="xp-in" data-key="'+k+'" data-campo="max" type="number" min="0" value="'+(max||"")+'" placeholder="máx" title="XP para el siguiente nivel" style="width:70px;"'+(puede?"":" disabled")+'></span></div>'
-        +'<div style="height:12px;border-radius:6px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);overflow:hidden;" title="'+cur+(max?(' / '+max):'')+' XP"><div style="height:100%;width:'+pct.toFixed(1)+'%;border-radius:6px;background:linear-gradient(90deg,'+bar[2]+'88,'+bar[2]+');box-shadow:0 0 8px '+bar[2]+'66;transition:width .25s;"></div></div>'
-        +(max>0?('<div style="font-size:10.5px;opacity:.65;margin-top:2px;text-align:right;">'+cur+' / '+max+' ('+Math.round(pct)+'%)</div>'):'')
-        +'</div>';
-    });
+    var xl=Math.max(0,Math.floor(Number((xp.logros||{}).cur)||0)), xnc=Math.max(0,Math.floor(Number((xp.normal||{}).cur)||0)), xnm=Math.max(0,Math.floor(Number((xp.normal||{}).max)||0));
+    var xtot=xnc+xl, xpct=xnm>0?Math.min(100,xtot/xnm*100):0;
+    // XP por logros: un solo campo; se SUMA al total de la barra de abajo
+    html+='<div class="inv-xpbar"><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12.5px;"><b>🏆 XP por logros</b><input class="xp-in" data-key="logros" data-campo="cur" type="number" min="0" value="'+xl+'" title="XP ganada por logros (se suma al total)" style="width:80px;"'+(puede?"":" disabled")+'></div></div>';
+    // XP total: normal (editable) + logros, sobre el máximo
+    html+='<div class="inv-xpbar">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;font-size:12.5px;"><b>⚔️ XP total</b>'
+      +'<span style="display:inline-flex;align-items:center;gap:3px;"><input class="xp-in" data-key="normal" data-campo="cur" type="number" min="0" value="'+xnc+'" title="XP normal (sin contar logros)" style="width:80px;"'+(puede?"":" disabled")+'> / <input class="xp-in" data-key="normal" data-campo="max" type="number" min="0" value="'+(xnm||"")+'" placeholder="máx" title="XP para el siguiente nivel" style="width:80px;"'+(puede?"":" disabled")+'></span></div>'
+      +'<div style="height:12px;border-radius:6px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);overflow:hidden;" title="'+xtot+(xnm?(' / '+xnm):'')+' XP"><div style="height:100%;width:'+xpct.toFixed(1)+'%;border-radius:6px;background:linear-gradient(90deg,#3fa7d688,#3fa7d6);box-shadow:0 0 8px #3fa7d666;transition:width .25s;"></div></div>'
+      +'<div style="font-size:10.5px;opacity:.65;margin-top:2px;text-align:right;">'+xnc+' + '+xl+' 🏆 = <b>'+xtot+'</b>'+(xnm?(' / '+xnm+' ('+Math.round(xpct)+'%)'):'')+'</div>'
+      +'</div>';
     html+='</div>';
   }
   html+='<div class="inv-h">💰 Dinero</div><div class="inv-coins">';
