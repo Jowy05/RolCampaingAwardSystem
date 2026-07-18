@@ -301,7 +301,7 @@ const FB="https://logrospathfinder-default-rtdb.europe-west1.firebasedatabase.ap
 // Usuarios: se cargan de Firebase /usuarios; SEED es solo respaldo si no hay conexión.
 var USERS={}, ROL={};
 var vistaJugador=false; // el Owner puede "verse" como jugador normal (temporal)
-var APP_VER=72; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
+var APP_VER=73; // versión de la app; se compara con /appver en Firebase para auto-recargar si hay una más nueva
 var miTitulo=null; // título equipado del usuario actual {t,r}
 const SEED_USERS={
   "Joel":{pass:"0e787cb4a5551b4fa26a02c56715301abe14cb628688296f7172d69572254d7b",rol:"owner"},
@@ -1924,7 +1924,9 @@ function editItemInv(sec,id,campo,val){ if(!puedeEditarInv(sec))return; var d=in
 function delItemInv(sec,id){ if(!puedeEditarInv(sec))return; var d=invData(sec); delete d.items[id]; saveItemFB(sec,id); render(); }
 // ---- Contenedores (mochila, cofre…) dentro de una sección de inventario ----
 function crearContenedor(sec){ if(!puedeEditarInv(sec))return; var n=(window.prompt("Nombre del contenedor (p. ej. Mochila, Cofre):","")||"").trim(); if(!n)return; var pm=window.prompt("Peso máximo que soporta en kg (deja vacío = sin límite):",""); if(pm===null)return; var max=Math.max(0,Number(pm)||0); var cid="c"+(new Date().getTime())+Math.floor(Math.random()*1000), c={nombre:n,pesoMax:max}; invData(sec).contenedores[cid]=c; setStatus("Guardando…"); fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/contenedores/"+cid+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){setStatus("⚠ Error");}); render(); }
-function editContenedor(sec,cid,campo,val){ if(!puedeEditarInv(sec))return; var c=invData(sec).contenedores[cid]; if(!c)return; if(campo==="nombre")c.nombre=(val||"").trim(); else c.pesoMax=Math.max(0,Number(val)||0); fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/contenedores/"+encodeURIComponent(cid)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){}); render(); }
+function editContenedor(sec,cid,campo,val){ if(!puedeEditarInv(sec))return; var c=invData(sec).contenedores[cid]; if(!c)return; if(campo==="nombre")c.nombre=(val||"").trim(); else if(campo==="divisor"){ if(val===""||val===null||val===undefined)delete c.divisor; else c.divisor=Math.max(0,Number(val)||0); } else c.pesoMax=Math.max(0,Number(val)||0); fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/contenedores/"+encodeURIComponent(cid)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)}).then(function(r){setStatus(r.ok?"✓ Guardado":"⚠ Error");}).catch(function(){}); render(); }
+// Divisor efectivo de un contenedor: sin definir → 1 (cuenta entero); 0 → no cuenta; 2 → mitad, etc.
+function divisorCont(c){ if(!c||c.divisor===undefined||c.divisor===null)return 1; var d=Number(c.divisor); return (isNaN(d)||d<0)?1:d; }
 function delContenedor(sec,cid){ if(!puedeEditarInv(sec))return; if(!confirm("¿Borrar este contenedor? Sus objetos quedarán sueltos (no se borran)."))return; delete INVCOLAPSO[sec+"|"+cid]; var d=invData(sec); Object.keys(d.items||{}).forEach(function(id){ if(d.items[id].cont===cid){ delete d.items[id].cont; saveItemFB(sec,id); } }); delete d.contenedores[cid]; fetch(FB+"/campanas/"+currentCamp+"/inventario/"+encodeURIComponent(sec)+"/contenedores/"+encodeURIComponent(cid)+".json",{method:"DELETE"}).then(function(){render();}).catch(function(){}); }
 function setItemCont(sec,id,cid){ if(!puedeEditarInv(sec))return; var it=invData(sec).items[id]; if(!it)return; if(cid&&invData(sec).contenedores[cid])it.cont=cid; else delete it.cont; saveItemFB(sec,id); render(); }
 // Carga máxima (lb) de la sección: para calcular carga ligera/media/pesada/sobrecarga (PF1e: ≤1/3 ligera, ≤2/3 media, ≤max pesada, >max sobrecarga).
@@ -2000,15 +2002,18 @@ function renderInventario(){
     if(puede)return '<div class="inv-row" data-id="'+esc(id)+'"'+((hayConts&&!INVTOUCH)?' draggable="true"':'')+'><button class="inv-img" data-id="'+esc(id)+'" type="button" title="Imagen del objeto">'+thumb+'</button><input class="inv-nom-in" value="'+esc(it.nombre||"")+'" placeholder="Objeto"><input class="inv-cant-in" type="number" min="1" value="'+cant+'" title="Cantidad"><input class="inv-peso-in" type="number" min="0" step="0.1" value="'+peso+'" title="Peso por unidad (kg)"><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span>'+(hayConts?('<select class="item-cont" data-id="'+esc(id)+'" title="Contenedor">'+contOpts(it.cont)+'</select>'):'')+(dests.length?('<button class="inv-trasp" data-id="'+esc(id)+'" type="button" title="Traspasar al destino seleccionado">↔</button>'):'')+'<button class="inv-del" data-id="'+esc(id)+'" type="button">🗑</button></div>';
     return '<div class="inv-row ro"><span class="inv-thumb">'+thumb+'</span><span class="inv-nom">'+esc(it.nombre||"")+'</span><span class="inv-cant">×'+cant+'</span><span class="inv-sub">'+(peso?((cant*peso).toFixed(1)+" kg"):"—")+'</span></div>';
   }
+  var itemsEff=0; // peso de objetos que CUENTA para el total (aplicando el divisor de cada contenedor)
   if(!hayConts){
     html+='<div class="inv-list">'; if(!keys.length)html+='<div class="empty" style="padding:18px;">Sin objetos todavía.</div>'; keys.forEach(function(id){ html+=itemRow(id); }); html+='</div>';
   } else {
     function grupoCont(cid,nombre,pesoMax,icon){
       var ids=keys.filter(function(id){ var c=items[id].cont; return (cid==="")?(!c||!conts[c]):(c===cid); });
       var gW=0; ids.forEach(function(id){ gW+=(Number(items[id].cantidad)||1)*(Number(items[id].peso)||0); });
+      var dv=(cid&&conts[cid])?divisorCont(conts[cid]):1, gEff=(dv===0)?0:gW/dv; itemsEff+=gEff;
       var over=(pesoMax>0&&gW>pesoMax);
       var colKey=sec+"|"+cid, col=!!INVCOLAPSO[colKey];
-      html+='<div class="inv-cont'+(over?" over":"")+'" data-cont="'+esc(cid)+'"><div class="inv-cont-head"><button class="inv-cont-tg" data-col="'+esc(colKey)+'" type="button" title="Plegar/desplegar">'+(col?"▸":"▾")+'</button>'+icon+' <b>'+esc(nombre)+'</b> <span class="inv-cont-w'+(over?" over":"")+'">'+gW.toFixed(1)+(pesoMax>0?(' / '+pesoMax+' kg'+(over?' ¡lleno!':'')):' kg')+'</span> <span class="inv-cont-count">'+ids.length+' obj.</span>'+((puede&&cid)?(' <input class="cont-max-in" data-cid="'+esc(cid)+'" type="number" min="0" value="'+(pesoMax||"")+'" placeholder="máx" title="Peso máximo del contenedor (vacío = sin límite)"><button class="cont-del" data-cid="'+esc(cid)+'" type="button" title="Borrar contenedor">🗑</button>'):'')+'</div><div class="inv-list"'+(col?' style="display:none"':'')+'>';
+      var divVal=(cid&&conts[cid]&&conts[cid].divisor!==undefined&&conts[cid].divisor!==null)?conts[cid].divisor:"";
+      html+='<div class="inv-cont'+(over?" over":"")+'" data-cont="'+esc(cid)+'"><div class="inv-cont-head"><button class="inv-cont-tg" data-col="'+esc(colKey)+'" type="button" title="Plegar/desplegar">'+(col?"▸":"▾")+'</button>'+icon+' <b>'+esc(nombre)+'</b> <span class="inv-cont-w'+(over?" over":"")+'">'+gW.toFixed(1)+(pesoMax>0?(' / '+pesoMax+' kg'+(over?' ¡lleno!':'')):' kg')+'</span>'+(dv!==1?(' <span style="color:#7fd6a0;font-size:11.5px;" title="Divisor de carga ÷'+dv+': para tu peso total este contenedor cuenta '+gEff.toFixed(1)+' kg">→ cuenta '+gEff.toFixed(1)+' kg</span>'):'')+' <span class="inv-cont-count">'+ids.length+' obj.</span>'+((puede&&cid)?(' <span title="Divisor de carga: el peso se divide entre este número para el total (0 = no cuenta, 2 = mitad; vacío = cuenta entero)" style="font-size:11px;opacity:.8;">÷<input class="cont-div-in" data-cid="'+esc(cid)+'" type="number" min="0" step="0.5" value="'+divVal+'" placeholder="1" style="width:44px;"></span> <input class="cont-max-in" data-cid="'+esc(cid)+'" type="number" min="0" value="'+(pesoMax||"")+'" placeholder="máx" title="Peso máximo del contenedor (vacío = sin límite)"><button class="cont-del" data-cid="'+esc(cid)+'" type="button" title="Borrar contenedor">🗑</button>'):'')+'</div><div class="inv-list"'+(col?' style="display:none"':'')+'>';
       if(!ids.length)html+='<div class="empty" style="padding:9px;font-size:12px;">Vacío.</div>';
       ids.forEach(function(id){ html+=itemRow(id); });
       html+='</div></div>';
@@ -2016,8 +2021,9 @@ function renderInventario(){
     grupoCont("","Sin contenedor",0,"🎒");
     Object.keys(conts).forEach(function(cid){ grupoCont(cid, conts[cid].nombre||"Contenedor", Math.floor(Number(conts[cid].pesoMax)||0), "📦"); });
   }
-  var total=itemsW+coinsW;
-  html+='<div class="inv-total">⚖️ Total: <b>'+total.toFixed(2)+' kg</b> <span class="inv-totsub">('+itemsW.toFixed(1)+' objetos + '+coinsW.toFixed(2)+' monedas)</span></div>';
+  var effW=hayConts?itemsEff:itemsW;
+  var total=effW+coinsW;
+  html+='<div class="inv-total">⚖️ Total: <b>'+total.toFixed(2)+' kg</b> <span class="inv-totsub">('+effW.toFixed(1)+' objetos'+((hayConts&&Math.abs(effW-itemsW)>0.04)?(' — reales '+itemsW.toFixed(1)):'')+' + '+coinsW.toFixed(2)+' monedas)</span></div>';
   if(puede)html+='<div class="inv-cargamax">🏋️ Carga máx (kg): <input class="cargamax-in" type="number" min="0" step="1" value="'+(maxC||"")+'" placeholder="según tu Fuerza"></div>';
   if(maxC>0){
     var cat,cc; if(total<=maxC/3){cat="Ligera";cc="lig";} else if(total<=maxC*2/3){cat="Media";cc="med";} else if(total<=maxC){cat="Pesada";cc="pes";} else {cat="¡Sobrecarga!";cc="sob";}
@@ -2097,6 +2103,7 @@ function renderInventario(){
   var traspM=document.querySelector("#list .traspd"); if(traspM)traspM.addEventListener("click",function(){ var dest=(document.getElementById("trasp-dest")||{}).value; if(!dest)return; var sub={}, ins=document.querySelectorAll("#list .traspd-in"); for(var j=0;j<ins.length;j++){ sub[ins[j].getAttribute("data-coin")]=Math.floor(Number(ins[j].value)||0); } traspasarDinero(sec,dest,sub); });
   var contAdd=document.querySelector("#list .inv-cont-add"); if(contAdd)contAdd.addEventListener("click",function(){crearContenedor(sec);});
   var contMaxs=document.querySelectorAll("#list .cont-max-in"); for(var cm2=0;cm2<contMaxs.length;cm2++){(function(inp){inp.addEventListener("change",function(){editContenedor(sec,inp.getAttribute("data-cid"),"pesoMax",inp.value);});})(contMaxs[cm2]);}
+  var contDivs=document.querySelectorAll("#list .cont-div-in"); for(var cv2=0;cv2<contDivs.length;cv2++){(function(inp){inp.addEventListener("change",function(){editContenedor(sec,inp.getAttribute("data-cid"),"divisor",inp.value);});})(contDivs[cv2]);}
   var contDels=document.querySelectorAll("#list .cont-del"); for(var cd2=0;cd2<contDels.length;cd2++){(function(b){b.addEventListener("click",function(){delContenedor(sec,b.getAttribute("data-cid"));});})(contDels[cd2]);}
   var itemConts=document.querySelectorAll("#list .item-cont"); for(var ic2=0;ic2<itemConts.length;ic2++){(function(s){s.addEventListener("change",function(){setItemCont(sec,s.getAttribute("data-id"),s.value);});})(itemConts[ic2]);}
   if(!INVTOUCH){ // arrastrar y soltar objetos en contenedores (solo escritorio; en móvil se usa el desplegable de arriba)
