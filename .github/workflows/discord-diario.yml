@@ -1,14 +1,22 @@
 name: Aviso diario de Discord
 
 # Corre en los servidores de GitHub (no necesita que nadie tenga la web abierta).
-# Objetivo: ~13:00 Madrid. El cron de GitHub se retrasa a menudo (1-2h) o se omite,
-# así que se programan varias horas y el script solo envía en la ventana 13-20h Madrid
-# (1er intento válido); el flag diario en Firebase garantiza un único envío.
+# Dos franjas: mañana (~8:00 Madrid) y tarde (~14:00 Madrid). El cron de GitHub se retrasa
+# a menudo (1-2h) o se omite, así que cada franja se programa varias veces; el script asigna
+# slot am/pm por la hora Madrid y un flag diario por slot (hoyAM/hoyPM) garantiza 1 envío por franja.
+# Solo se envía el día de la sesión (mañana + 14:00); las fases de votación mantienen 1 aviso/día.
 on:
   schedule:
-    - cron: '0 11 * * *'   # ~13:00 Madrid en verano (CEST = UTC+2)
-    - cron: '0 12 * * *'   # ~13:00 Madrid en invierno (CET = UTC+1)
-    - cron: '0 13 * * *'   # red de seguridad por si GitHub retrasa/omite las anteriores
+    # Mañana ~8:00 Madrid  (verano CEST=UTC+2 → 6 UTC; invierno CET=UTC+1 → 7 UTC) + refuerzos
+    - cron: '0 6 * * *'
+    - cron: '30 6 * * *'
+    - cron: '0 7 * * *'
+    - cron: '30 7 * * *'
+    # Tarde ~14:00 Madrid  (verano → 12 UTC; invierno → 13 UTC) + refuerzos
+    - cron: '0 12 * * *'
+    - cron: '30 12 * * *'
+    - cron: '0 13 * * *'
+    - cron: '30 13 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

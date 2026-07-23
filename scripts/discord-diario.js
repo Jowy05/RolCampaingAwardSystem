@@ -67,7 +67,8 @@ async function discordPost(webhook, rolId, content) {
 }
 
 // Función PURA: dado el estado, decide qué mensaje toca y con qué flag. Sin I/O → testeable.
-function decidir(info, hoyKey, mondayKey, weekDays) {
+// slot: "am" (mañana) | "pm" (tarde) — solo relevante cuando hay sesión fijada para HOY.
+function decidir(info, hoyKey, mondayKey, weekDays, slot) {
   const c = info.discord || {};
   const gm = info.gm || "";
   const MI = Object.keys(info.miembros || {}).filter(m => m !== gm);
@@ -92,21 +93,20 @@ function decidir(info, hoyKey, mondayKey, weekDays) {
     const lista = tops.length ? tops.map((t, i) => `${meds[i]} **${labelDk(t.dk)}** (${t.n}${t.tv ? "+" + t.tv + "🤔" : ""})`).join("   ") : "_(nadie puede ningún día aún)_";
     return { key: "fija/" + hoyKey, msg: rolTag(c.rolId) + `📅 ¡Ya habéis votado **todos**! Falta fijar la sesión.${gm ? ` **${gm}**,` : ""} toca elegir día 🎲. Días con más gente:   ${lista}` };
   }
-  if (dia < hoyKey) return { skip: "sesión ya pasada (" + dia + ") — sin anuncio hasta que se fije una nueva" }; // dkeys YYYY-MM-DD: comparación lexicográfica válida
+  // Sesión fijada. SOLO se avisa el propio día de la sesión (mañana + 14:00). Ningún otro día — ni antes ni después.
+  if (dia !== hoyKey) return { skip: `sesión fijada para ${dia}, no es hoy — sin avisos en días previos/posteriores` }; // dkeys YYYY-MM-DD: comparación lexicográfica válida
   if (c.avisoHoy === false) return { skip: "avisoHoy=off (sesión fijada)" };
-  if (dia === hoyKey) {
-    return { key: "hoy/" + dia, msg: rolTag(c.rolId) + `🎲 **¡HOY HAY SESIÓN!** (${labelDk(dia)}). ¡Nos vemos! 🐉` };
-  }
-  return { key: "rec/" + hoyKey, msg: rolTag(c.rolId) + `🎲 ¡Recordad que **${labelDk(dia)}** hay sesión esta semana! 🐉` };
+  if (slot === "am") return { key: "hoyAM/" + dia, msg: rolTag(c.rolId) + `🌅 **¡HOY HAY SESIÓN!** (${labelDk(dia)}). Preparad fichas y dados; nos vemos hoy 🎲🐉` };
+  return { key: "hoyPM/" + dia, msg: rolTag(c.rolId) + `🎲 **¡Recordatorio: HOY hay sesión!** (${labelDk(dia)}). ¡Nos vemos! 🐉` };
 }
 
-async function procesarCampana(id, hoyKey, mondayKey, weekDays) {
+async function procesarCampana(id, hoyKey, mondayKey, weekDays, slot) {
   const info = await fbGet("/campanas/" + id + "/info");
   if (!info) { console.log(`· ${id}: sin info, salto`); return; }
   const c = info.discord || {};
   if (!c.on || !c.webhook) { console.log(`· ${id}: Discord off o sin webhook, salto`); return; }
 
-  const d = decidir(info, hoyKey, mondayKey, weekDays);
+  const d = decidir(info, hoyKey, mondayKey, weekDays, slot);
   if (d.skip) { console.log(`· ${id}: ${d.skip}, salto`); return; }
   const { key, msg } = d;
 
@@ -125,8 +125,11 @@ async function procesarCampana(id, hoyKey, mondayKey, weekDays) {
 
 async function main() {
   const now = madridNow();
-  console.log(`Madrid ahora: ${now.y}-${pad2(now.m)}-${pad2(now.d)} ${pad2(now.h)}h | DRY=${DRY} MANUAL=${MANUAL}`);
-  if (!MANUAL && !DRY && (now.h < HORA_MIN || now.h > HORA_MAX)) { console.log(`Fuera de la ventana ${HORA_MIN}-${HORA_MAX}h Madrid — no toca. Fin.`); return; }
+  // Franjas Madrid: mañana [6..12] → "am", tarde [13..23] → "pm". Antes de las 6 no toca.
+  const slot = now.h < 6 ? null : (now.h < 13 ? "am" : "pm");
+  console.log(`Madrid ahora: ${now.y}-${pad2(now.m)}-${pad2(now.d)} ${pad2(now.h)}h | slot=${slot} | DRY=${DRY} MANUAL=${MANUAL}`);
+  if (!MANUAL && !DRY && !slot) { console.log(`Antes de las 6h Madrid — no toca. Fin.`); return; }
+  const slotEff = slot || (now.h < 13 ? "am" : "pm"); // para MANUAL/DRY fuera de franja
 
   const today = civil(now.y, now.m, now.d);
   const hoyKey = dkeyOf(today);
@@ -137,15 +140,15 @@ async function main() {
   const camps = await fbGet("/campanas", "shallow=true") || {};
   const ids = Object.keys(camps);
   console.log(`Campañas: ${ids.join(", ") || "(ninguna)"}`);
-  for (const id of ids) { await procesarCampana(id, hoyKey, mondayKey, weekDays); if (!DRY) await podarFlags(id, today); }
+  for (const id of ids) { await procesarCampana(id, hoyKey, mondayKey, weekDays, slotEff); if (!DRY) await podarFlags(id, today); }
   console.log("Fin.");
 }
 
-// Poda los flags propios del cron (fija/rec) de más de 30 días; el cliente ya poda r/c/dia/hoy.
+// Poda los flags propios del cron (fija/rec/hoyAM/hoyPM) de más de 30 días; el cliente ya poda r/c/dia/hoy.
 async function podarFlags(id, todayCivil) {
   const sent = await fbGet("/campanas/" + id + "/info/discordSent");
   if (!sent) return;
-  for (const g of ["fija", "rec"]) {
+  for (const g of ["fija", "rec", "hoyAM", "hoyPM"]) {
     const grp = sent[g] || {};
     for (const k of Object.keys(grp)) {
       const p = k.split("-");
